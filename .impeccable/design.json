@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T12:00:00+07:00",
+  "title": "Design System: Lyora",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary Blue",
+        "canonical": "#2563eb",
+        "tonalRamp": ["#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#dbeafe"]
+      },
+      "accent": {
+        "role": "secondary",
+        "displayName": "Accent Purple",
+        "canonical": "#aa3bff",
+        "tonalRamp": ["#581c87", "#7e22ce", "#9333ea", "#aa3bff", "#c084fc", "#d8b4fe", "#e9d5ff", "#f3e8ff"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc", "#ffffff"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display Hero",
+        "purpose": "Hero banner and large page headers."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Main section headers."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles and sub-headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Form labels and small metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-ambient",
+        "value": "0 8px 30px rgba(0, 0, 0, 0.08)",
+        "purpose": "Soft deep lift for primary form cards and modals."
+      },
+      {
+        "name": "button-glow",
+        "value": "0 4px 6px -1px rgba(37, 99, 235, 0.3), 0 2px 4px -2px rgba(37, 99, 235, 0.3)",
+        "purpose": "Subtle radiant glow under primary interactive button."
+      },
+      {
+        "name": "system-layer",
+        "value": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+        "purpose": "Dropdowns and popovers."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default smooth transition for colors and borders (150ms)."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action button with brand blue and tinted shadow.",
+      "html": "<button class=\"ds-btn-primary\">Bắt đầu ngay</button>",
+      "css": ".ds-btn-primary { background: #2563eb; color: #ffffff; padding: 10px 20px; font-size: 14px; font-weight: 600; font-family: system-ui, sans-serif; border: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); cursor: pointer; transition: background 0.15s ease, transform 0.15s ease; } .ds-btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Standard form input with active focus glow.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Nhập thông tin...\" />",
+      "css": ".ds-input { width: 100%; box-sizing: border-box; background: #ffffff; color: #0f172a; padding: 8px 12px; font-size: 14px; font-family: system-ui, sans-serif; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease; } .ds-input:focus { border-color: #2563eb; box-shadow: 0 0 0 1px #2563eb; } .ds-input::placeholder { color: #94a3b8; }"
+    },
+    {
+      "name": "Form Card",
+      "kind": "card",
+      "refersTo": "card-container",
+      "description": "Elevated white surface container with 16px radius and soft shadow.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Đăng nhập</h3><p class=\"ds-card-desc\">Truy cập hệ thống quản trị Lyora</p></div>",
+      "css": ".ds-card { background: #ffffff; border-radius: 16px; padding: 24px 32px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08); max-width: 400px; font-family: system-ui, sans-serif; } .ds-card-title { margin: 0 0 8px 0; font-size: 24px; font-weight: 600; color: #0f172a; } .ds-card-desc { margin: 0; font-size: 14px; color: #475569; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Cyber Precision & Ambient Clarity",
+    "overview": "Hệ thống thiết kế Lyora thể hiện sự sắc sảo, đáng tin cậy của một nền tảng công nghệ cao. Sử dụng tông màu xanh Primary Blue (#2563eb) làm tâm điểm tương tác trên nền trắng sáng thanh lịch, điểm xuyết ánh sáng phát quang nhẹ (ambient glow) và sắc tím công nghệ. Hệ thống tối ưu trải nghiệm theo một giao diện trực quan thống nhất (Unified Theme), bảo đảm tốc độ hiển thị và tính dễ dùng vượt trội.",
+    "keyCharacteristics": [
+      "Màu xanh Primary Blue (#2563eb) làm tâm điểm tương tác, kết hợp bóng đổ màu thương hiệu",
+      "Sử dụng font Native System cho tốc độ tải tức thì và sắc nét trên mọi hệ điều hành",
+      "Bo góc phân cấp chuẩn: 4px (vi mô), 8px (controls), 16px (containers)",
+      "Kỷ luật chống AI-Slop: không lạm dụng gradient tím hoặc glassmorphism"
+    ],
+    "rules": [
+      {
+        "name": "The Blue Dominance Rule",
+        "body": "Màu Primary Blue #2563eb là điểm kích hoạt hành động chính duy nhất; không dùng màu khác cạnh tranh nút kêu gọi hành động (CTA).",
+        "section": "colors"
+      },
+      {
+        "name": "The Glow Restraint Rule",
+        "body": "Hiệu ứng phát sáng chỉ dùng làm điểm nhấn chiều sâu cho nút chính hoặc khối visual công nghệ, tuyệt đối không lạm dụng toàn màn hình.",
+        "section": "colors"
+      },
+      {
+        "name": "The Unified Theme Authority Rule",
+        "body": "Dự án áp dụng duy nhất một chuẩn hiển thị sáng (Light Mode), không tự ý kích hoạt Dark Mode hay đổi token màu ngoài bảng chuẩn.",
+        "section": "colors"
+      },
+      {
+        "name": "The Native Sans Rule",
+        "body": "Toàn bộ văn bản hiển thị giao diện dùng sans-serif hệ thống để đảm bảo tính mượt mà và cảm giác nguyên bản.",
+        "section": "typography"
+      },
+      {
+        "name": "The Monospace Quarantine Rule",
+        "body": "Font monospace chỉ được dùng cho license key, code block, token kỹ thuật; cấm dùng cho văn bản thông thường.",
+        "section": "typography"
+      },
+      {
+        "name": "The Soft Lift Rule",
+        "body": "Bề mặt thông thường phẳng tinh khôi; chỉ nhấc cao (lift) khi là khối tương tác trung tâm (Form Card) hoặc phản hồi hover.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do tuân thủ tuyệt đối các mã màu chính thức: Primary #2563eb, Accent #aa3bff, Headings #0f172a, Body #334155.",
+      "Do sử dụng rounded-lg (8px) cho Input/Button và rounded-2xl (16px) cho Form Card.",
+      "Do áp dụng hiệu ứng bóng shadow-md shadow-blue-500/30 cho nút bấm Primary để đồng bộ nhận diện.",
+      "Do thiết lập focus:border-[#2563eb] và focus:ring-1 focus:ring-[#2563eb] trên mọi trường input tương tác.",
+      "Do sử dụng tiếng Việt chuẩn mực, rõ ràng, gãy gọn cho toàn bộ nhãn, thông báo và nút bấm."
+    ],
+    "donts": [
+      "Don't tự ý thêm nút chuyển đổi Dark Mode hay viết các lớp dark: mâu thuẫn với quy chuẩn Unified Theme.",
+      "Don't sử dụng font Monospace cho văn bản thông thường (chỉ dùng cho code, key, token).",
+      "Don't áp dụng gradient tím-hồng rập khuôn AI (AI-slop) khắp màn hình.",
+      "Don't sử dụng bo góc tùy tiện ngoài hệ thống 4px / 8px / 16px / full.",
+      "Don't dùng các đường kẻ hairline divider phân cắt dày đặc; hãy ưu tiên dùng khoảng trắng và độ tương phản màu nền."
+    ]
+  }
+}
+

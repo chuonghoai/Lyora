@@ -38,6 +38,7 @@ Mọi thay đổi do AI Agent thực hiện phải tuân thủ các tài liệu 
     ├── design-taste-frontend/              # [Group B] Thiết kế UI chống rập khuôn (Anti-slop frontend)
     ├── find-skills/                        # [Group B] Khám phá và cài đặt skill từ skills.sh
     ├── impeccable/                         # [Group B] Thiết kế, polish & audit UI components
+    ├── logo-design/                        # [Group B] Thiết kế logo & nhận diện thương hiệu chuyên nghiệp (Vector SVG, Audit, Brand kit)
     ├── lya-analyzeTask/                    # Phân tích scope, rủi ro, tác động của task
     ├── lya-cleanup/                        # Quét và dọn dẹp file rác trong workspace
     ├── lya-createPR/                       # Chuẩn bị và tạo Pull Request
@@ -70,4 +71,5 @@ Mọi thay đổi do AI Agent thực hiện phải tuân thủ các tài liệu 
 | `/lya-cleanup` | Quét và dọn dẹp file rác trong workspace | Không | Không (chỉ xóa rác) | Không | **Có** (trước khi xóa file) |
 | `design-taste-frontend` | Hướng dẫn thiết kế frontend chất lượng cao, chống AI-slop | Brief UI / Yêu cầu thiết kế | Có (áp dụng trong code UI) | Không | Theo quy trình của task |
 | `impeccable` | Thiết kế, polish & audit UI components, forms, pages | UI Component / Yêu cầu UI | Có (áp dụng trong code UI) | Không | Theo quy trình của task |
+| `logo-design` | Thiết kế logo, biểu tượng & bộ nhận diện thương hiệu chuyên nghiệp (Vector SVG, test 16px, export web icons & brand kit) | Brief thương hiệu / Yêu cầu logo | Có (tạo/sửa file SVG, assets logo) | Không | **Có** (Checkpoint duyệt concept) |
 | `find-skills` | Tìm kiếm và cài đặt thêm skill từ hệ sinh thái [skills.sh](https://skills.sh/) | Câu hỏi / Từ khóa tìm kiếm | Không | Không | **Có** (trước khi cài đặt) |
