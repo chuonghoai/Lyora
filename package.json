@@ -1,0 +1,32 @@
+{
+  "name": "lyora-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lyora Monorepo (NestJS Backend + ReactJS Client + ReactJS Admin + Web Shared)",
+  "workspaces": [
+    "lyora_backend",
+    "lyora_client",
+    "lyora_admin",
+    "lyora_web_shared"
+  ],
+  "scripts": {
+    "backend:dev": "npm run start:dev --workspace=lyora_backend",
+    "backend:build": "npm run build --workspace=lyora_backend",
+    "backend:test": "npm run test --workspace=lyora_backend",
+    "client:dev": "npm run dev --workspace=lyora_client",
+    "client:build": "npm run build --workspace=lyora_client",
+    "client:test": "npm run test --workspace=lyora_client",
+    "client:lint": "npm run lint --workspace=lyora_client",
+    "admin:dev": "npm run dev --workspace=lyora_admin",
+    "admin:build": "npm run build --workspace=lyora_admin",
+    "admin:test": "npm run test --workspace=lyora_admin",
+    "admin:lint": "npm run lint --workspace=lyora_admin",
+    "dev": "concurrently \"npm run backend:dev\" \"npm run client:dev\" \"npm run admin:dev\"",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "concurrently \"npm run client:lint\" \"npm run admin:lint\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
