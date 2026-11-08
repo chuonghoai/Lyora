@@ -1,10 +1,8 @@
 # Lyora Monorepo
 
-Dự án Web Platform ứng dụng kiến trúc npm Monorepo với:
-- **Backend API:** NestJS + TypeScript (`lyora_backend/`)
-- **Web Client:** ReactJS + TypeScript + Vite (`lyora_client/`)
-- **Web Admin:** ReactJS + TypeScript + Vite (`lyora_admin/`)
-- **Web Shared:** Thư viện dùng chung (`lyora_web_shared/`, package `@lyora/web-shared`)
+Dự án Web Platform ứng dụng kiến trúc npm Monorepo với 2 workspaces cốt lõi:
+- **Backend API:** NestJS + TypeScript + TypeORM + PostgreSQL + Redis (`lyora_backend/`)
+- **Unified Web App:** ReactJS + TypeScript + Vite (`lyora_web/`) — hợp nhất Client Portal (`/*`), Admin Portal (`/admin/*`) và thư viện dùng chung (`src/shared/`)
 - **Linter chuẩn:** ESLint cho toàn bộ các workspace frontend và backend
 - **Giao diện & Nội dung:** Giao diện trực quan thống nhất (`DESIGN.md`) và tiếng Việt chuẩn mực (không dùng i18n, không dùng Dark/Light mode)
 
@@ -18,25 +16,17 @@ Dự án Web Platform ứng dụng kiến trúc npm Monorepo với:
 
 ### 1.2. Các bước cài đặt & Khởi chạy
 
-Khi clone repository về máy mới, toàn bộ quá trình cài đặt được điều phối tập trung tại thư mục gốc (root):
-
 ```bash
 # 1. Clone repository về máy
 git clone <repository-url>
 cd Lyora
 
-# 2. Cài đặt toàn bộ dependencies tập trung cho cả 4 workspaces
+# 2. Cài đặt toàn bộ dependencies tập trung cho cả 2 workspaces
 npm install
 
-# 3. Khởi chạy đồng thời toàn bộ hệ thống (Backend :3000, Client :5173, Admin :5174)
+# 3. Khởi chạy đồng thời toàn bộ hệ thống (Backend :3000, Web :5173)
 npm run dev
 ```
-
-### 1.3. Cơ chế tối ưu hóa Node Modules (npm Workspaces Hoisting)
-- **Quản lý tập trung (Hoisting):** Lệnh `npm install` tại thư mục root sẽ quét cả 4 workspaces (`lyora_backend`, `lyora_client`, `lyora_admin`, `lyora_web_shared`) và tải toàn bộ dependencies về một thư mục duy nhất: `node_modules/` ở root dự án (~230 MB).
-- **Không bị duplicate:** Các thư viện dùng chung (`react`, `typescript`, `eslint`, `@types/node`...) đã được đồng bộ chuẩn hóa phiên bản, đảm bảo 100% được deduplicate về root. Các thư mục con (`lyora_client/`, `lyora_admin/`, `lyora_backend/`) không phải chứa bản sao thư viện, giúp tiết kiệm tối đa dung lượng ổ cứng.
-- **Tự động liên kết nội bộ:** npm workspaces tự động tạo symlink nội bộ cho package `@lyora/web-shared` tại `node_modules/@lyora/web-shared`, giúp Client và Admin import trực tiếp mà không cần cấu hình phức tạp.
-- **Lưu ý quan trọng:** Luôn thực hiện `npm install` tại **thư mục root**, tuyệt đối **không chạy `npm install` lẻ** bên trong các thư mục con để tránh phá vỡ cơ chế hoisting và gây trùng lặp thư viện.
 
 ---
 
@@ -45,33 +35,35 @@ npm run dev
 ```text
 lyora/
 ├── .agents/                        # Hệ thống AI Skills và Rules chuẩn hóa
-├── architecture_web/               # Kiến trúc ứng dụng Web Frontend
+├── architecture_web/               # Kiến trúc ứng dụng Web Frontend (Unified)
 ├── architecture_backend/           # Kiến trúc ứng dụng Backend NestJS
-├── refactor_reports/               # Báo cáo kỹ thuật và danh mục tài nguyên
 │
-├── lyora_web_shared/               # Gói tài nguyên dùng chung (@lyora/web-shared)
-│   ├── src/                        # Components, hooks, utils, types, apiClient
-│   ├── eslint.config.js            # Cấu hình ESLint dùng chung
-│   └── package.json
-│
-├── lyora_backend/                  # Workspace Backend API (NestJS)
+├── lyora_backend/                  # Workspace Backend API (NestJS :3000)
 │   ├── src/
+│   │   ├── common/                 # Decorators, Guards, Interceptors, Filters, DTOs, BaseEntity
+│   │   ├── config/                 # Cấu hình App, Database, JWT, Redis
+│   │   ├── database/               # TypeORM PostgreSQL connection
+│   │   ├── redis/                  # Global Redis & Fallback Session/Blacklist/OTP Service
+│   │   └── modules/                # Feature modules (auth, users, health...)
 │   ├── test/
+│   ├── .env.example
 │   └── package.json
 │
-├── lyora_client/                   # Workspace Web Khách hàng (ReactJS + Vite)
+├── lyora_web/                      # Workspace Web Hợp nhất (ReactJS + Vite :5173)
 │   ├── src/
+│   │   ├── shared/                 # Components, hooks, utils, types, constants, apiClient
+│   │   ├── core/                   # Zustand stores, Providers, Route Guards
+│   │   ├── layouts/                # ClientLayout & AdminLayout
+│   │   ├── features/               # Feature modules (auth, client, admin)
+│   │   └── routes/                 # Cấu hình React Router (/* và /admin/*)
+│   ├── eslint.config.js            # Cấu hình ESLint chuẩn
 │   ├── vite.config.ts
-│   └── package.json
-│
-├── lyora_admin/                    # Workspace Web Quản trị (ReactJS + Vite)
-│   ├── src/
-│   ├── vite.config.ts
+│   ├── .env.example
 │   └── package.json
 │
 ├── .gitignore                      # File cấu hình Git ignore
 ├── DESIGN.md                       # Design System Tokens chuẩn (Giao diện thống nhất)
-├── package.json                    # Root npm workspace manifest & monorepo scripts (14 scripts)
+├── package.json                    # Root npm workspace manifest & monorepo scripts
 └── README.md                       # Tài liệu hướng dẫn dự án
 ```
 
@@ -79,31 +71,26 @@ lyora/
 
 ## 3. Danh mục Scripts Monorepo (`package.json`)
 
-Toàn bộ 14 scripts chuẩn hóa được điều phối từ root:
-
 | Script | Mô tả chức năng | Workspace tác động |
 | :--- | :--- | :--- |
-| `npm run backend:dev` | Khởi chạy NestJS Dev Server (`start:dev`) | `lyora_backend` |
+| `npm run backend:dev` | Khởi chạy NestJS Dev Server (`start:dev`, port 3000) | `lyora_backend` |
 | `npm run backend:build` | Build production bundle cho Backend NestJS | `lyora_backend` |
 | `npm run backend:test` | Chạy bộ test Jest cho Backend | `lyora_backend` |
-| `npm run client:dev` | Khởi chạy Vite Dev Server cho Web Client (port 5173) | `lyora_client` |
-| `npm run client:build` | Build bundle production cho Web Client | `lyora_client` |
-| `npm run client:test` | Chạy test cho Web Client | `lyora_client` |
-| `npm run client:lint` | Chạy ESLint kiểm tra mã nguồn Web Client | `lyora_client` |
-| `npm run admin:dev` | Khởi chạy Vite Dev Server cho Web Admin (port 5174) | `lyora_admin` |
-| `npm run admin:build` | Build bundle production cho Web Admin | `lyora_admin` |
-| `npm run admin:test` | Chạy test cho Web Admin | `lyora_admin` |
-| `npm run admin:lint` | Chạy ESLint kiểm tra mã nguồn Web Admin | `lyora_admin` |
-| `npm run dev` | Chạy song song cả 3 dự án (Backend, Client, Admin) | Tất cả |
+| `npm run backend:lint` | Chạy ESLint kiểm tra mã nguồn Backend | `lyora_backend` |
+| `npm run web:dev` | Khởi chạy Vite Dev Server cho Unified Web (port 5173) | `lyora_web` |
+| `npm run web:build` | Build bundle production cho Unified Web | `lyora_web` |
+| `npm run web:test` | Chạy test cho Unified Web | `lyora_web` |
+| `npm run web:lint` | Chạy ESLint kiểm tra mã nguồn Unified Web | `lyora_web` |
+| `npm run dev` | Chạy song song cả Backend và Web | Tất cả |
 | `npm run build` | Build tất cả các workspaces | Tất cả |
 | `npm run test` | Chạy test trên tất cả các workspaces | Tất cả |
-| `npm run lint` | Chạy ESLint song song trên cả Client và Admin | Frontend |
+| `npm run lint` | Chạy ESLint song song trên cả Backend và Web | Tất cả |
 
 ---
 
 ## 4. Nguồn chân lý kiến trúc (Architecture Sources of Truth)
 
-- **Web Frontend (`lyora_client`, `lyora_admin`, `lyora_web_shared`):** Đọc kỹ hướng dẫn tại [architecture_web/](architecture_web/README.md).
+- **Web Frontend (`lyora_web`):** Đọc kỹ hướng dẫn tại [architecture_web/](architecture_web/README.md).
 - **Backend API (`lyora_backend`):** Đọc kỹ hướng dẫn tại [architecture_backend/](architecture_backend/README.md).
 - **Design Tokens & Theme:** Đọc kỹ hướng dẫn tại [DESIGN.md](DESIGN.md).
 - **AI Skills & Rules:** Đọc kỹ hướng dẫn tại [.agents/](.agents/README.md).
