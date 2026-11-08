@@ -3,11 +3,11 @@
 Mọi thay đổi liên quan đến mã nguồn (code) đều phải tuân thủ nghiêm ngặt các quy định về kiến trúc (Architecture) của dự án Lyora Monorepo.
 
 ## Source of Truth (Nguồn chân lý)
-- **Web Client (`lyora_client`) & Web Admin (`lyora_admin`)**: Mọi code frontend phải tuân thủ tài liệu trong `architecture_web/`.
-- **Shared Web Resources (`lyora_web_shared`)**: Mọi tài nguyên dùng chung giữa hai frontend (components, hooks, utils, types, API client) bắt buộc đặt tại `lyora_web_shared/` (package `@lyora/web-shared`).
+- **Unified Web Frontend (`lyora_web`)**: Mọi code frontend (bao gồm Client Portal `src/features/client`, Admin Portal `src/features/admin` và Shared `src/shared`) phải tuân thủ tài liệu trong `architecture_web/`.
+- **Shared Web Resources (`lyora_web/src/shared`)**: Mọi tài nguyên dùng chung giữa Client và Admin (components, hooks, utils, types, API client) bắt buộc đặt tại `lyora_web/src/shared/` (import qua `@shared`).
 - **Backend API (`lyora_backend`)**: Mọi code backend API phải tuân thủ tài liệu trong `architecture_backend/`.
 - **UI Design System**: Mọi thành phần giao diện phải tuân thủ token màu sắc và typography thống nhất trong `DESIGN.md`.
-- **Code Quality**: Bắt buộc sử dụng ESLint cho cả `lyora_client` và `lyora_admin` kế thừa từ `lyora_web_shared/eslint.config.js`.
+- **Code Quality**: Bắt buộc sử dụng ESLint cho cả `lyora_web` và `lyora_backend`.
 
 Tài liệu Architecture là nguồn chân lý. Không được tự tạo convention mới trái với các tài liệu này.
 
