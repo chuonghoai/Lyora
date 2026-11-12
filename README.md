@@ -1,21 +1,38 @@
-# Lyora — Cyber Keys & Licensed Software Platform
+# Lyora — Social Networking & Real-Time Communication Platform
 
-Lyora is an enterprise-grade e-commerce and management platform for software licenses and digital keys. The project is architected as an **npm Monorepo** comprising a NestJS backend API and a unified ReactJS web application.
+Lyora là nền tảng mạng xã hội và truyền thông tương tác hiện đại, hỗ trợ người dùng kết nối bạn bè, chia sẻ bài viết, nhắn tin và gọi điện thoại/video trực tuyến trong thời gian thực. Dự án được kiến trúc dưới dạng **npm Monorepo** bao gồm dịch vụ Backend API & WebSocket (NestJS) và ứng dụng Web Frontend hợp nhất (ReactJS).
 
 ---
 
-## 1. Project Overview
+## 1. Project Overview & Scope
 
-The Lyora platform consists of two integrated workspaces:
+Hệ sinh thái Lyora tích hợp 2 không gian làm việc (workspaces) chính:
 
-- **`lyora_backend`**: RESTful API and WebSocket services built with NestJS, TypeScript, TypeORM, PostgreSQL, and Redis.
-- **`lyora_web`**: Unified Web Frontend built with React 19, TypeScript, Vite, TailwindCSS, and TanStack Query. It serves both the **Client Portal** (public e-commerce & customer portal) and the **Admin Portal** (management dashboard).
+- **`lyora_backend`**: RESTful API và dịch vụ WebSocket thời gian thực được xây dựng bằng NestJS, TypeScript, TypeORM, PostgreSQL và Redis.
+- **`lyora_web`**: Ứng dụng Web Frontend hợp nhất xây dựng bằng React 19, TypeScript, Vite, TailwindCSS và TanStack Query. Ứng dụng phục vụ hai cổng tương tác chính:
+  - **Cổng Người Dùng (Client Portal - `/`):**
+    - Đăng bài viết đa phương tiện (văn bản, hình ảnh, trạng thái cá nhân).
+    - Tương tác với bài viết: Bày tỏ cảm xúc, bình luận và chia sẻ bài viết của bạn bè trên bảng tin (Newsfeed).
+    - Nhắn tin trò chuyện trực tiếp (1-1, trò chuyện nhóm) tức thời qua WebSocket.
+    - Thực hiện cuộc gọi thoại và video trực tuyến với bạn bè.
+    - Quản lý trang hồ sơ cá nhân và kết nối bạn bè.
+  - **Trung Tâm Quản Trị (Admin Portal - `/admin`):**
+    - Đăng bài viết và phát hành thông báo chính thức từ ban quản trị hệ thống.
+    - Giám sát toàn diện luồng nội dung và bài viết của cộng đồng người dùng.
+    - Kiểm duyệt bài viết, tiếp nhận báo cáo vi phạm, thực hiện khóa hoặc ẩn bài viết vi phạm tiêu chuẩn cộng đồng.
+    - Quản lý tài khoản người dùng, phân quyền vai trò (`ADMIN`, `STAFF`, `CLIENT`) và quản lý bật/tắt các tính năng của trang web.
+  - **Phân Hệ Xác Thực (Auth Module - `/login`):**
+    - Đăng nhập, đăng ký tài khoản, cơ chế xác thực JWT kép (Access/Refresh Token) và phân luồng bảo vệ route (`GuestRoute`, `RoleRoute`).
+
+> [!NOTE]
+> **Phạm vi phi thương mại:** Nền tảng Lyora tập trung 100% vào mạng xã hội và truyền thông tương tác người dùng; dự án **không** bao gồm các hoạt động thương mại điện tử, mua bán hàng hóa, xử lý thanh toán đơn hàng hay cấp phát key bản quyền phần mềm.
 
 Key Highlights:
-- **Strict Layered Architecture:** Decoupled Core, Data, UI, and Routing layers.
-- **Unified Visual Identity:** Implements the Cyber Precision design system (`DESIGN.md`) with a consistent single-theme appearance.
-- **Unified Language:** 100% standard Vietnamese user-facing interface without complex i18n overhead.
-- **Zero-Tolerance Quality:** Complete TypeScript strict typing and ESLint compliance across all workspaces.
+- **Strict Layered Architecture:** Tách biệt triệt để các tầng Core, Data Layer (Repository/Service/Query), UI Layer (View-Controller) và Routing.
+- **Unified Visual Identity:** Áp dụng hệ thống thiết kế Cyber Precision & Ambient Clarity (`DESIGN.md`) với giao diện trực quan thống nhất (Single Theme - Light Mode).
+- **Unified Language:** 100% tiếng Việt chuẩn mực, rõ ràng cho mọi thành phần giao diện người dùng và thông báo hệ thống.
+- **Real-time Communication:** Tích hợp WebSocket cho trải nghiệm nhắn tin, nhận thông báo và gọi điện tức thời.
+- **Zero-Tolerance Quality:** Kiểm soát nghiêm ngặt toàn bộ kiểu dữ liệu (Strict TypeScript) và kiểm định mã nguồn (ESLint Flat Config) trên toàn monorepo.
 
 ---
 
@@ -52,9 +69,9 @@ Lyora/
 │   │   │   ├── system/             # System health feature (useSystemHealthQuery, systemKeys)
 │   │   │   └── user/               # User profile feature (useUserProfileQuery, userKeys)
 │   │   ├── ui/                     # UI View Layer (Strictly 3 root modules: admin, auth, client)
-│   │   │   ├── admin/              # Admin Portal (AdminLayout, DashboardView, dashboard.controller)
+│   │   │   ├── admin/              # Admin Portal (Quản lý bài viết, kiểm duyệt nội dung, quản lý người dùng & cài đặt)
 │   │   │   ├── auth/               # Authentication Views (LoginView, login.controller, LoginForm)
-│   │   │   └── client/             # Customer Portal (ClientLayout, HomeView, home.controller)
+│   │   │   └── client/             # Client Portal (Bảng tin bài viết, tương tác, tin nhắn & cuộc gọi bạn bè)
 │   │   ├── routes/                 # Centralized routing (AppRoutes.tsx, paths.ts, RoleRoute, GuestRoute)
 │   │   └── tests/                  # Vitest unit & integration test suites
 │   ├── vite.config.ts              # Vite configuration with path aliases (@, @core, @features, @ui)
