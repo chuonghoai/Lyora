@@ -39,6 +39,8 @@ Lyora/
 │   │   │   ├── users/              # User entity and profile management
 │   │   │   └── health/             # System health check endpoints
 │   │   └── main.ts                 # Application bootstrap (CORS, Helmet, ValidationPipe)
+│   ├── seed/                       # Database seed scripts & data definitions (createSeedDB.ts)
+│   ├── script/                     # Database maintenance scripts (deleteAllData.ts)
 │   ├── test/                       # E2E & integration test suites
 │   └── package.json
 │
@@ -195,6 +197,8 @@ All primary operations can be executed from the monorepo root:
 | `npm run backend:build`| Compile NestJS production bundle | `lyora_backend` |
 | `npm run backend:test` | Run Jest unit & e2e tests | `lyora_backend` |
 | `npm run backend:lint` | Run ESLint with auto-fix | `lyora_backend` |
+| `npm run backend:seed` | Insert default seed data into PostgreSQL | `lyora_backend` |
+| `npm run backend:db:reset` | Clean and truncate all database tables | `lyora_backend` |
 | `npm run web:dev` | Start Vite dev server (`:5173`) | `lyora_web` |
 | `npm run web:build` | Run TypeScript check & Vite build | `lyora_web` |
 | `npm run web:test` | Run Vitest unit & integration test suites | `lyora_web` |

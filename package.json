@@ -12,6 +12,8 @@
     "backend:build": "npm run build --workspace=lyora_backend",
     "backend:test": "npm run test --workspace=lyora_backend",
     "backend:lint": "npm run lint --workspace=lyora_backend",
+    "backend:seed": "npm run seed:create --workspace=lyora_backend",
+    "backend:db:reset": "npm run seed:reset --workspace=lyora_backend",
 
     "web:dev": "npm run dev --workspace=lyora_web",
     "web:build": "npm run build --workspace=lyora_web",
