@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 256" width="768" height="256" role="img" aria-labelledby="title-a-lockup">
+  <title id="title-a-lockup">LYORA Concept A - The Harmonic L Lockup</title>
+  <g id="symbol" transform="translate(68, 40) scale(0.68)">
+    <path fill="#2563eb" fill-rule="evenodd" d="
+      M 34 48
+      C 34 40 40 36 48 36
+      H 68
+      C 76 36 82 42 82 50
+      V 158
+      C 82 174 94 186 110 186
+      H 172
+      C 184 186 192 178 192 166
+      V 128
+      C 192 120 198 116 204 116
+      C 210 116 216 120 216 128
+      V 168
+      C 216 196 194 218 166 218
+      H 102
+      C 64 218 34 188 34 150
+      Z
+    "/>
+    <path fill="#2563eb" d="
+      M 74 52
+      H 168
+      C 174 52 178 56 178 62
+      C 178 68 174 72 168 72
+      H 74
+      Z
+    "/>
+    <rect x="96" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
+    <rect x="121" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
+    <rect x="146" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
+    <path fill="#aa3bff" d="
+      M 204 42
+      Q 204 60 186 60
+      Q 204 60 204 78
+      Q 204 60 222 60
+      Q 204 60 204 42
+      Z
+    "/>
+  </g>
+  
+  <g id="wordmark" transform="translate(284, 86)" fill="#0f172a">
+    <!-- L (width: 48px) -->
+    <path d="M 0 0 H 14 V 70 H 48 V 84 H 0 Z" />
+    <!-- Y (width: 72px, calibrated 60° branches) -->
+    <path d="M 62 0 L 89 42 V 84 H 103 V 42 L 130 0 H 113.84 L 96 28 L 78.16 0 Z" />
+    <!-- O (geometric circle, diameter: 84px) -->
+    <path fill-rule="evenodd" d="
+      M 194 0
+      C 217.2 0 236 18.8 236 42
+      C 236 65.2 217.2 84 194 84
+      C 170.8 84 152 65.2 152 42
+      C 152 18.8 170.8 0 194 0 Z
+      M 194 14
+      C 178.5 14 166 26.5 166 42
+      C 166 57.5 178.5 70 194 70
+      C 209.5 70 222 57.5 222 42
+      C 222 26.5 209.5 14 194 14 Z
+    "/>
+    <!-- R (width: 64px) -->
+    <path fill-rule="evenodd" d="
+      M 254 0 H 288
+      C 304.5 0 316 10 316 26
+      C 316 38.5 307.5 48 295.5 50.5
+      L 318 84 H 301.5
+      L 281.5 52 H 268 V 84 H 254 Z
+      M 268 13.5 V 38.5 H 287
+      C 295.5 38.5 302 33 302 26
+      C 302 19 295.5 13.5 287 13.5 Z
+    "/>
+    <!-- A (width: 80px, calibrated 60° diagonals) -->
+    <path fill-rule="evenodd" d="
+      M 372 0
+      L 332 84 H 348.16
+      L 358 63.3 H 386 L 395.84 84 H 412
+      L 372 0 Z
+      M 372 26
+      L 363.5 49.3 H 380.5 Z
+    "/>
+  </g>
+</svg>
+
