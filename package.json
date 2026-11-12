@@ -12,10 +12,12 @@
     "backend:build": "npm run build --workspace=lyora_backend",
     "backend:test": "npm run test --workspace=lyora_backend",
     "backend:lint": "npm run lint --workspace=lyora_backend",
+
     "web:dev": "npm run dev --workspace=lyora_web",
     "web:build": "npm run build --workspace=lyora_web",
     "web:test": "npm run test --workspace=lyora_web",
     "web:lint": "npm run lint --workspace=lyora_web",
+    
     "dev": "concurrently \"npm run backend:dev\" \"npm run web:dev\"",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
