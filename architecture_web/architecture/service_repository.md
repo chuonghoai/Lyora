@@ -1,58 +1,92 @@
-# Service & API Client Layer
+# Service, Repository & Data Layer Architecture (`lyora_web/src/features`)
 
-Trong hệ thống Web Client của Lyora, tầng kết nối API và HTTP Client được quản lý tập trung thông qua thư viện dùng chung **`@lyora/web-shared`**, giúp `lyora_client` và `lyora_admin` đồng nhất hoàn toàn cơ chế gọi API tới Backend NestJS (`lyora_backend`).
+Trong kiến trúc của `lyora_web`, toàn bộ việc giao tiếp với Backend NestJS và quản lý luồng dữ liệu được đóng gói trong **Data Layer (`src/features`)**.
 
 ---
 
-## 1. HTTP Client dùng chung (`@lyora/web-shared/apiClient`)
+## 1. Phân Tách Trách Nhiệm
 
-- **Vị trí gốc:** `lyora_web_shared/src/api/apiClient.ts`.
-- **Trách nhiệm:**
-  - Khởi tạo Axios instance tập trung với cấu hình mặc định (`timeout: 15000`, `Content-Type: application/json`).
-  - **Request Interceptor:** Tự động lấy JWT token từ `localStorage.getItem('lyora_token')` và đính kèm vào header `Authorization: Bearer <token>`.
-  - **Response Interceptor:** Trích xuất trực tiếp `response.data`. Nếu xảy ra lỗi mạng hoặc HTTP error (401, 403, 500), chuẩn hóa lỗi thành đối tượng `ApiError` có kiểu dữ liệu rõ ràng.
-
-```typescript
-// Sử dụng trong lyora_client hoặc lyora_admin
-import { apiClient, type ApiResponse, type ApiError } from '@lyora/web-shared';
+```text
+src/features/[feature]/
+├── hooks/                      # TanStack Query hooks (*.query.ts) & Key Factory (*.keys.ts)
+├── models/                     # Zod validation schemas (*.model.ts)
+├── repositories/               # Trừu tượng hóa truy vấn HTTP (*.repository.ts)
+├── services/                   # Nghiệp vụ dữ liệu & storage (*.service.ts)
+├── types/                      # TypeScript DTOs & Interfaces (*.types.ts)
+└── index.ts                    # Public Feature Export
 ```
 
----
-
-## 2. Feature Service Layer (Từng ứng dụng riêng biệt)
-
-- **Vị trí:** `lyora_client/src/features/<feature>/services/` hoặc `lyora_admin/src/features/<feature>/services/`.
-- **Trách nhiệm:**
-  - Chứa các hàm API đặc thù của từng ứng dụng (ví dụ: Client gọi API tạo phản ánh, Admin gọi API phê duyệt và phân công xử lý).
-  - Trả về Promise có kiểu dữ liệu rõ ràng (`Promise<ApiResponse<T>>`).
-  - **Stateless:** Các file service là pure TypeScript module, **TUYỆT ĐỐI KHÔNG** lưu trữ state bên trong Service.
+### 1.1. Repository Layer (`*.repository.ts`)
+- **Trách nhiệm:** Trừu tượng hóa việc giao tiếp mạng. Sử dụng `apiClient` từ `src/core/api` để gửi HTTP request lên Backend NestJS.
+- **Quy tắc:**
+  - Không chứa business logic.
+  - Trả về Promise chứa `ApiResponse<T>`.
+  - Luôn định nghĩa interface `I[Feature]Repository` để phục vụ mocking khi viết unit test.
 
 ```typescript
-// lyora_client/src/features/reports/services/reportService.ts
-import { apiClient, type ApiResponse } from '@lyora/web-shared';
-import type { ReportItem, CreateReportDto } from '../types';
+// src/features/auth/repositories/auth.repository.ts
+import { apiClient, type ApiResponse } from '@/core';
+import type { LoginCredentials, AuthResponseDto } from '../types/auth.types';
 
-export const reportService = {
-  async getReports(params?: { status?: string }): Promise<ApiResponse<ReportItem[]>> {
-    return apiClient.get('/reports', { params });
-  },
+export interface IAuthRepository {
+  login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponseDto>>;
+}
 
-  async createReport(dto: CreateReportDto): Promise<ApiResponse<ReportItem>> {
-    return apiClient.post('/reports', dto);
-  },
-};
+export class AuthRepository implements IAuthRepository {
+  async login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponseDto>> {
+    return apiClient.post('/api/auth/login', credentials);
+  }
+}
+
+export const authRepository = new AuthRepository();
 ```
+
+### 1.2. Service Layer (`*.service.ts`)
+- **Trách nhiệm:**
+  - Tiếp nhận dữ liệu từ Repository.
+  - Xử lý business rules phía client (ví dụ: giải mã session, lưu trữ tokens vào `TokenStorage`).
+  - Định nghĩa interface `I[Feature]Service`.
+- **Quy tắc:**
+  - Không chứa JSX/TSX.
+  - Không import router hooks (`useNavigate`).
+  - Là pure TypeScript module.
+
+```typescript
+// src/features/auth/services/auth.service.ts
+import { TokenStorage } from '@/core';
+import { authRepository, type IAuthRepository } from '../repositories/auth.repository';
+import type { LoginCredentials, AuthSession } from '../types/auth.types';
+
+export class AuthService {
+  private repository: IAuthRepository;
+
+  constructor(repository: IAuthRepository = authRepository) {
+    this.repository = repository;
+  }
+
+  async login(credentials: LoginCredentials): Promise<AuthSession> {
+    const response = await this.repository.login(credentials);
+    const { accessToken, refreshToken, user } = response.data;
+    TokenStorage.saveAuthSession(accessToken, refreshToken, user);
+    return { accessToken, refreshToken, user };
+  }
+}
+
+export const authService = new AuthService();
+```
+
+### 1.3. Hooks Layer (`*.query.ts`)
+- **Trách nhiệm:** Đóng gói `useQuery` và `useMutation` của TanStack Query.
+- **Quy tắc:**
+  - Gọi Service tương ứng.
+  - Kích hoạt cache invalidation qua Query Key Factory.
+  - Không đặt trong `ui/`.
 
 ---
 
-## 3. Quy tắc DO / DON'T
+## 2. Core API Client (`src/core/api/apiClient.ts`)
 
-**DO:**
-- Tái sử dụng `apiClient` từ `@lyora/web-shared` cho mọi tác vụ kết nối mạng.
-- Định nghĩa kiểu dữ liệu trả về cho tất cả các hàm API (`Promise<ApiResponse<T>>`).
-- Sử dụng TanStack Query (`useQuery`, `useMutation`) trong UI Controller hook để gọi Service.
-
-**DON'T:**
-- **KHÔNG** tự tạo thêm một Axios instance riêng biệt trong `lyora_client` hoặc `lyora_admin` nếu không có lý do đặc biệt.
-- **KHÔNG** đưa API nghiệp vụ riêng của Client vào Admin hoặc ngược lại.
-- **KHÔNG** nhúng các header i18n phức tạp vì hệ thống sử dụng một ngôn ngữ thống nhất.
+- **Base URL:** `/` (proxy chuyển tiếp tới `http://localhost:3000` qua cấu hình Vite `vite.config.ts`).
+- **Request Interceptor:** Tự động lấy Access Token từ `TokenStorage.getAccessToken()` và gán vào header `Authorization: Bearer <token>`.
+- **Response Interceptor:** Trích xuất `response.data`.
+- **401 Refresh Token Queue:** Khi nhận HTTP 401, tự động giữ các request đồng thời vào hàng đợi, gọi API `/api/auth/refresh-token`, cập nhật token mới và replay lại các request đang chờ một cách mượt mà mà không làm gián đoạn phiên người dùng.

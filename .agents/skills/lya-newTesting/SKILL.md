@@ -6,24 +6,23 @@ description: >-
 
 # lya-newTesting
 
-Mục đích: Quy định chuẩn hóa quy trình tạo file `*.integration.spec.ts` hoặc `*.e2e-spec.ts` trong Backend NestJS (`lyora_backend`) nhằm mô phỏng 100% hành vi thực tế của Client/Admin (kiểm thử luồng CSDL, WebSocket, Push Notification) và thực thi qua Jest runner.
+Mục đích: Quy định chuẩn hóa quy trình tạo file `*.integration.spec.ts` hoặc `*.e2e-spec.ts` trong Backend NestJS (`lyora_backend`) nhằm mô phỏng 100% hành vi thực tế của Client/Admin (kiểm thử luồng CSDL, WebSocket) và thực thi qua Jest runner.
 
 ## Dependencies (Quy tắc phải tuân thủ)
 - [Shared Workflow](../../rules/shared-workflow.md)
-- [Push Notification Architecture Rules](../../web_architecture/architecture/push_notification_rules.md)
 
 ---
 
 ## Quy trình thực hiện (Workflow)
 
 ### Step 1 — Xác định kịch bản kiểm thử (Test Scenario & Actor)
-1. Xác định Controller, API Endpoint và phương thức cần mô phỏng (ví dụ: `ReportsController.createReport`).
+1. Xác định Controller, API Endpoint và phương thức cần mô phỏng (ví dụ: `AuthController.login`, `UsersController.getProfile`).
 2. Xác định Actor thực hiện hành động:
-   - **Client** (User thông thường trên `lyora_client`): Cần JWT Token chứa claim `userId` và role `CLIENT`.
-   - **Staff / Admin** (Quản trị viên trên `lyora_admin`): Cần JWT Token với role tương ứng (`STAFF`, `ADMIN`).
+   - **Client** (User thông thường trên Cổng Client): Cần JWT Token chứa claim `userId` và role `CLIENT`.
+   - **Staff / Admin** (Quản trị viên trên Cổng Admin): Cần JWT Token với role tương ứng (`STAFF`, `ADMIN`).
    - **Anonymous / Guest**: Không kèm Authorization header.
 3. Thu thập định dạng Payload thực tế:
-   - Đọc Request DTO hoặc types từ `web_shared` và `lyora_client/src/features/<feature>/types` để đảm bảo payload gửi trong test **100% giống với client thực tế**.
+   - Đọc Request DTO hoặc types từ `lyora_web/src/features/<feature>/types` để đảm bảo payload gửi trong test **100% giống với client thực tế**.
 
 ---
 
@@ -31,7 +30,7 @@ Mục đích: Quy định chuẩn hóa quy trình tạo file `*.integration.spec
 
 1. **Vị trí file**: Đặt trong thư mục `lyora_backend/test/integration/` hoặc `lyora_backend/src/modules/<feature>/test/<feature>.integration.spec.ts`.
 2. **Quy tắc Kiểm tra Backend Đang Chạy (Health Check)**:
-   - Bắt buộc kiểm tra server backend (`http://localhost:3000` hoặc port cấu hình) đang hoạt động trước khi gửi request.
+   - Bắt buộc kiểm tra server backend (`http://localhost:3000/api` hoặc port cấu hình) đang hoạt động trước khi gửi request.
    - Nếu backend chưa chạy, in thông báo hướng dẫn developer khởi động backend bằng `npm run backend:dev` và dừng test ngay.
 3. **Quy tắc Thực thi Test**:
    - Chỉ tạo **1 test block duy nhất** cho 1 nghiệp vụ mô phỏng, gọi API đúng **1 lần duy nhất**.
@@ -70,13 +69,11 @@ describe('Simulate Action Test (Integration)', () => {
 
     // 2. Gửi Request qua Axios
     const payload = {
-      title: 'Báo cáo sự cố đường sá',
-      description: 'Đoạn đường xuất hiện ổ gà lớn',
-      latitude: 10.7769,
-      longitude: 106.7009,
+      email: 'test@example.com',
+      password: 'Password123!',
     };
 
-    const response = await axios.post(`${BASE_URL}/reports`, payload, {
+    const response = await axios.post(`${BASE_URL}/auth/login`, payload, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -84,9 +81,8 @@ describe('Simulate Action Test (Integration)', () => {
     });
 
     // 3. Assert
-    expect(response.status).toBe(201);
-    expect(response.data).toHaveProperty('id');
-    expect(response.data.title).toBe(payload.title);
+    expect(response.status).toBe(200);
+    expect(response.data).toHaveProperty('data');
   });
 });
 ```
@@ -103,4 +99,4 @@ Hoặc chỉ định file cụ thể:
 ```bash
 npm run test --workspace=lyora_backend -- <path-to-spec-file>
 ```
-Xác nhận test chạy thành công (`exitCode == 0`), log hiển thị chi tiết và sự kiện realtime được kích hoạt trên hệ thống.
+Xác nhận test chạy thành công (`exitCode == 0`), log hiển thị chi tiết trên hệ thống.

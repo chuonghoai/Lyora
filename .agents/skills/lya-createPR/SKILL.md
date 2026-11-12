@@ -18,10 +18,8 @@ Kiểm tra: current branch, working tree, staged/unstaged changes, untracked fil
 
 ### Step 2 — Scope validation
 Xác định rõ phạm vi thay đổi giữa các workspace:
-- `lyora_backend`:
-- `lyora_client`:
-- `lyora_admin`:
-- `web_shared`:
+- `lyora_backend`: Backend NestJS API
+- `lyora_web`: Unified Web Frontend (`core`, `features`, `ui`, `routes`)
 **Ràng buộc:** KHÔNG được tự ý commit các file không liên quan hoặc file rác từ build artifacts.
 
 ### Step 3 — Push
@@ -39,23 +37,25 @@ Nếu có thể prefill, hãy điền sẵn nội dung theo template sau:
 
 ## Changes
 - Backend (`lyora_backend`):
-- Web Client (`lyora_client`):
-- Web Admin (`lyora_admin`):
-- Shared Resources (`web_shared`):
+- Frontend (`lyora_web`):
+  - Core (`src/core`):
+  - Data Layer (`src/features`):
+  - UI Layer (`src/ui`):
 
 ## Implementation
-- Architecture compliance (web_architecture / backend_architecture)
-- Reused shared components from `@lyora/web-shared`
+- Architecture compliance (`architecture_web/` / `architecture_backend/`)
+- Reused core components & primitives from `@core`
+- View-Controller separation enforced
 
 ## Testing
 - Unit / Integration Tests
 
 ## Checklist
-- [ ] Tested
+- [ ] Tested (Backend & Frontend)
 - [ ] Architecture compliant
 - [ ] No unrelated changes
 - [ ] ESLint verified (`npm run lint`)
-- [ ] No backend secrets leaked into frontend/shared
+- [ ] No backend secrets leaked into frontend
 ```
 
 **STOP CONDITION:** KHÔNG ĐƯỢC TỰ MERGE PR.

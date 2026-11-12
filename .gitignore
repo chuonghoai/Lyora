@@ -22,7 +22,6 @@ out/
 # Environment files & Secrets
 .env
 .env.*
-!.env.example
 *.pem
 *.key
 *.p12

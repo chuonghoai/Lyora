@@ -1,73 +1,85 @@
-# State Management & Store Layer (Zustand)
+# Core State Management & Infrastructure Providers (`lyora_web`)
 
-Trong kiến trúc ReactJS Web Client (`lyora_client` và `lyora_admin`), State Layer chịu trách nhiệm quản lý phiên làm việc của người dùng (Authentication) và đồng bộ dữ liệu với Backend.
+Tài liệu này quy chuẩn việc quản lý trạng thái toàn cục và các Providers hạ tầng trong `lyora_web`.
 
-## Phân định các loại State trong ứng dụng
+---
 
-1. **Local UI State:** Thuộc sở hữu của từng Component hoặc Custom Hook (quản lý bằng `useState`, `useReducer`, React Hook Form).
-2. **Global Client State (Zustand):** Quản lý trạng thái phiên làm việc (Auth token, thông tin người dùng đăng nhập, quyền hạn).
-3. **Server Cache State (TanStack Query):** Quản lý việc fetch, cache và revalidate dữ liệu từ backend API.
+## 1. Phân Định Các Loại Trạng Thái
 
-> **Lưu ý:** Dự án sử dụng một giao diện trực quan thống nhất và một ngôn ngữ Tiếng Việt duy nhất, không triển khai theme switcher (Light/Dark mode) hoặc language switcher trong Store.
+1. **Server Cache State (TanStack Query):**
+   - Quản lý việc truy vấn, lưu cache và đồng bộ dữ liệu từ Backend.
+   - Toàn bộ hook nằm trong `src/features/[feature]/hooks/`.
+2. **Global Client State (Zustand Stores):**
+   - Quản lý phiên làm việc của người dùng (`authStore`).
+   - Quản lý thông báo toast tức thời (`toastStore`).
+   - Quản lý kết nối socket thời gian thực (`websocketStore`).
+3. **Local UI State (React useState / useRef):**
+   - Quản lý đóng mở modal, focus, form input tạm thời.
+   - Nằm bên trong UI Controller (`*.controller.ts`).
 
-## Trách nhiệm của Auth Store (Zustand Store)
+---
 
-- Lưu trữ trạng thái phiên xác thực (Token, Refresh Token, Thông tin User).
-- Quản lý số lượng thông báo chưa đọc (Unread Count) cập nhật từ WebSocket.
-- Đóng gói các hàm mutation/action toàn cục (ví dụ: `login`, `logout`).
+## 2. Global Providers (`src/core/providers/AppProviders.tsx`)
 
-## Cấu trúc mẫu chuẩn của Zustand Store
+Mọi Provider hạ tầng được bọc tập trung tại `AppProviders`:
 
-```typescript
-// src/core/store/authStore.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+```tsx
+import React, { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastContainer } from '@/core/toast';
+import { ErrorBoundary } from './ErrorBoundary';
 
-interface UserProfile {
-  id: string;
-  email: string;
-  fullName: string;
-  role: 'ADMIN' | 'STAFF' | 'CLIENT';
-}
+export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 10 * 60 * 1000, // 10 phút mặc định
+            gcTime: 15 * 60 * 1000,    // 15 phút giải phóng bộ nhớ
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
+          mutations: {
+            retry: 0,
+          },
+        },
+      }),
+  );
 
-interface AuthState {
-  token: string | null;
-  user: UserProfile | null;
-  isAuthenticated: boolean;
-  setAuth: (token: string, user: UserProfile) => void;
-  logout: () => void;
-}
-
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      token: null,
-      user: null,
-      isAuthenticated: false,
-      setAuth: (token, user) => {
-        localStorage.setItem('lyora_token', token);
-        set({ token, user, isAuthenticated: true });
-      },
-      logout: () => {
-        localStorage.removeItem('lyora_token');
-        set({ token: null, user: null, isAuthenticated: false });
-      },
-    }),
-    {
-      name: 'lyora-auth-storage',
-    }
-  )
-);
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <ToastContainer />
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 ```
 
-## Quy tắc DO / DON'T
+---
 
-**DO:**
-- Tách các store theo domain rõ ràng: `useAuthStore`, `useNotificationStore`.
-- Sử dụng selectors khi lấy dữ liệu từ Zustand để tránh re-render thừa (ví dụ: `const user = useAuthStore((s) => s.user)`).
-- Đồng bộ lưu trữ token vào `localStorage` dưới key `lyora_token` để `apiClient` từ `@lyora/web-shared` tự động đính kèm vào Authorization header.
+## 3. Zustand Auth Store (`src/core/store/authStore.ts`)
 
-**DON'T:**
-- **KHÔNG** đưa toàn bộ danh sách dữ liệu từ API vào Zustand. Hãy dùng TanStack Query.
-- **KHÔNG** xây dựng theme switcher hoặc lưu trữ theme preference vì dự án áp dụng giao diện thống nhất.
-- **KHÔNG** nhúng các logic i18n vào state store.
+- Lưu trữ trạng thái xác thực (`user`, `tokens`, `isAuthenticated`).
+- Đồng bộ với `TokenStorage` (LocalStorage / SessionStorage).
+- Cung cấp selectors để tránh re-render thừa:
+  ```typescript
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  ```
+
+---
+
+## 4. Toast System (`src/core/toast/`)
+
+- Cung cấp API phát thông báo đơn giản, không phụ thuộc UI:
+  ```typescript
+  import { toast } from '@/core';
+
+  toast.success('Đăng nhập thành công!');
+  toast.error('Có lỗi xảy ra, vui lòng thử lại.');
+  toast.info('Hệ thống đang bảo trì.');
+  ```
+- Component `ToastContainer` tự động render góc trên màn hình với animation mượt mà.

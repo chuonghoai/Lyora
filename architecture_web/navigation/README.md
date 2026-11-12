@@ -1,44 +1,122 @@
-# Quy tắc Điều Hướng (Navigation / React Router)
+# Routing & Navigation Architecture (`lyora_web/src/routes`)
 
-Cả hai ứng dụng Web Frontend (`lyora_client` và `lyora_admin`) đều sử dụng thư viện `react-router-dom` để quản lý định tuyến độc lập. Mỗi ứng dụng quản lý cây routing và hằng số đường dẫn riêng biệt.
-
----
-
-## 1. Tính độc lập giữa Client và Admin
-
-- `lyora_client` quản lý các route dành cho người dùng công cộng (Trang chủ, Gửi phản ánh, Theo dõi sự cố, Đăng nhập cư dân).
-- `lyora_admin` quản lý các route dành cho quản trị viên (Bảng điều khiển Analytics, Danh sách phản ánh, Phân công xử lý, Cấu hình hệ thống).
-- **Ranh giới:** Hai ứng dụng chạy trên hai cổng/tên miền riêng biệt (ví dụ: Client port 5173, Admin port 5174). Không import file routing của ứng dụng này vào ứng dụng kia.
+Hệ thống định tuyến của `lyora_web` được quản lý tập trung bằng **React Router v7** (`createBrowserRouter`), hỗ trợ phân tách bundle theo màn hình (Code Splitting qua `React.lazy`), bảo vệ tuyến đường theo phân quyền (Route Guards), và gắn kết Layout điều hướng chuẩn mực.
 
 ---
 
-## 2. Quy tắc triển khai đường dẫn (Route Path Rules)
+## 1. Cấu Trúc File Định Tuyến
 
-### 1. Không hardcode chuỗi URL
-- Mọi đường dẫn của ứng dụng phải được định nghĩa tập trung tại file `src/routes/paths.ts` của ứng dụng đó:
-  ```typescript
-  // lyora_client/src/routes/paths.ts
-  export const ROUTES = {
+```text
+src/routes/
+├── paths.ts                    # Hằng số định danh URL (ROUTES)
+└── AppRoutes.tsx               # Cấu hình Router, Guards & Lazy Loading
+```
+
+---
+
+## 2. Hằng Số Đường Dẫn (`paths.ts`)
+
+Mọi đường dẫn trong ứng dụng bắt buộc phải được khai báo trong `ROUTES` object, **tuyệt đối không hardcode chuỗi URL** trong UI hay Controller:
+
+```typescript
+export const ROUTES = {
+  AUTH: {
+    ROOT: '/auth',
+    LOGIN: '/auth/login',
+  },
+  CLIENT: {
     ROOT: '/',
-    REPORTS: '/reports',
-    CREATE_REPORT: '/reports/new',
-    REPORT_DETAIL: (id: string | number) => `/reports/${id}`,
-  } as const;
-  ```
-- Khi cần điều hướng, luôn import `ROUTES` để sử dụng: `navigate(ROUTES.REPORT_DETAIL(reportId))`.
+    HOME: '/',
+  },
+  ADMIN: {
+    ROOT: '/admin',
+    DASHBOARD: '/admin/dashboard',
+  },
+} as const;
+```
 
-### 2. Cấu trúc Route tập trung
-- Khai báo cấu trúc các route tại `src/routes/AppRoutes.tsx` kết hợp với Layout wrappers (`<Outlet />`):
-  ```tsx
-  export const router = createBrowserRouter([
-    {
-      path: ROUTES.ROOT,
-      element: <MainLayout />,
-      children: [
-        { index: true, element: <HomePage /> },
-        { path: ROUTES.REPORTS, element: <ReportsPage /> },
-      ],
-    },
-  ]);
-  ```
-- Chỉ khi một route mới được cấu hình đầy đủ trong `paths.ts` và `AppRoutes.tsx` thì mới được coi là hoàn thiện việc đăng ký route.
+---
+
+## 3. Cấu Trúc Router & Route Guards (`AppRoutes.tsx`)
+
+```tsx
+import React, { Suspense, lazy } from 'react';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { ClientLayout } from '@/ui/client/ClientLayout';
+import { AdminLayout } from '@/ui/admin/AdminLayout';
+import { RoleRoute, GuestRoute, LoadingSpinner } from '@/core';
+import { ROUTES } from './paths';
+
+// Code Splitting qua React.lazy
+const ClientHomeView = lazy(() => import('@/ui/client/home/HomeView'));
+const AdminDashboardView = lazy(() => import('@/ui/admin/dashboard/DashboardView'));
+const LoginView = lazy(() => import('@/ui/auth/login/LoginView'));
+
+export const router = createBrowserRouter([
+  // 1. Tuyến Guest (Chưa đăng nhập)
+  {
+    path: ROUTES.AUTH.LOGIN,
+    element: <GuestRoute />,
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <LoginView />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  // 2. Tuyến Cổng Khách Hàng (Công khai / Khách hàng)
+  {
+    path: ROUTES.CLIENT.ROOT,
+    element: <ClientLayout />,
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <ClientHomeView />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  // 3. Tuyến Cổng Quản Trị (Bảo vệ bởi RoleRoute)
+  {
+    path: ROUTES.ADMIN.ROOT,
+    element: <RoleRoute allowedRoles={['ADMIN', 'STAFF']} requireAuth={true} />,
+    children: [
+      {
+        element: <AdminLayout />,
+        children: [
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<LoadingSpinner />}>
+                <AdminDashboardView />
+              </Suspense>
+            ),
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+export const AppRoutes: React.FC = () => {
+  return <RouterProvider router={router} />;
+};
+```
+
+---
+
+## 4. Các Loại Route Guards
+1. **`GuestRoute` (`src/core/guards/GuestRoute.tsx`):**
+   - Dành riêng cho màn hình đăng nhập.
+   - Nếu người dùng đã đăng nhập thành công, tự động chuyển hướng về trang tương ứng theo vai trò (`/admin/dashboard` cho Admin hoặc `/` cho Client).
+2. **`RoleRoute` (`src/core/guards/RoleRoute.tsx`):**
+   - Bảo vệ các tuyến đường yêu cầu quyền hạn cao (`ADMIN`, `STAFF`).
+   - Nếu chưa đăng nhập: Tự động lưu `location.pathname` hiện tại vào `state.from` và redirect về `/auth/login`.
+   - Nếu đã đăng nhập nhưng không đủ quyền: Redirect an toàn về `/` và phát toast cảnh báo.

@@ -1,44 +1,74 @@
-# Data Flow & State Management
+# Data Flow & State Management (`lyora_web`)
 
-Ứng dụng Web Client ReactJS sử dụng mô hình **Luồng dữ liệu một chiều (Unidirectional Data Flow)** kết hợp với hai giải pháp quản lý trạng thái:
-- **Server State (TanStack Query):** Chịu trách nhiệm fetch, cache, revalidate và đồng bộ dữ liệu với Backend.
-- **Client/Global State (Zustand hoặc Context API):** Chịu trách nhiệm quản lý phiên người dùng (Auth/Session), theme (Light/Dark mode), và các trạng thái toàn cục của ứng dụng.
+Ứng dụng `lyora_web` tuân thủ mô hình **Luồng dữ liệu một chiều (Unidirectional Data Flow)** kết hợp phân tầng nghiêm ngặt giữa View Layer, Data Layer, Core Hạ tầng và Backend NestJS.
 
-## Sơ đồ luồng dữ liệu (Sequence Diagram)
+---
+
+## 1. Sơ đồ tuần tự hoàn chỉnh (Sequence Diagram)
 
 ```mermaid
 sequenceDiagram
-    participant U as UI Component (View / TSX)
-    participant C as UI Controller (Custom Hook)
-    participant Q as Server State (TanStack Query)
-    participant S as Feature API Service
-    participant A as HTTP Client (Axios Instance)
-    participant B as NestJS Backend
+    participant V as UI View (*View.tsx)
+    participant C as UI Controller (*.controller.ts)
+    participant Q as Data Layer Hook (*.query.ts)
+    participant S as Feature Service (*.service.ts)
+    participant R as Feature Repository (*.repository.ts)
+    participant A as Core API Client (apiClient.ts)
+    participant B as NestJS Backend API (:3000)
 
-    U->>C: Hành động người dùng (Ví dụ: Nhấn "Làm mới" hoặc Submit Form)
-    C->>Q: Gọi hàm thao tác dữ liệu (refetch() hoặc mutation.mutateAsync())
-    Q->>Q: Cập nhật status (isLoading = true / isPending = true)
-    Q->>S: Yêu cầu lấy/gửi dữ liệu (reportService.getReports())
-    S->>A: Gửi HTTP Request (apiClient.get('/reports'))
-    A->>B: Gửi HTTP Request tới NestJS API kèm JWT Bearer Token
-    B-->>A: Trả về JSON Data (ApiResponse<T>)
-    A-->>S: Interceptor kiểm tra & trả về response.data
-    S-->>Q: Trả về kết quả phân tích
-    Q->>Q: Cập nhật Cache & State (isLoading = false, data = reports)
-    Q-->>C: Hook nhận state mới
-    C-->>U: Component tự động re-render với dữ liệu mới
+    V->>C: Kích hoạt Controller: `const controller = use...Controller()`
+    V->>C: Hành động người dùng: `controller.handleSubmit(e)`
+    C->>C: Validate form dữ liệu (Zod Schema)
+    C->>Q: Gọi Query/Mutation Hook (`useLoginMutation`)
+    Q->>S: Gọi Service (`authService.login(credentials)`)
+    S->>R: Gọi Repository (`authRepository.login(credentials)`)
+    R->>A: Gửi HTTP Request qua Core Client (`apiClient.post('/auth/login', ...)`)
+    A->>B: Gửi HTTP Request kèm Bearer Token (nếu có)
+    B-->>A: Trả về HTTP Response (ApiResponse<T>)
+    A-->>R: Interceptor bóc tách payload / chuẩn hóa ApiError
+    R-->>S: Trả về Domain DTO
+    S->>S: Lưu token & session vào TokenStorage
+    S-->>Q: Trả về Session Data
+    Q->>Q: Tự động Invalidate Cache theo Query Key Factory (`authKeys.session()`)
+    Q-->>C: Hook thông báo thành công (onSuccess)
+    C->>C: Cập nhật Zustand Store (`useAuthStore`)
+    C->>C: Hiển thị Toast thông báo (`toast.success`)
+    C->>V: Điều hướng router (`navigate('/...')`)
+    V-->>V: Render giao diện mới
 ```
 
-## Giải thích chi tiết các bước trong luồng
+---
 
-1. **User Action:** Bắt đầu khi người dùng tương tác với UI Component (click, submit, đổi trang).
-2. **UI Controller Hook:** Tiếp nhận sự kiện, xác thực điều kiện phía client (nếu có), sau đó gọi hàm tương ứng từ State Layer (Mutation hoặc Query).
-3. **Query/Mutation Layer:**
-   - Đảm bảo trạng thái loading/error được cập nhật tự động.
-   - Quản lý cache key và tự động hủy request cũ nếu component bị unmount (qua AbortController).
-4. **Service & HTTP Client:**
-   - Service đóng gói endpoint và format payload.
-   - Axios Client đảm nhận việc thêm Authorization Header (`Bearer <token>`), xử lý Timeout, và bắt lỗi mạng hoặc mã HTTP lỗi (401, 403, 500).
-5. **State Update & Re-render:**
-   - Khi có dữ liệu trả về, TanStack Query lưu vào cache và kích hoạt re-render đối với tất cả các Component đang quan sát (subscribe) dữ liệu đó.
-   - Nếu là Mutation (ví dụ: tạo mới phản ánh thành công), thực hiện `queryClient.invalidateQueries({ queryKey: ['reports'] })` để tự động làm mới danh sách dữ liệu hiển thị.
+## 2. Chiến lược Cache & Invalidation (TanStack Query)
+
+### 2.1. Cấu hình Cache Mặc định (AppProviders)
+Tất cả các truy vấn dữ liệu được cấu hình tập trung trong [AppProviders.tsx](file:///d:/study/ute/4%20-%20HK1/CongNghePhanMemMoi/Project/Lyora/lyora_web/src/core/providers/AppProviders.tsx):
+
+- **`staleTime: 10 phút` (600,000 ms):** Dữ liệu được coi là mới (fresh) trong 10 phút. Trong thời gian này, các component truy cập lại query sẽ nhận ngay dữ liệu từ memory mà không phát sinh thêm HTTP request lên backend.
+- **`gcTime: 15 phút` (900,000 ms):** Thời gian lưu giữ dữ liệu không sử dụng trong bộ nhớ trước khi giải phóng (Garbage Collection).
+- **`retry: 1`:** Tự động thử lại 1 lần nếu gặp sự cố mạng gián đoạn.
+- **`refetchOnWindowFocus: false`:** Không tự động refetch khi người dùng chuyển qua lại giữa các tab trình duyệt.
+
+### 2.2. Query Key Factories (`*.keys.ts`)
+Tuyệt đối không hardcode chuỗi query key trong codebase. Mỗi feature trong Data Layer phải có một Query Key Factory phân cấp:
+
+```typescript
+// src/features/auth/hooks/auth.keys.ts
+export const authKeys = {
+  all: ['auth'] as const,
+  session: () => [...authKeys.all, 'session'] as const,
+  profile: () => [...authKeys.all, 'profile'] as const,
+};
+
+// src/features/system/hooks/system.keys.ts
+export const systemKeys = {
+  all: ['system'] as const,
+  health: () => [...systemKeys.all, 'health'] as const,
+};
+```
+
+### 2.3. Cache Invalidation
+Khi mutation làm thay đổi dữ liệu, sử dụng Query Key Factory để làm mới cache chính xác:
+```typescript
+queryClient.invalidateQueries({ queryKey: authKeys.session() });
+```

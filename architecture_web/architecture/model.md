@@ -1,66 +1,72 @@
-# Model & Type Definition Layer
+# Model & Type Definition Layer (`lyora_web`)
 
-Trong ứng dụng Web Client (ReactJS + TypeScript), Model Layer chịu trách nhiệm định nghĩa cấu trúc dữ liệu, các kiểu dữ liệu (Types/Interfaces), DTOs (Data Transfer Objects), và Zod Schemas để xác thực runtime.
+Trong ứng dụng `lyora_web`, Model và Type được định nghĩa bên trong **Data Layer (`src/features/[feature]/`)** nhằm đảm bảo tính độc lập và phân vùng rõ ràng theo domain nghiệp vụ.
 
-## Trách nhiệm của Model / Type Layer
+---
 
-1. **Định nghĩa Request & Response DTOs:** Mô tả chính xác dữ liệu gửi lên và nhận về từ Backend NestJS (ví dụ: `LoginRequestDto`, `ReportResponseDto`, `ApiResponse<T>`).
-2. **Định nghĩa Domain Entities:** Mô tả thực thể nghiệp vụ cốt lõi (ví dụ: `User`, `Report`, `NotificationItem`).
-3. **Định nghĩa Enums & Constants:** Chứa các trạng thái hữu hạn của hệ thống (ví dụ: `ReportStatus`, `Role`, `NotificationType`).
-4. **Zod Schemas (Runtime Validation):** Sử dụng `zod` để định nghĩa schema xác thực form và tự động suy luận kiểu dữ liệu (`z.infer<typeof schema>`).
+## 1. Cấu Trúc File Chuẩn
 
-## Cấu trúc mẫu chuẩn
+Mỗi feature trong `src/features/[feature]/` bao gồm 2 file cốt lõi:
+- **`types/[feature].types.ts`:** Chứa toàn bộ interfaces, DTOs (Data Transfer Objects), Enums, và ApiResponse types.
+- **`models/[feature].model.ts`:** Chứa Zod validation schemas và TypeScript types suy luận từ schema (`z.infer<typeof schema>`).
 
-### 1. Định nghĩa Interface & DTO
+---
+
+## 2. Mã Mẫu Chuẩn
+
+### 2.1. Domain Types & DTOs (`src/features/auth/types/auth.types.ts`)
+
 ```typescript
-// src/features/reports/types/report.types.ts
-export type ReportStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
-
-export interface ReportItem {
+export interface UserProfile {
   id: string;
-  title: string;
-  description: string;
-  status: ReportStatus;
-  latitude: number;
-  longitude: number;
-  imageUrl?: string;
-  createdAt: string;
-  updatedAt: string;
+  email: string;
+  fullName: string;
+  role: 'ADMIN' | 'STAFF' | 'CLIENT';
+  avatarUrl?: string;
+  isActive?: boolean;
 }
 
-export interface CreateReportRequestDto {
-  title: string;
-  description: string;
-  latitude: number;
-  longitude: number;
-  images?: File[];
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data: T;
-  timestamp: string;
+export interface AuthSession extends AuthTokens {
+  user: UserProfile;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
 }
 ```
 
-### 2. Định nghĩa Zod Schema cho Form Validation
+### 2.2. Zod Validation Model (`src/features/auth/models/auth.model.ts`)
+
 ```typescript
-// src/features/reports/schemas/report.schema.ts
 import { z } from 'zod';
 
-export const createReportSchema = z.object({
-  title: z.string().min(5, 'Tiêu đề phải có ít nhất 5 ký tự').max(100),
-  description: z.string().min(10, 'Mô tả chi tiết phải có ít nhất 10 ký tự'),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email không được để trống')
+    .email('Định dạng email không hợp lệ'),
+  password: z
+    .string()
+    .min(6, 'Mật khẩu phải có tối thiểu 6 ký tự'),
+  rememberMe: z.boolean().optional(),
 });
 
-export type CreateReportFormData = z.infer<typeof createReportSchema>;
+export type LoginFormData = z.infer<typeof loginSchema>;
 ```
 
-## Quy tắc quan trọng
+---
 
-- **Bắt buộc tái sử dụng Model/Type:** Nếu một type tương tự hoặc giống hệt đã tồn tại (ví dụ `User` trong `@/types/user.ts`), phải import tái sử dụng, KHÔNG tạo duplicate type trong feature mới.
-- **Đồng bộ hóa với Backend NestJS:** Cấu trúc DTO của frontend phải khớp 100% với DTO của backend (cùng tên field, kiểu dữ liệu, định dạng ISO date string, hỗ trợ nullable).
-- **Tránh dùng `any`:** Mọi biến, tham số API, response payload đều phải được định kiểu tường minh với TypeScript (`strict: true`). Dùng `unknown` thay vì `any` nếu dữ liệu thực sự chưa rõ ràng trước khi validate.
+## 3. Quy Tắc Bắt Buộc
+
+1. **Đồng bộ hóa với Backend NestJS:** Kiểu dữ liệu Request DTO và Response DTO phải khớp 100% với DTO của Backend (`lyora_backend`).
+2. **Không dùng `any`:** Định nghĩa kiểu rõ ràng cho mọi property và parameter. Sử dụng `unknown` nếu dữ liệu cần parse runtime.
+3. **Phân biệt Types vs Models:**
+   - `types/`: Thuần type definitions (TypeScript interfaces, types, enums).
+   - `models/`: Chứa executable runtime logic như Zod validation schemas.
