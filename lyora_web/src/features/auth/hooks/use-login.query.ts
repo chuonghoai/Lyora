@@ -8,10 +8,6 @@ export type UseLoginMutationOptions = Omit<
   'mutationFn'
 >;
 
-/**
- * Data Layer TanStack Query Mutation Hook for User Login.
- * Interacts with AuthService and invalidates relevant queries on success.
- */
 export function useLoginMutation(options?: UseLoginMutationOptions) {
   const queryClient = useQueryClient();
 
@@ -21,7 +17,6 @@ export function useLoginMutation(options?: UseLoginMutationOptions) {
       return authService.login(credentials);
     },
     onSuccess: (...args) => {
-      // Invalidate active session queries
       queryClient.invalidateQueries({ queryKey: authKeys.session() });
       options?.onSuccess?.(...args);
     },

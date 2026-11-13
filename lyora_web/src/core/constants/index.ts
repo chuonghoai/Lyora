@@ -13,6 +13,10 @@ export const CORE_CONSTANTS = {
     HEALTH: '/health',
     AUTH_LOGIN: '/auth/login',
     AUTH_REGISTER: '/auth/register',
+    AUTH_REGISTER_SEND_OTP: '/auth/register/send-otp',
+    AUTH_FORGOT_PASSWORD_SEND_OTP: '/auth/forgot-password/send-otp',
+    AUTH_FORGOT_PASSWORD_VERIFY_OTP: '/auth/forgot-password/verify-otp',
+    AUTH_FORGOT_PASSWORD_RESET: '/auth/forgot-password/reset',
     AUTH_REFRESH: '/auth/refresh',
     AUTH_LOGOUT: '/auth/logout',
     AUTH_ME: '/auth/me',
@@ -21,4 +25,3 @@ export const CORE_CONSTANTS = {
 } as const;
 
 export const SHARED_CONSTANTS = CORE_CONSTANTS;
-

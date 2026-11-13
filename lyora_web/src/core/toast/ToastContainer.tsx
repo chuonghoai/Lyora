@@ -35,7 +35,7 @@ const ToastIcon: React.FC<{ type: ToastType }> = ({ type }) => {
     case 'info':
     default:
       return (
-        <svg className="w-5 h-5 text-[#2563eb] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-[#863bff] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -55,7 +55,7 @@ const ToastCard: React.FC<{ toast: ToastItem; onDismiss: (id: string) => void }>
     success: 'border-l-4 border-l-emerald-500',
     error: 'border-l-4 border-l-red-500',
     warning: 'border-l-4 border-l-amber-500',
-    info: 'border-l-4 border-l-[#2563eb]',
+    info: 'border-l-4 border-l-[#863bff]',
   }[toast.type];
 
   return (

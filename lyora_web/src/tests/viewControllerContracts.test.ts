@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { LoginController } from '@/ui/auth/login/login.controller';
+import type { RegisterController } from '@/ui/auth/register/register.controller';
+import type { ForgotPasswordController } from '@/ui/auth/forgot-password/forgot-password.controller';
 import type { HomeController } from '@/ui/client/home/home.controller';
 import type { DashboardController } from '@/ui/admin/dashboard/dashboard.controller';
 import type { ClientLayoutController } from '@/ui/client/client-layout.controller';
@@ -19,6 +21,52 @@ describe('View-Controller Contract & Integration Types', () => {
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<LoginController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('RegisterController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'step'
+      | 'formData'
+      | 'validationErrors'
+      | 'showPassword'
+      | 'cooldown'
+      | 'isLoading'
+      | 'apiError'
+      | 'handleFieldChange'
+      | 'handleTogglePassword'
+      | 'handleSubmitStep1'
+      | 'handleVerifyOtp'
+      | 'handleResendOtp'
+      | 'handleBackToForm';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<RegisterController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('ForgotPasswordController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'step'
+      | 'formData'
+      | 'resetToken'
+      | 'validationErrors'
+      | 'showPassword'
+      | 'cooldown'
+      | 'isLoading'
+      | 'apiError'
+      | 'handleFieldChange'
+      | 'handleTogglePassword'
+      | 'handleSendOtp'
+      | 'handleVerifyOtp'
+      | 'handleResetPassword'
+      | 'handleResendOtp'
+      | 'handleBackToEmail';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<ForgotPasswordController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });
@@ -92,4 +140,3 @@ describe('View-Controller Contract & Integration Types', () => {
     expect(isContractValid).toBe(true);
   });
 });
-

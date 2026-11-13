@@ -12,7 +12,7 @@ export const ClientLayout: React.FC = () => {
         <div className="max-w-[1126px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to={ROUTES.CLIENT.ROOT} className="flex items-center gap-3">
-              <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#2563eb] text-white font-bold text-lg shadow-md shadow-blue-500/30">
+              <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#863bff] text-white font-bold text-lg shadow-md shadow-purple-500/30">
                 L
               </span>
               <div>
@@ -31,7 +31,7 @@ export const ClientLayout: React.FC = () => {
               to={ROUTES.CLIENT.ROOT}
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
                 controller.location.pathname === ROUTES.CLIENT.ROOT
-                  ? 'bg-[#2563eb] text-white shadow-md shadow-blue-500/30'
+                  ? 'bg-[#863bff] text-white shadow-md shadow-purple-500/30'
                   : 'text-[#334155] hover:bg-[#f8fafc]'
               }`}
             >
@@ -55,16 +55,17 @@ export const ClientLayout: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={controller.handleLogout}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
+                  onClick={() => void controller.handleLogout()}
+                  disabled={controller.isLoggingOut}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Đăng xuất
+                  {controller.isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
                 </button>
               </div>
             ) : (
               <Link
                 to={ROUTES.AUTH.LOGIN}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#2563eb] text-white hover:bg-[#1d4ed8] shadow-md shadow-blue-500/30 transition-colors duration-150"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#863bff] text-white hover:bg-[#6d28d9] shadow-md shadow-purple-500/30 transition-colors duration-150"
               >
                 Đăng nhập
               </Link>

@@ -7,10 +7,6 @@ export type UseLogoutMutationOptions = Omit<
   'mutationFn'
 >;
 
-/**
- * Data Layer TanStack Query Mutation Hook for User Logout.
- * Clears query cache and cleans up session tokens.
- */
 export function useLogoutMutation(options?: UseLogoutMutationOptions) {
   const queryClient = useQueryClient();
 
@@ -19,9 +15,10 @@ export function useLogoutMutation(options?: UseLogoutMutationOptions) {
     mutationFn: async () => {
       await authService.logout();
     },
-    onSuccess: (...args) => {
-      // Invalidate or clear auth cache
+    onSettled: () => {
       queryClient.removeQueries({ queryKey: authKeys.all });
+    },
+    onSuccess: (...args) => {
       options?.onSuccess?.(...args);
     },
   });

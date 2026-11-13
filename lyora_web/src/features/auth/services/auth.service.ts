@@ -1,10 +1,23 @@
-import { TokenStorage } from '@/core';
+import { logger, TokenStorage } from '@/core';
 import { authRepository, type IAuthRepository } from '../repositories/auth.repository';
-import type { LoginCredentials, RegisterCredentials, AuthSession } from '../types/auth.types';
+import type {
+  AuthSession,
+  LoginCredentials,
+  OtpSentResponse,
+  RegisterCredentials,
+  ResetPasswordPayload,
+  SendOtpPayload,
+  VerifyForgotOtpPayload,
+  VerifyForgotOtpResponse,
+} from '../types/auth.types';
 
 export interface IAuthService {
   login(credentials: LoginCredentials): Promise<AuthSession>;
   register(credentials: RegisterCredentials): Promise<AuthSession>;
+  sendRegisterOtp(payload: SendOtpPayload): Promise<OtpSentResponse>;
+  sendForgotPasswordOtp(payload: SendOtpPayload): Promise<OtpSentResponse>;
+  verifyForgotPasswordOtp(payload: VerifyForgotOtpPayload): Promise<VerifyForgotOtpResponse>;
+  resetPassword(payload: ResetPasswordPayload): Promise<void>;
   logout(): Promise<void>;
   getCurrentSession(): AuthSession | null;
   hasActiveSession(): boolean;
@@ -21,7 +34,6 @@ export class AuthService implements IAuthService {
     const response = await this.repository.login(credentials);
     const { accessToken, refreshToken, user } = response.data;
 
-    // Save tokens and profile in Core storage
     TokenStorage.saveAuthSession(accessToken, refreshToken, user);
 
     return {
@@ -44,11 +56,34 @@ export class AuthService implements IAuthService {
     };
   }
 
+  async sendRegisterOtp(payload: SendOtpPayload): Promise<OtpSentResponse> {
+    const response = await this.repository.sendRegisterOtp(payload);
+    return response.data;
+  }
+
+  async sendForgotPasswordOtp(payload: SendOtpPayload): Promise<OtpSentResponse> {
+    const response = await this.repository.sendForgotPasswordOtp(payload);
+    return response.data;
+  }
+
+  async verifyForgotPasswordOtp(
+    payload: VerifyForgotOtpPayload,
+  ): Promise<VerifyForgotOtpResponse> {
+    const response = await this.repository.verifyForgotPasswordOtp(payload);
+    return response.data;
+  }
+
+  async resetPassword(payload: ResetPasswordPayload): Promise<void> {
+    await this.repository.resetPassword(payload);
+  }
+
   async logout(): Promise<void> {
     try {
       if (TokenStorage.hasToken()) {
         await this.repository.logout();
       }
+    } catch (err) {
+      logger.warn('AuthService', 'Logout API request failed, clearing local session.', err);
     } finally {
       TokenStorage.clearAuth();
     }
@@ -76,4 +111,3 @@ export class AuthService implements IAuthService {
 }
 
 export const authService = new AuthService();
-
