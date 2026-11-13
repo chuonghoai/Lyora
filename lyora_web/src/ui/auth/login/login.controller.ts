@@ -18,7 +18,6 @@ export function useLoginController() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
 
-  // Uses Data Layer TanStack Query hook, NOT defining useMutation in UI
   const loginMutation = useLoginMutation({
     onSuccess: (session) => {
       const { accessToken, refreshToken, user } = session;
@@ -94,19 +93,16 @@ export function useLoginController() {
         password: formData.password,
       });
     } catch {
-      // Handled in mutation onError
+      return;
     }
   };
 
   return {
-    // States
     formData,
     validationErrors,
     showPassword,
     isLoading: loginMutation.isPending,
     apiError: loginMutation.error as ApiError | null,
-
-    // Handlers
     handleFieldChange,
     handleTogglePassword,
     handleSubmit,

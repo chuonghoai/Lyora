@@ -25,18 +25,27 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const redisUrl = this.configService.get<string>('redis.url');
     const redisHost = this.configService.get<string>('redis.host');
 
+    const baseOptions = {
+      lazyConnect: false,
+      maxRetriesPerRequest: 1,
+      connectTimeout: 10000,
+      commandTimeout: 8000,
+      keepAlive: 15000,
+      enableOfflineQueue: false,
+    };
+
     if (redisUrl) {
+      const isTls = redisUrl.startsWith('rediss://');
       this.client = new Redis(redisUrl, {
-        lazyConnect: true,
-        maxRetriesPerRequest: 2,
+        ...baseOptions,
+        tls: isTls ? { rejectUnauthorized: false } : undefined,
       });
     } else if (redisHost) {
       this.client = new Redis({
+        ...baseOptions,
         host: redisHost,
         port: this.configService.get<number>('redis.port', 6379),
         password: this.configService.get<string>('redis.password'),
-        lazyConnect: true,
-        maxRetriesPerRequest: 2,
       });
     }
 
@@ -60,9 +69,27 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.memoryStore.clear();
   }
 
+  private async execClient<T>(
+    op: string,
+    fn: (client: Redis) => Promise<T>,
+  ): Promise<{ ok: true; value: T } | { ok: false }> {
+    if (!this.client || this.client.status !== 'ready') {
+      return { ok: false };
+    }
+    try {
+      return { ok: true, value: await fn(this.client) };
+    } catch (err) {
+      this.logger.warn(
+        `Redis ${op} failed, falling back to memory store: ${(err as Error).message}`,
+      );
+      return { ok: false };
+    }
+  }
+
   async get(key: string): Promise<string | null> {
-    if (this.client && this.client.status === 'ready') {
-      return this.client.get(key);
+    const res = await this.execClient('GET', (client) => client.get(key));
+    if (res.ok) {
+      return res.value;
     }
     const entry = this.memoryStore.get(key);
     if (!entry) {
@@ -76,12 +103,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
-    if (this.client && this.client.status === 'ready') {
-      if (ttlSeconds && ttlSeconds > 0) {
-        await this.client.set(key, value, 'EX', ttlSeconds);
-      } else {
-        await this.client.set(key, value);
-      }
+    const res = await this.execClient('SET', (client) =>
+      ttlSeconds && ttlSeconds > 0
+        ? client.set(key, value, 'EX', ttlSeconds)
+        : client.set(key, value),
+    );
+    if (res.ok) {
       return;
     }
 
@@ -91,8 +118,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async del(key: string): Promise<void> {
-    if (this.client && this.client.status === 'ready') {
-      await this.client.del(key);
+    const res = await this.execClient('DEL', (client) => client.del(key));
+    if (res.ok) {
       return;
     }
     this.memoryStore.delete(key);
@@ -141,16 +168,46 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     otp: string,
     ttlSeconds: number = REDIS_TTL.OTP_SECONDS,
   ): Promise<void> {
-    await this.set(REDIS_KEYS.otp(action, identifier), otp, ttlSeconds);
-    await this.set(
-      REDIS_KEYS.otpCooldown(action, identifier),
-      '1',
-      REDIS_TTL.OTP_COOLDOWN_SECONDS,
-    );
+    await Promise.all([
+      this.set(REDIS_KEYS.otp(action, identifier), otp, ttlSeconds),
+      this.set(
+        REDIS_KEYS.otpCooldown(action, identifier),
+        '1',
+        REDIS_TTL.OTP_COOLDOWN_SECONDS,
+      ),
+    ]);
+  }
+
+  async getOtp(action: string, identifier: string): Promise<string | null> {
+    return this.get(REDIS_KEYS.otp(action, identifier));
+  }
+
+  async delOtp(action: string, identifier: string): Promise<void> {
+    await this.del(REDIS_KEYS.otp(action, identifier));
+  }
+
+  async delOtpCooldown(action: string, identifier: string): Promise<void> {
+    await this.del(REDIS_KEYS.otpCooldown(action, identifier));
   }
 
   async isOtpInCooldown(action: string, identifier: string): Promise<boolean> {
     const val = await this.get(REDIS_KEYS.otpCooldown(action, identifier));
     return val !== null;
+  }
+
+  async setResetToken(
+    email: string,
+    token: string,
+    ttlSeconds: number = REDIS_TTL.RESET_PASSWORD_TOKEN_SECONDS,
+  ): Promise<void> {
+    await this.set(REDIS_KEYS.resetPasswordToken(email), token, ttlSeconds);
+  }
+
+  async getResetToken(email: string): Promise<string | null> {
+    return this.get(REDIS_KEYS.resetPasswordToken(email));
+  }
+
+  async delResetToken(email: string): Promise<void> {
+    await this.del(REDIS_KEYS.resetPasswordToken(email));
   }
 }
