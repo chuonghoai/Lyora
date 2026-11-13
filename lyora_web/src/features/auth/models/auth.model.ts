@@ -79,3 +79,14 @@ export const resetPasswordSchema = z
   });
 
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
+export function mapZodFieldErrors(error: z.ZodError): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const fieldName = String(issue.path[0]);
+    if (!fieldErrors[fieldName]) {
+      fieldErrors[fieldName] = issue.message;
+    }
+  }
+  return fieldErrors;
+}

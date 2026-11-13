@@ -49,11 +49,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ controller }) => {
             name="rememberMe"
             checked={controller.formData.rememberMe}
             onChange={controller.handleFieldChange}
-            className="h-4 w-4 cursor-pointer rounded border-[#cbd5e1] accent-[#863bff]"
+            className="h-4 w-4 cursor-pointer rounded border-[#d1d5db] accent-[#2563eb]"
           />
           <span className="text-sm text-[#475569]">Ghi nhớ đăng nhập</span>
         </label>
-        <Link to={ROUTES.AUTH.FORGOT_PASSWORD} className="text-sm text-[#863bff] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#863bff]">
+        <Link to={ROUTES.AUTH.FORGOT_PASSWORD} className="text-sm text-[#2563eb] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">
           Quên mật khẩu?
         </Link>
       </div>

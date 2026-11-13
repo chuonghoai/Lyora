@@ -12,14 +12,14 @@ export const AdminLayout: React.FC = () => {
         <div className="max-w-[1126px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to={ROUTES.ADMIN.DASHBOARD} className="flex items-center gap-3">
-              <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#5b08d9] text-white font-bold text-lg shadow-md shadow-purple-900/30">
+              <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#0f172a] text-white font-bold text-lg">
                 A
               </span>
               <div>
                 <span className="font-bold text-[#0f172a] text-lg tracking-tight">
                   {controller.appTitle}
                 </span>
-                <span className="ml-2 text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#863bff]/10 text-[#863bff] border border-[#863bff]/30">
+                <span className="ml-2 text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#2563eb]/10 text-[#2563eb] border border-[#2563eb]/30">
                   Trung Tâm Quản Trị
                 </span>
               </div>
@@ -31,7 +31,7 @@ export const AdminLayout: React.FC = () => {
               to={ROUTES.ADMIN.DASHBOARD}
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
                 controller.location.pathname.startsWith(ROUTES.ADMIN.ROOT)
-                  ? 'bg-[#863bff] text-white shadow-md shadow-purple-500/30'
+                  ? 'bg-[#2563eb] text-white shadow-md shadow-blue-500/30'
                   : 'text-[#334155] hover:bg-[#f8fafc]'
               }`}
             >

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  mapZodFieldErrors,
   otpSchema,
   registerStep1Schema,
   useRegisterMutation,
@@ -110,14 +111,7 @@ export function useRegisterController() {
 
     const result = registerStep1Schema.safeParse(formData);
     if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const fieldName = String(issue.path[0]);
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message;
-        }
-      }
-      setValidationErrors(fieldErrors);
+      setValidationErrors(mapZodFieldErrors(result.error));
       return;
     }
 
@@ -137,14 +131,7 @@ export function useRegisterController() {
 
     const result = otpSchema.safeParse({ otp: formData.otp });
     if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const fieldName = String(issue.path[0]);
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message;
-        }
-      }
-      setValidationErrors(fieldErrors);
+      setValidationErrors(mapZodFieldErrors(result.error));
       return;
     }
 

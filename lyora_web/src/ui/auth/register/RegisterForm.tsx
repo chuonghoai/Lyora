@@ -13,7 +13,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ controller }) => {
       <form onSubmit={controller.handleVerifyOtp} noValidate className="space-y-5">
         {controller.apiError && <FormAlert message={controller.apiError.message} />}
 
-        <div className="rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 text-sm text-[#5b08d9]">
+        <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-sm text-[#1d4ed8]">
           <p className="font-semibold">Xác thực địa chỉ email</p>
           <p className="mt-1">Mã 6 chữ số đã được gửi tới <strong>{controller.formData.email}</strong>.</p>
         </div>
@@ -40,11 +40,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ controller }) => {
             type="button"
             onClick={controller.handleResendOtp}
             disabled={controller.cooldown > 0 || controller.isLoading}
-            className="font-medium text-[#863bff] underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-[#94a3b8] disabled:no-underline"
+            className="font-medium text-[#2563eb] underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-[#94a3b8] disabled:no-underline"
           >
             {controller.cooldown > 0 ? `Gửi lại sau ${controller.cooldown}s` : 'Gửi lại mã OTP'}
           </button>
-          <button type="button" onClick={controller.handleBackToForm} className="text-[#625a7b] underline-offset-4 hover:text-[#2d0d64] hover:underline">
+          <button type="button" onClick={controller.handleBackToForm} className="text-[#64748b] underline-offset-4 hover:text-[#0f172a] hover:underline">
             Thay đổi thông tin
           </button>
         </div>

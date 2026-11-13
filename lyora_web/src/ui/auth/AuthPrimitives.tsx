@@ -29,7 +29,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
         onClick={onToggleVisibility}
         aria-label={isVisible ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
         aria-pressed={isVisible}
-        className="grid h-11 w-11 place-items-center rounded-xl text-[#625a7b] transition-colors hover:bg-violet-50 hover:text-[#5b08d9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#863bff]"
+        className="grid h-11 w-11 place-items-center rounded-xl text-[#64748b] transition-colors hover:bg-[#f8fafc] hover:text-[#2563eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]"
       >
         {isVisible ? (
           <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -49,10 +49,15 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
 interface AuthProgressProps {
   steps: string[];
   currentStep: number;
+  ariaLabel?: string;
 }
 
-export const AuthProgress: React.FC<AuthProgressProps> = ({ steps, currentStep }) => (
-  <nav aria-label="Tiến trình khôi phục mật khẩu">
+export const AuthProgress: React.FC<AuthProgressProps> = ({
+  steps,
+  currentStep,
+  ariaLabel = 'Tiến trình thực hiện',
+}) => (
+  <nav aria-label={ariaLabel}>
     <ol className="flex items-center gap-2">
       {steps.map((step, index) => {
         const stepNumber = index + 1;
@@ -61,12 +66,12 @@ export const AuthProgress: React.FC<AuthProgressProps> = ({ steps, currentStep }
 
         return (
           <React.Fragment key={step}>
-            {index > 0 && <span aria-hidden="true" className={`h-px flex-1 ${stepNumber <= currentStep ? 'bg-[#863bff]' : 'bg-violet-100'}`} />}
+            {index > 0 && <span aria-hidden="true" className={`h-px flex-1 ${stepNumber <= currentStep ? 'bg-[#2563eb]' : 'bg-[#e5e4e7]'}`} />}
             <li className="flex min-w-0 items-center gap-2" aria-current={active ? 'step' : undefined}>
-              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold ${complete || active ? 'bg-[#863bff] text-white' : 'bg-violet-100 text-[#716889]'}`}>
+              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold ${complete || active ? 'bg-[#2563eb] text-white' : 'bg-[#f8fafc] border border-[#cbd5e1] text-[#64748b]'}`}>
                 {complete ? '✓' : stepNumber}
               </span>
-              <span className={`hidden text-xs font-medium sm:inline ${active ? 'text-[#2d0d64]' : 'text-[#716889]'}`}>{step}</span>
+              <span className={`hidden text-xs font-medium sm:inline ${active ? 'text-[#0f172a]' : 'text-[#64748b]'}`}>{step}</span>
             </li>
           </React.Fragment>
         );

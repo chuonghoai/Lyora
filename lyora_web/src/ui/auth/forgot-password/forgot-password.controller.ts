@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   forgotPasswordEmailSchema,
+  mapZodFieldErrors,
   otpSchema,
   resetPasswordSchema,
   useResetPasswordMutation,
@@ -133,14 +134,7 @@ export function useForgotPasswordController() {
 
     const result = forgotPasswordEmailSchema.safeParse({ email: formData.email });
     if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const fieldName = String(issue.path[0]);
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message;
-        }
-      }
-      setValidationErrors(fieldErrors);
+      setValidationErrors(mapZodFieldErrors(result.error));
       return;
     }
 
@@ -160,14 +154,7 @@ export function useForgotPasswordController() {
 
     const result = otpSchema.safeParse({ otp: formData.otp });
     if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const fieldName = String(issue.path[0]);
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message;
-        }
-      }
-      setValidationErrors(fieldErrors);
+      setValidationErrors(mapZodFieldErrors(result.error));
       return;
     }
 
@@ -192,14 +179,7 @@ export function useForgotPasswordController() {
     });
 
     if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const fieldName = String(issue.path[0]);
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message;
-        }
-      }
-      setValidationErrors(fieldErrors);
+      setValidationErrors(mapZodFieldErrors(result.error));
       return;
     }
 

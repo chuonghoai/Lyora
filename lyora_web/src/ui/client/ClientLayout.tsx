@@ -12,7 +12,7 @@ export const ClientLayout: React.FC = () => {
         <div className="max-w-[1126px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to={ROUTES.CLIENT.ROOT} className="flex items-center gap-3">
-              <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#863bff] text-white font-bold text-lg shadow-md shadow-purple-500/30">
+              <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#2563eb] text-white font-bold text-lg shadow-md shadow-blue-500/30">
                 L
               </span>
               <div>
@@ -31,7 +31,7 @@ export const ClientLayout: React.FC = () => {
               to={ROUTES.CLIENT.ROOT}
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
                 controller.location.pathname === ROUTES.CLIENT.ROOT
-                  ? 'bg-[#863bff] text-white shadow-md shadow-purple-500/30'
+                  ? 'bg-[#2563eb] text-white shadow-md shadow-blue-500/30'
                   : 'text-[#334155] hover:bg-[#f8fafc]'
               }`}
             >
@@ -65,7 +65,7 @@ export const ClientLayout: React.FC = () => {
             ) : (
               <Link
                 to={ROUTES.AUTH.LOGIN}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#863bff] text-white hover:bg-[#6d28d9] shadow-md shadow-purple-500/30 transition-colors duration-150"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#2563eb] text-white hover:bg-[#1d4ed8] shadow-md shadow-blue-500/30 transition-colors duration-150"
               >
                 Đăng nhập
               </Link>

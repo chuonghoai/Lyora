@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -19,6 +20,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('register/send-otp')
   @ResponseMessage('Mã xác thực OTP đã được gửi đến email của bạn')
   async sendRegisterOtp(@Body() dto: SendOtpDto) {
@@ -26,6 +28,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('register')
   @ResponseMessage('Đăng ký tài khoản thành công')
   async register(@Body() dto: RegisterDto) {
@@ -33,6 +36,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('login')
   @ResponseMessage('Đăng nhập thành công')
   async login(@Body() dto: LoginDto) {
@@ -40,6 +44,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('forgot-password/send-otp')
   @ResponseMessage('Mã xác thực đặt lại mật khẩu đã được gửi đến email của bạn')
   async sendForgotPasswordOtp(@Body() dto: SendOtpDto) {
@@ -47,6 +52,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('forgot-password/verify-otp')
   @ResponseMessage('Xác thực mã OTP thành công')
   async verifyForgotPasswordOtp(@Body() dto: VerifyForgotPasswordOtpDto) {
@@ -54,6 +60,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('forgot-password/reset')
   @ResponseMessage('Đặt lại mật khẩu thành công')
   async resetPassword(@Body() dto: ResetPasswordDto) {
