@@ -15,7 +15,7 @@ export default function RegisterView(): React.ReactElement {
       footer={
         <>
           Đã có tài khoản?{' '}
-          <Link to={ROUTES.AUTH.LOGIN} className="font-semibold text-[#863bff] underline-offset-4 hover:underline">
+          <Link to={ROUTES.AUTH.LOGIN} className="font-semibold text-[#2563eb] underline-offset-4 hover:underline">
             Đăng nhập
           </Link>
         </>

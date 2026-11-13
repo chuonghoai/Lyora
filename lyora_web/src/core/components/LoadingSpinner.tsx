@@ -17,7 +17,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   return (
     <div
-      className={`inline-block animate-spin rounded-full border-[#863bff] border-t-transparent ${sizeMap[size]} ${className}`}
+      className={`inline-block animate-spin rounded-full border-[#2563eb] border-t-transparent ${sizeMap[size]} ${className}`}
       role="status"
       aria-label="Đang tải"
     >

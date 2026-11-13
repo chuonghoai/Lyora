@@ -18,6 +18,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private client: Redis | null = null;
   private readonly memoryStore = new Map<string, MemoryEntry>();
+  private readonly memorySessionSets = new Map<string, Set<string>>();
+  private cleanupTimer: NodeJS.Timeout | null = null;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -60,13 +62,32 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         'REDIS_URL chưa được cấu hình — Sử dụng In-Memory TTL Store cho phiên làm việc cục bộ',
       );
     }
+
+    this.cleanupTimer = setInterval(() => {
+      this.pruneExpiredMemoryEntries();
+    }, 60_000);
+    this.cleanupTimer.unref();
   }
 
   async onModuleDestroy(): Promise<void> {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
     if (this.client) {
       await this.client.quit().catch(() => undefined);
     }
     this.memoryStore.clear();
+    this.memorySessionSets.clear();
+  }
+
+  private pruneExpiredMemoryEntries(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.memoryStore.entries()) {
+      if (entry.expiresAt !== null && now > entry.expiresAt) {
+        this.memoryStore.delete(key);
+      }
+    }
   }
 
   private async execClient<T>(
@@ -152,6 +173,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       refreshToken,
       ttlSeconds,
     );
+
+    const indexKey = REDIS_KEYS.userSessionIndex(userId);
+    const res = await this.execClient('SADD', async (client) => {
+      await client.sadd(indexKey, sessionId);
+      await client.expire(indexKey, ttlSeconds);
+    });
+    if (!res.ok) {
+      const set = this.memorySessionSets.get(userId) ?? new Set<string>();
+      set.add(sessionId);
+      this.memorySessionSets.set(userId, set);
+    }
   }
 
   async getSession(userId: string, sessionId: string): Promise<string | null> {
@@ -160,6 +192,33 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async revokeSession(userId: string, sessionId: string): Promise<void> {
     await this.del(REDIS_KEYS.userSession(userId, sessionId));
+
+    const indexKey = REDIS_KEYS.userSessionIndex(userId);
+    const res = await this.execClient('SREM', (client) =>
+      client.srem(indexKey, sessionId),
+    );
+    if (!res.ok) {
+      this.memorySessionSets.get(userId)?.delete(sessionId);
+    }
+  }
+
+  async revokeAllUserSessions(userId: string): Promise<void> {
+    const indexKey = REDIS_KEYS.userSessionIndex(userId);
+    const res = await this.execClient('SMEMBERS', (client) =>
+      client.smembers(indexKey),
+    );
+
+    const redisIds = res.ok ? res.value : [];
+    const memoryIds = Array.from(this.memorySessionSets.get(userId) ?? []);
+    const allSessionIds = new Set([...redisIds, ...memoryIds]);
+
+    await Promise.all([
+      ...Array.from(allSessionIds).map((sessionId) =>
+        this.del(REDIS_KEYS.userSession(userId, sessionId)),
+      ),
+      this.del(indexKey),
+    ]);
+    this.memorySessionSets.delete(userId);
   }
 
   async setOtp(
@@ -170,6 +229,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   ): Promise<void> {
     await Promise.all([
       this.set(REDIS_KEYS.otp(action, identifier), otp, ttlSeconds),
+      this.del(REDIS_KEYS.otpAttempts(action, identifier)),
       this.set(
         REDIS_KEYS.otpCooldown(action, identifier),
         '1',
@@ -183,7 +243,38 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async delOtp(action: string, identifier: string): Promise<void> {
-    await this.del(REDIS_KEYS.otp(action, identifier));
+    await Promise.all([
+      this.del(REDIS_KEYS.otp(action, identifier)),
+      this.del(REDIS_KEYS.otpAttempts(action, identifier)),
+    ]);
+  }
+
+  async incrementOtpAttempts(
+    action: string,
+    identifier: string,
+    ttlSeconds: number = REDIS_TTL.OTP_SECONDS,
+  ): Promise<number> {
+    const key = REDIS_KEYS.otpAttempts(action, identifier);
+    const res = await this.execClient('INCR', async (client) => {
+      const count = await client.incr(key);
+      if (count === 1) {
+        await client.expire(key, ttlSeconds);
+      }
+      return count;
+    });
+    if (res.ok) {
+      return res.value;
+    }
+
+    const now = Date.now();
+    const existing = this.memoryStore.get(key);
+    const isValid =
+      existing !== undefined &&
+      (existing.expiresAt === null || now <= existing.expiresAt);
+    const nextCount = isValid ? (parseInt(existing.value, 10) || 0) + 1 : 1;
+    const expiresAt = isValid ? existing.expiresAt : now + ttlSeconds * 1000;
+    this.memoryStore.set(key, { value: String(nextCount), expiresAt });
+    return nextCount;
   }
 
   async delOtpCooldown(action: string, identifier: string): Promise<void> {

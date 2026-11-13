@@ -17,11 +17,17 @@ export default function ForgotPasswordView(): React.ReactElement {
     <AuthShell
       title="Khôi phục mật khẩu"
       description="Làm theo các bước để đặt lại mật khẩu tài khoản Lyora của bạn."
-      progress={<AuthProgress steps={STEPS} currentStep={stepNumber} />}
+      progress={
+        <AuthProgress
+          steps={STEPS}
+          currentStep={stepNumber}
+          ariaLabel="Tiến trình khôi phục mật khẩu"
+        />
+      }
       footer={
         <>
           Nhớ lại mật khẩu?{' '}
-          <Link to={ROUTES.AUTH.LOGIN} className="font-semibold text-[#863bff] underline-offset-4 hover:underline">
+          <Link to={ROUTES.AUTH.LOGIN} className="font-semibold text-[#2563eb] underline-offset-4 hover:underline">
             Đăng nhập
           </Link>
         </>

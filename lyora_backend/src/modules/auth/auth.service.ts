@@ -65,17 +65,7 @@ export class AuthService {
 
   async register(dto: RegisterDto): Promise<AuthTokenResponse> {
     const normalizedEmail = dto.email.trim().toLowerCase();
-    const storedOtp = await this.redisService.getOtp(
-      'register',
-      normalizedEmail,
-    );
-    if (!storedOtp || storedOtp !== dto.otp) {
-      throw new BadRequestException(
-        'Mã xác thực OTP không chính xác hoặc đã hết hạn',
-      );
-    }
-
-    await this.redisService.delOtp('register', normalizedEmail);
+    await this.verifyOtpOrThrow('register', normalizedEmail, dto.otp);
 
     const user = await this.usersService.createUser({
       email: normalizedEmail,
@@ -83,6 +73,8 @@ export class AuthService {
       fullName: dto.fullName,
       role: UserRole.CLIENT,
     });
+
+    await this.redisService.delOtp('register', normalizedEmail);
 
     return this.issueTokens(user);
   }
@@ -177,15 +169,7 @@ export class AuthService {
     dto: VerifyForgotPasswordOtpDto,
   ): Promise<{ resetToken: string }> {
     const normalizedEmail = dto.email.trim().toLowerCase();
-    const storedOtp = await this.redisService.getOtp(
-      'forgot-password',
-      normalizedEmail,
-    );
-    if (!storedOtp || storedOtp !== dto.otp) {
-      throw new BadRequestException(
-        'Mã xác thực OTP không chính xác hoặc đã hết hạn',
-      );
-    }
+    await this.verifyOtpOrThrow('forgot-password', normalizedEmail, dto.otp);
 
     await this.redisService.delOtp('forgot-password', normalizedEmail);
 
@@ -193,6 +177,35 @@ export class AuthService {
     await this.redisService.setResetToken(normalizedEmail, resetToken);
 
     return { resetToken };
+  }
+
+  private async verifyOtpOrThrow(
+    action: 'register' | 'forgot-password',
+    normalizedEmail: string,
+    otp: string,
+  ): Promise<void> {
+    const storedOtp = await this.redisService.getOtp(action, normalizedEmail);
+    if (!storedOtp) {
+      throw new BadRequestException(
+        'Mã xác thực OTP không chính xác hoặc đã hết hạn',
+      );
+    }
+
+    if (storedOtp !== otp) {
+      const attempts = await this.redisService.incrementOtpAttempts(
+        action,
+        normalizedEmail,
+      );
+      if (attempts >= REDIS_TTL.MAX_OTP_ATTEMPTS) {
+        await this.redisService.delOtp(action, normalizedEmail);
+        throw new BadRequestException(
+          'Bạn đã nhập sai mã OTP quá số lần cho phép. Vui lòng yêu cầu gửi lại mã mới.',
+        );
+      }
+      throw new BadRequestException(
+        'Mã xác thực OTP không chính xác hoặc đã hết hạn',
+      );
+    }
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ success: boolean }> {
@@ -210,7 +223,10 @@ export class AuthService {
     }
 
     await this.usersService.updatePassword(user.id, dto.newPassword);
-    await this.redisService.delResetToken(normalizedEmail);
+    await Promise.all([
+      this.redisService.delResetToken(normalizedEmail),
+      this.redisService.revokeAllUserSessions(user.id),
+    ]);
 
     return { success: true };
   }
