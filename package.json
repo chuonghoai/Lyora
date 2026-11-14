@@ -3,21 +3,33 @@
   "version": "1.0.0",
   "private": true,
   "description": "Lyora Monorepo (NestJS Backend + Unified ReactJS Web Portal)",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0",
+    "npm": ">=10.0.0"
+  },
   "workspaces": [
     "lyora_backend",
     "lyora_web"
   ],
   "scripts": {
+    "backend:install": "npm ci --workspace=lyora_backend --include-workspace-root=false",
     "backend:dev": "npm run start:dev --workspace=lyora_backend",
     "backend:build": "npm run build --workspace=lyora_backend",
+    "backend:start": "npm run start:prod --workspace=lyora_backend",
+    "backend:deploy:build": "npm run backend:install && npm run backend:build",
     "backend:test": "npm run test --workspace=lyora_backend",
     "backend:lint": "npm run lint --workspace=lyora_backend",
     "backend:seed": "npm run seed:create --workspace=lyora_backend",
     "backend:db:reset": "npm run seed:reset --workspace=lyora_backend",
+
+    "web:install": "npm ci --workspace=lyora_web --include-workspace-root=false",
     "web:dev": "npm run dev --workspace=lyora_web",
     "web:build": "npm run build --workspace=lyora_web",
+    "web:preview": "npm run preview --workspace=lyora_web",
+    "web:deploy:build": "npm run web:install && npm run web:build",
     "web:test": "npm run test --workspace=lyora_web",
     "web:lint": "npm run lint --workspace=lyora_web",
+
     "dev": "concurrently \"npm run backend:dev\" \"npm run web:dev\"",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
