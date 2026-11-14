@@ -66,6 +66,16 @@ export class UsersService {
     return this.findById(saved.id);
   }
 
+  async updatePassword(userId: string, newPassword: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy thông tin người dùng');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
+    await this.userRepository.update(userId, { passwordHash });
+  }
+
   async findAllPaginated(query: PaginationQueryDto): Promise<{
     items: User[];
     meta: PaginationMetaDto;

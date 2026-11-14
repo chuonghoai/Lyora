@@ -14,6 +14,12 @@ const AdminDashboardView = lazy(
 const LoginView = lazy(
   () => import('@/ui/auth/login/LoginView'),
 );
+const RegisterView = lazy(
+  () => import('@/ui/auth/register/RegisterView'),
+);
+const ForgotPasswordView = lazy(
+  () => import('@/ui/auth/forgot-password/ForgotPasswordView'),
+);
 
 const PageLoader: React.FC = () => (
   <div className="min-h-[40vh] flex items-center justify-center">
@@ -31,6 +37,34 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <LoginView />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  {
+    path: ROUTES.AUTH.REGISTER,
+    element: <GuestRoute />,
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RegisterView />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  {
+    path: ROUTES.AUTH.FORGOT_PASSWORD,
+    element: <GuestRoute />,
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ForgotPasswordView />
           </Suspense>
         ),
       },

@@ -29,6 +29,7 @@ function resolveApiBaseUrl(rawUrl?: string): string {
 const PUBLIC_ENDPOINTS = [
   '/auth/login',
   '/auth/register',
+  '/auth/forgot-password',
   '/auth/refresh',
   '/health',
 ];
@@ -42,7 +43,7 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
   const baseURL = resolveApiBaseUrl(
     customBaseURL || import.meta.env.VITE_API_BASE_URL,
   );
-  const timeout = Number(import.meta.env.VITE_API_TIMEOUT) || 15000;
+  const timeout = Number(import.meta.env.VITE_API_TIMEOUT) || 45000;
 
   const client = axios.create({
     baseURL,
@@ -162,7 +163,9 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
         } catch (refreshErr) {
           processQueue(refreshErr, null);
           TokenStorage.clearAuth();
-          toast.error('Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.');
+          if (!url.includes('/auth/logout')) {
+            toast.error('Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.');
+          }
           return Promise.reject(buildApiError(error));
         } finally {
           isRefreshing = false;
