@@ -148,7 +148,7 @@ User Interaction (Click submit / input)
    Core API Client (apiClient.ts)
        │ (handles Bearer token, interceptors, refresh storm guard)
        ▼
-     Backend NestJS API (:3000/api)
+     Backend NestJS API (:3000)
 ```
 
 ---

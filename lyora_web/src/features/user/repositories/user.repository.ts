@@ -1,9 +1,9 @@
-import { apiClient, CORE_CONSTANTS, type ApiResponse, type UserProfile } from '@/core';
+import { apiClient, CORE_CONSTANTS, type ApiResponse, type UserProfile, type UserRole } from '@/core';
 import type { UserStatistics } from '../types/user.types';
 
 export interface IUserRepository {
   getProfile(): Promise<ApiResponse<UserProfile>>;
-  getStatistics(): Promise<ApiResponse<UserStatistics>>;
+  getStatistics(role?: UserRole): Promise<ApiResponse<UserStatistics>>;
 }
 
 export class UserRepository implements IUserRepository {
@@ -13,9 +13,10 @@ export class UserRepository implements IUserRepository {
     );
   }
 
-  async getStatistics(): Promise<ApiResponse<UserStatistics>> {
+  async getStatistics(role?: UserRole): Promise<ApiResponse<UserStatistics>> {
     return apiClient.get<ApiResponse<UserStatistics>, ApiResponse<UserStatistics>>(
       CORE_CONSTANTS.API_ENDPOINTS.USERS_STATISTICS,
+      role ? { params: { role } } : undefined,
     );
   }
 }

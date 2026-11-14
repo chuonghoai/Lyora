@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 256" width="768" height="256" role="img" aria-labelledby="title-a-lockup">
-  <title id="title-a-lockup">LYORA Concept A - The Harmonic L Lockup</title>
+  <title id="title-a-lockup">LYORA - The Harmonic L Lockup</title>
   <g id="symbol" transform="translate(68, 40) scale(0.68)">
-    <path fill="#2563eb" fill-rule="evenodd" d="
+    <path fill="#2563EB" fill-rule="evenodd" d="
       M 34 48
       C 34 40 40 36 48 36
       H 68
@@ -19,7 +19,7 @@
       C 64 218 34 188 34 150
       Z
     "/>
-    <path fill="#2563eb" d="
+    <path fill="#2563EB" d="
       M 74 52
       H 168
       C 174 52 178 56 178 62
@@ -27,10 +27,10 @@
       H 74
       Z
     "/>
-    <rect x="96" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
-    <rect x="121" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
-    <rect x="146" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
-    <path fill="#aa3bff" d="
+    <rect x="96" y="78" width="13" height="92" rx="6.5" fill="#2563EB"/>
+    <rect x="121" y="78" width="13" height="92" rx="6.5" fill="#2563EB"/>
+    <rect x="146" y="78" width="13" height="92" rx="6.5" fill="#2563EB"/>
+    <path fill="#93C5FD" d="
       M 204 42
       Q 204 60 186 60
       Q 204 60 204 78
@@ -39,8 +39,8 @@
       Z
     "/>
   </g>
-  
-  <g id="wordmark" transform="translate(284, 86)" fill="#0f172a">
+
+  <g id="wordmark" transform="translate(284, 86)" fill="#111827">
     <!-- L (width: 48px) -->
     <path d="M 0 0 H 14 V 70 H 48 V 84 H 0 Z" />
     <!-- Y (width: 72px, calibrated 60° branches) -->
@@ -80,4 +80,3 @@
     "/>
   </g>
 </svg>
-

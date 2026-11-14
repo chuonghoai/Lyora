@@ -86,7 +86,7 @@ export const router = createBrowserRouter([
   // 3. Tuyến Cổng Quản Trị (Bảo vệ bởi RoleRoute)
   {
     path: ROUTES.ADMIN.ROOT,
-    element: <RoleRoute allowedRoles={['ADMIN', 'STAFF']} requireAuth={true} />,
+    element: <RoleRoute allowedRoles={['ADMIN']} requireAuth={true} />,
     children: [
       {
         element: <AdminLayout />,
@@ -117,6 +117,6 @@ export const AppRoutes: React.FC = () => {
    - Dành riêng cho màn hình đăng nhập.
    - Nếu người dùng đã đăng nhập thành công, tự động chuyển hướng về trang tương ứng theo vai trò (`/admin/dashboard` cho Admin hoặc `/` cho Client).
 2. **`RoleRoute` (`src/core/guards/RoleRoute.tsx`):**
-   - Bảo vệ các tuyến đường yêu cầu quyền hạn cao (`ADMIN`, `STAFF`).
+   - Bảo vệ các tuyến đường yêu cầu quyền hạn cao (`ADMIN`).
    - Nếu chưa đăng nhập: Tự động lưu `location.pathname` hiện tại vào `state.from` và redirect về `/auth/login`.
    - Nếu đã đăng nhập nhưng không đủ quyền: Redirect an toàn về `/` và phát toast cảnh báo.

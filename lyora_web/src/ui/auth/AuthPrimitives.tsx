@@ -2,7 +2,7 @@ import React from 'react';
 import { Input, type InputProps } from '@/core';
 
 export const FormAlert: React.FC<{ message: string }> = ({ message }) => (
-  <div role="alert" className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+  <div role="alert" className="flex items-start gap-3 rounded-2xl border border-error/25 bg-error/8 px-4 py-3 text-sm text-error">
     <svg aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
@@ -29,7 +29,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
         onClick={onToggleVisibility}
         aria-label={isVisible ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
         aria-pressed={isVisible}
-        className="grid h-11 w-11 place-items-center rounded-xl text-[#64748b] transition-colors hover:bg-[#f8fafc] hover:text-[#2563eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]"
+        className="grid h-10 w-10 place-items-center rounded-lg text-muted transition-colors hover:bg-background hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 cursor-pointer"
       >
         {isVisible ? (
           <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -66,12 +66,18 @@ export const AuthProgress: React.FC<AuthProgressProps> = ({
 
         return (
           <React.Fragment key={step}>
-            {index > 0 && <span aria-hidden="true" className={`h-px flex-1 ${stepNumber <= currentStep ? 'bg-[#2563eb]' : 'bg-[#e5e4e7]'}`} />}
+            {index > 0 && <span aria-hidden="true" className={`h-px flex-1 ${stepNumber <= currentStep ? 'bg-primary' : 'bg-border'}`} />}
             <li className="flex min-w-0 items-center gap-2" aria-current={active ? 'step' : undefined}>
-              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold ${complete || active ? 'bg-[#2563eb] text-white' : 'bg-[#f8fafc] border border-[#cbd5e1] text-[#64748b]'}`}>
-                {complete ? '✓' : stepNumber}
+              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold ${complete || active ? 'bg-primary text-on-primary' : 'bg-card border border-border text-muted'}`}>
+                {complete ? (
+                  <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  stepNumber
+                )}
               </span>
-              <span className={`hidden text-xs font-medium sm:inline ${active ? 'text-[#0f172a]' : 'text-[#64748b]'}`}>{step}</span>
+              <span className={`hidden text-xs font-medium sm:inline ${active ? 'text-foreground' : 'text-muted'}`}>{step}</span>
             </li>
           </React.Fragment>
         );

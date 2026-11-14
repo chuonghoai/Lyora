@@ -1,9 +1,20 @@
 import { useState, useRef } from 'react';
 import { useDebounce, useClickOutside, toast } from '@/core';
 import { useSystemHealthQuery, type HealthStatus } from '@/features/system';
-import { useUserStatisticsQuery, type UserStatistics } from '@/features/user';
+import {
+  useUserStatisticsQuery,
+  type UserRoleFilter,
+  type UserStatistics,
+} from '@/features/user';
 
-export type UserRoleFilter = 'ALL' | 'CLIENT' | 'ADMIN' | 'STAFF';
+export type { UserRoleFilter };
+
+export interface HealthCheckReport {
+  ok: boolean;
+  durationMs: number;
+  checkedAt: string;
+  message: string;
+}
 
 export function useDashboardController() {
   const [adminActions, setAdminActions] = useState(0);
@@ -11,11 +22,13 @@ export function useDashboardController() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isStatsRefreshing, setIsStatsRefreshing] = useState(false);
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false);
+  const [lastHealthReport, setLastHealthReport] = useState<HealthCheckReport | null>(null);
   const [activeRoleFilter, setActiveRoleFilter] = useState<UserRoleFilter>('ALL');
 
   // TanStack Query Hooks from Data Layer
   const healthQuery = useSystemHealthQuery();
-  const userStatsQuery = useUserStatisticsQuery();
+  const userStatsQuery = useUserStatisticsQuery(activeRoleFilter);
 
   const debouncedFilter = useDebounce(filterQuery, 350);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -44,8 +57,15 @@ export function useDashboardController() {
   const handleRefreshStats = async () => {
     setIsStatsRefreshing(true);
     try {
-      await Promise.all([userStatsQuery.refetch(), healthQuery.refetch()]);
-      toast.success('Đã cập nhật toàn bộ số liệu thống kê realtime!');
+      const [statsRes, healthRes] = await Promise.all([
+        userStatsQuery.refetch(),
+        healthQuery.refetch(),
+      ]);
+      if (statsRes.isError || healthRes.isError) {
+        toast.error('Không thể làm mới đầy đủ số liệu. Vui lòng thử lại.');
+        return;
+      }
+      toast.success('Đã cập nhật số liệu thống kê mới nhất.');
     } catch {
       toast.error('Không thể làm mới số liệu. Vui lòng thử lại!');
     } finally {
@@ -57,9 +77,59 @@ export function useDashboardController() {
     setActiveRoleFilter(filter);
   };
 
+  const handleCheckHealth = async () => {
+    if (isCheckingHealth) return;
+    setIsCheckingHealth(true);
+    const startedAt = performance.now();
+
+    try {
+      const result = await healthQuery.refetch();
+      const durationMs = Math.max(1, Math.round(performance.now() - startedAt));
+      const checkedAt = new Date().toISOString();
+
+      if (result.isError || result.data?.status !== 'ok') {
+        const errorMessage = 'Máy chủ API phản hồi lỗi hoặc không khả dụng.';
+        setLastHealthReport({
+          ok: false,
+          durationMs,
+          checkedAt,
+          message: errorMessage,
+        });
+        toast.error(errorMessage);
+        return;
+      }
+
+      const okMessage = `Máy chủ hoạt động ổn định · Phản hồi trong ${durationMs} ms.`;
+      setLastHealthReport({
+        ok: true,
+        durationMs,
+        checkedAt,
+        message: okMessage,
+      });
+      toast.success(okMessage);
+    } catch {
+      const durationMs = Math.max(1, Math.round(performance.now() - startedAt));
+      const errorMessage = 'Không thể kết nối tới endpoint /health.';
+      setLastHealthReport({
+        ok: false,
+        durationMs,
+        checkedAt: new Date().toISOString(),
+        message: errorMessage,
+      });
+      toast.error(errorMessage);
+    } finally {
+      setIsCheckingHealth(false);
+    }
+  };
+
+  const handleViewAllUsers = () => {
+    // TODO: Điều hướng sang module nghiệp vụ quản lý toàn bộ người dùng (/admin/users) khi được triển khai
+    toast.info('Module quản lý toàn bộ người dùng (/admin/users) đang trong kế hoạch triển khai.');
+  };
+
   // --- Handlers: User & RBAC Operations (TODO) ---
   const handleCreateUser = () => {
-    // TODO: Mở modal tạo tài khoản thành viên hoặc quản trị viên mới (POST /api/v1/users)
+    // TODO: Mở modal tạo tài khoản thành viên hoặc quản trị viên mới (POST /users)
     toast.info('Tính năng "Thêm thành viên mới" đang được phát triển (// TODO).');
   };
 
@@ -69,7 +139,7 @@ export function useDashboardController() {
   };
 
   const handleManageRoles = () => {
-    // TODO: Điều hướng sang trang cấu hình ma trận phân quyền vai trò (ADMIN, STAFF, CLIENT)
+    // TODO: Điều hướng sang trang cấu hình ma trận phân quyền vai trò (ADMIN, CLIENT)
     toast.info('Tính năng "Phân quyền vai trò (RBAC)" đang được phát triển (// TODO).');
   };
 
@@ -122,7 +192,7 @@ export function useDashboardController() {
 
   // --- Handlers: Infrastructure & Security Operations (TODO) ---
   const handlePurgeCache = () => {
-    // TODO: Gửi yêu cầu làm mới bộ nhớ cache Redis (POST /api/v1/system/purge-cache)
+    // TODO: Gửi yêu cầu làm mới bộ nhớ cache Redis (POST /system/purge-cache)
     toast.info('Tính năng "Làm mới cache Redis" đang được phát triển (// TODO).');
   };
 
@@ -149,12 +219,16 @@ export function useDashboardController() {
     isMenuOpen,
     isSubmitting,
     isStatsRefreshing,
+    isCheckingHealth,
+    lastHealthReport,
     activeRoleFilter,
     menuRef,
     systemHealth: (healthQuery.data as HealthStatus | undefined) ?? null,
     isHealthLoading: healthQuery.isLoading,
+    isHealthError: healthQuery.isError,
     userStats: (userStatsQuery.data as UserStatistics | undefined) ?? null,
     isStatsLoading: userStatsQuery.isLoading,
+    isStatsError: userStatsQuery.isError,
     statsError: userStatsQuery.error,
     appTitle,
 
@@ -163,6 +237,8 @@ export function useDashboardController() {
     handleToggleMenu,
     handleFilterChange,
     handleRefreshStats,
+    handleCheckHealth,
+    handleViewAllUsers,
     handleSelectRoleFilter,
     setFilterQuery,
     toggleMenu: handleToggleMenu,

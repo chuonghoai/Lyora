@@ -28,13 +28,12 @@ Hệ thống được thiết lập sẵn hai tài khoản đăng nhập bắt b
 
 | Vai trò (Role) | Email | Mật khẩu mẫu | Phân quyền Backend thực tế | Trạng thái | Mục đích sử dụng |
 | :--- | :--- | :--- | :--- | :---: | :--- |
-| **Staff** | `staff@lyora.com` | `Staff@123456` | `UserRole.STAFF` (`STAFF`) | Hoạt động (`isActive: true`) | Kiểm thử phân quyền nhân viên vận hành và hỗ trợ kiểm duyệt nội dung |
 | **Inactive Client** | `inactive@lyora.com` | `Client@123456` | `UserRole.CLIENT` (`CLIENT`) | Tạm khóa (`isActive: false`) | Kiểm thử xử lý lỗi đăng nhập tài khoản bị vô hiệu hóa |
 
 > [!IMPORTANT]
 > **Ghi chú bảo mật & vận hành:**
 > - Toàn bộ mật khẩu được băm (hash) bằng thuật toán **Bcrypt** (`salt rounds = 10`) trước khi lưu trữ vào bảng `users`. Tuyệt đối không lưu mật khẩu dạng văn bản thô (plaintext).
-> - Vai trò và quyền hạn được gán chính xác theo enum `UserRole` (`ADMIN`, `STAFF`, `CLIENT`) trong mã nguồn Backend (`src/common/enums/role.enum.ts`).
+> - Vai trò và quyền hạn được gán chính xác theo enum `UserRole` (`ADMIN`, `CLIENT`) trong mã nguồn Backend (`src/common/enums/role.enum.ts`).
 > - Cả hai tài khoản đã được kiểm chứng hoạt động hoàn hảo với `AuthService.login` và `JwtAuthGuard`.
 > - **TUYỆT ĐỐI KHÔNG** sử dụng các tài khoản mặc định này trên môi trường Production!
 
@@ -46,7 +45,7 @@ Danh mục toàn bộ các file seed dữ liệu hiện có trong thư mục `ly
 
 | STT | Seed File | Tên Bảng (Table) | Mô tả dữ liệu | Số bản ghi | Trạng thái |
 | :---: | :--- | :--- | :--- | :---: | :---: |
-| 1 | `users.seed.ts` | `users` | Tài khoản người dùng hệ thống (`ADMIN`, `CLIENT`, `STAFF`, `INACTIVE`) | 4 | Complete |
+| 1 | `users.seed.ts` | `users` | Tài khoản người dùng hệ thống (`ADMIN`, `CLIENT`, `INACTIVE`) | 3 | Complete |
 
 - **Cấu hình & Tiện ích hỗ trợ**:
   - `seed.config.ts`: Khởi tạo TypeORM DataSource độc lập cho runner (hỗ trợ chuẩn hóa URL và SSL cho cả local lẫn DB cloud dev/staging qua `parsePostgresConnectionConfig`), tích hợp hàm chặn an toàn `assertSafeEnvironment()`.

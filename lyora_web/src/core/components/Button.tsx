@@ -14,16 +14,16 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-semibold transition-colors duration-150 rounded-lg px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+    'inline-flex items-center justify-center font-semibold transition-colors duration-150 rounded-lg px-4 py-2 text-sm disabled:bg-background disabled:text-muted/60 disabled:border-border disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-card';
 
   const variantStyles = {
     primary:
-      'bg-[#2563eb] text-white hover:bg-[#1d4ed8] shadow-md shadow-blue-500/30',
+      'bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active',
     secondary:
-      'bg-[#aa3bff]/10 text-[#aa3bff] border border-[#aa3bff]/50 hover:bg-[#aa3bff]/20',
+      'bg-secondary text-primary-active hover:bg-secondary-strong/50 active:bg-secondary-strong/70',
     outline:
-      'border border-[#cbd5e1] text-[#334155] bg-white hover:bg-[#f8fafc]',
-    danger: 'bg-red-600 text-white hover:bg-red-700',
+      'border border-border text-foreground bg-card hover:bg-background',
+    danger: 'bg-error text-on-primary hover:bg-error/90',
   }[variant];
 
   return (

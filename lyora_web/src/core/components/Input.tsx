@@ -31,7 +31,7 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className="flex flex-col gap-1.5 w-full text-left">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-[#334155]">
+        <label htmlFor={inputId} className="text-sm font-medium text-foreground">
           {label}
         </label>
       )}
@@ -40,8 +40,10 @@ export const Input: React.FC<InputProps> = ({
           id={inputId}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={describedBy}
-          className={`w-full px-3 py-2 border rounded-lg text-sm text-[#0f172a] bg-white placeholder-[#94a3b8] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-colors duration-150 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden ${
-            error ? 'border-red-500' : 'border-[#cbd5e1]'
+          className={`w-full px-3 py-2 border rounded-lg text-sm text-foreground bg-card placeholder:text-muted focus:outline-none focus:ring-2 disabled:bg-background disabled:text-muted/60 disabled:cursor-not-allowed transition-colors duration-150 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden ${
+            error
+              ? 'border-error focus:border-error focus:ring-error/25'
+              : 'border-border focus:border-primary focus:ring-primary/40'
           } ${endAdornment ? 'pr-12' : ''} ${className}`}
           {...props}
         />
@@ -52,12 +54,12 @@ export const Input: React.FC<InputProps> = ({
         )}
       </div>
       {error && (
-        <span id={errorId} className="text-xs text-red-600" role="alert">
+        <span id={errorId} className="text-xs text-error" role="alert">
           {error}
         </span>
       )}
       {!error && helperText && (
-        <span id={helperId} className="text-xs text-[#64748b]">
+        <span id={helperId} className="text-xs text-muted">
           {helperText}
         </span>
       )}

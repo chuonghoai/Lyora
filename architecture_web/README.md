@@ -125,7 +125,7 @@ lyora_web/
 [Core API Client] (apiClient.ts)
     │  Gửi HTTP Request kèm Bearer Token
     ▼
-[NestJS Backend API] (:3000/api)
+[NestJS Backend API] (:3000)
 ```
 
 ---
