@@ -1,63 +1,73 @@
-# Quy tắc UI Component Layer
+# UI View Layer Rules (`lyora_web/src/ui`)
 
-Trong hệ thống Web Client của Lyora (`lyora_client` và `lyora_admin`), UI Layer chịu trách nhiệm hiển thị giao diện người dùng, tuân thủ hệ thống **Design Tokens thống nhất** từ `DESIGN.md`, tái sử dụng tối đa các thành phần từ **`@lyora/web-shared`**, và đảm bảo khả năng tiếp cận (Accessibility - a11y).
+Tài liệu này quy chuẩn cấu trúc thư mục, quy tắc thiết kế và cách tổ chức các thành phần trong tầng giao diện (**UI Layer**) của `lyora_web`.
 
 ---
 
-## 1. Tổ chức thư mục UI và Tái sử dụng `lyora_web_shared`
+## 1. Cấu Trúc 3 Module Gốc Duy Nhất
+
+Trong `src/ui/`, bắt buộc chỉ tồn tại đúng 3 module cấp cao nhất:
 
 ```text
-lyora_client/ hoặc lyora_admin/
-├── src/
-│   ├── components/             # Components riêng của từng ứng dụng
-│   │   ├── common/             # Common composite đặc thù
-│   │   └── ui/                 # UI primitives đặc thù (nếu chưa có trong lyora_web_shared)
-│   ├── layouts/                # Layouts riêng (ClientLayout, AdminDashboardLayout)
-│   ├── pages/                  # Page components theo từng Route
-│   └── features/               # Domain feature components
+src/ui/
+├── admin/                      # Cổng Quản Trị Viên
+│   ├── AdminLayout.tsx         # Layout khung điều hướng Admin
+│   ├── admin-layout.controller.ts # Controller cho AdminLayout
+│   ├── dashboard/              # Submodule màn hình Dashboard
+│   │   ├── DashboardView.tsx   # View trình diễn
+│   │   └── dashboard.controller.ts # Controller điều phối
+│   └── index.ts
+│
+├── auth/                       # Phân Hệ Xác Thực
+│   ├── login/                  # Submodule màn hình Login
+│   │   ├── LoginView.tsx       # View chính
+│   │   ├── login.controller.ts # Controller điều phối
+│   │   └── LoginForm.tsx       # Subcomponent nhận controller
+│   └── index.ts
+│
+├── client/                     # Cổng Khách Hàng
+│   ├── ClientLayout.tsx        # Layout khung điều hướng Client
+│   ├── client-layout.controller.ts # Controller cho ClientLayout
+│   ├── home/                   # Submodule màn hình Home
+│   │   ├── HomeView.tsx        # View trình diễn
+│   │   └── home.controller.ts  # Controller điều phối
+│   └── index.ts
+│
+└── index.ts                    # Public barrel export
 ```
 
-- **Nguyên tắc ưu tiên:** Trước khi tạo mới một UI primitive (Button, Input, Spinner, Image loader, Modal...), developer/agent **BẮT BUỘC** kiểm tra gói `@lyora/web-shared`. Nếu đã có, phải import trực tiếp:
-  ```tsx
-  import { Button, Input, AppImage, LoadingSpinner } from '@lyora/web-shared';
-  ```
+### Quy tắc tổ chức bên trong Submodule con:
+- View (`*View.tsx`), Controller (`*.controller.ts`) và các UI subcomponent con được đặt **phẳng trong cùng một thư mục**.
+- **Tuyệt đối KHÔNG** tạo các thư mục con `views/`, `controllers/`, hoặc `components/`.
 
 ---
 
-## 2. Giao diện thống nhất (Unified Theme)
+## 2. Tái Sử Dụng Thành Phần Từ Core (`@core`)
 
-- Dự án áp dụng **một giao diện trực quan thống nhất**, không hỗ trợ chuyển đổi Light/Dark mode.
-- Màu sắc, bo góc, bóng đổ và typography phải tuân thủ nghiêm ngặt các tokens đã định nghĩa trong `DESIGN.md`.
-- Tuyệt đối không hardcode mã màu tùy tiện dạng `#000000` hoặc `#FFFFFF` mà không theo hệ thống token màu của hệ thống.
-
----
-
-## 3. Form Handling & Keyboard Accessibility
-
-Trên nền tảng Web, hành vi điều hướng bàn phím tuân theo tiêu chuẩn chuẩn mực của HTML5:
-
-1. **Chuẩn HTML Form:**
-   - Mọi form nhập liệu phải được bọc trong thẻ `<form onSubmit={handleSubmit}>`.
-   - Nhấn phím **Enter** trên bất kỳ input nào trong form sẽ kích hoạt submit (chuẩn web accessibility).
-2. **Tab Navigation (Điều hướng bằng phím Tab):**
-   - Trình duyệt tự động điều hướng focus giữa các thẻ input theo thứ tự DOM tự nhiên. Tuyệt đối không can thiệp làm hỏng tab order mặc định.
-3. **Form Accessibility & Error Feedback:**
-   - Mọi trường nhập liệu phải có nhãn `<label htmlFor="...">` tương ứng với `id` của input.
-   - Khi có lỗi validation, gắn thuộc tính `aria-invalid="true"` và hiển thị thông báo lỗi rõ ràng bằng tiếng Việt.
+Trước khi tạo bất kỳ UI component cục bộ nào, bắt buộc kiểm tra và tái sử dụng các primitives từ `src/core/components/`:
+- **`Button`:** Nút bấm chuẩn với variants (`primary`, `secondary`, `outline`, `ghost`, `danger`) và cờ `isLoading`.
+- **`Input`:** Ô nhập liệu với nhãn, thông báo lỗi validation, helper text và trạng thái focus chuẩn.
+- **`AppImage`:** Tải hình ảnh an toàn với skeleton loading, fallback khi lỗi và lazy loading.
+- **`LoadingSpinner`:** Vòng quay tải trang đồng bộ.
 
 ---
 
-## 4. Hiển thị hình ảnh chuẩn hóa (`AppImage`)
+## 3. Giao Diện Thống Nhất (Unified Theme)
 
-- Bắt buộc tái sử dụng component `AppImage` từ `@lyora/web-shared`.
-- Không sử dụng thẻ `<img>` trần mà không xử lý fallback, error state và skeleton loading.
-- `AppImage` đã được tích hợp sẵn lazy loading (`loading="lazy"`), bo góc tùy biến (`rounded`), và ảnh fallback an toàn.
+- **Không chuyển đổi Light/Dark mode:** Hệ sinh thái sử dụng duy nhất một giao diện trực quan tiêu chuẩn.
+- **Tuân thủ Design Tokens từ `DESIGN.md`:**
+  - Primary Color: `#2563eb` (Primary Blue).
+  - Background: `#f8fafc`.
+  - Surface: `#ffffff` kèm border `#cbd5e1` hoặc `#e2e8f0`.
+  - Text Primary: `#0f172a`.
+  - Text Secondary: `#475569`.
+- **Anti-Default Discipline:**
+  - Không sử dụng gradient tím rập khuôn AI.
+  - Bố cục thông thoáng, padding thoải mái.
 
 ---
 
-## 5. Áp dụng Anti-Default Discipline (Chống AI-Slop)
+## 4. Ngôn Ngữ Tiếng Việt Chuẩn Mực (Unified Language)
 
-- Tuân thủ các nguyên tắc thiết kế từ Skill `design-taste-frontend`:
-  - Không sử dụng các dải màu tím - hồng gradient rập khuôn của AI.
-  - Bố cục layout theo nhịp điệu nội dung thực tế (bảng dữ liệu quản trị trong `lyora_admin`, lưới thẻ phản ánh trực quan trong `lyora_client`).
-  - Hạn chế hiệu ứng kính (glassmorphism) lạm dụng gây nặng trình duyệt.
+- Toàn bộ văn bản hiển thị cho người dùng (tiêu đề, nhãn nút, placeholder, thông báo lỗi, toast) được viết trực tiếp bằng **Tiếng Việt chuẩn mực, mạch lạc, dễ hiểu**.
+- Không sử dụng thư viện đa ngôn ngữ (i18n / `react-i18next`).

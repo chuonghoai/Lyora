@@ -1,51 +1,59 @@
-# Kiến trúc hệ thống Web Client (Architecture)
+# Kiến trúc hệ thống Web Client (`lyora_web`)
 
-Dự án Web Frontend được thiết kế dựa trên kiến trúc phân lớp hướng tính năng (Feature-based Clean Architecture) kết hợp với gói tài nguyên dùng chung **`@lyora/web-shared`**, phục vụ đồng thời cho 2 ứng dụng độc lập: **`lyora_client`** và **`lyora_admin`**.
+Dự án Web Frontend được thiết kế dựa trên kiến trúc 4 Layer phân tách độc lập, phục vụ đồng thời cho cả hai phân hệ: Cổng Khách Hàng (`src/ui/client`) và Trung Tâm Quản Trị (`src/ui/admin`).
 
-## Sơ đồ luồng kiến trúc (Architecture Flow)
+---
+
+## 1. Sơ đồ luồng kiến trúc (Architecture Flow)
 
 ```mermaid
 graph TD
-    subgraph SharedPackage ["@lyora/web-shared"]
-        SharedUI["Shared Components (Button, Input, AppImage, Loading)"]
-        SharedHooks["Shared Hooks (useDebounce, useClickOutside)"]
-        SharedClient["HTTP Client (apiClient instance & interceptors)"]
-        SharedTypes["Shared Types (ApiResponse, PaginatedResponse)"]
+    subgraph CoreLayer ["Core Layer (src/core)"]
+        CoreUI["UI Primitives (Button, Input, AppImage, LoadingSpinner)"]
+        CoreHooks["Core Hooks (useDebounce, useClickOutside)"]
+        CoreClient["HTTP Client (apiClient instance & interceptors)"]
+        CoreStorage["Storage & Auth Store (TokenStorage, useAuthStore)"]
+        CoreToast["Toast System (toast, ToastContainer)"]
     end
 
-    subgraph ClientOrAdminApp ["lyora_client / lyora_admin"]
-        Page["Page / View Component (TSX)"] --> Controller["UI Controller / Custom Hook (use*Controller)"]
-        Controller --> StateLayer["State Management (TanStack Query / Zustand)"]
-        StateLayer --> Service["Feature API Service (reportService)"]
-        Page -.-> SharedUI
-        Controller -.-> SharedHooks
-        Service --> SharedClient
+    subgraph UILayer ["UI Layer (src/ui)"]
+        View["View Component (*View.tsx)"] --> Controller["UI Controller (*.controller.ts)"]
+        View -.-> CoreUI
+        Controller -.-> CoreHooks
     end
 
-    SharedClient --> Backend["Backend API (lyora_backend - NestJS REST / WebSocket)"]
+    subgraph DataLayer ["Data Layer (src/features)"]
+        QueryHook["Query Hook (*.query.ts)"] --> Service["Feature Service (*.service.ts)"]
+        Service --> Repository["Feature Repository (*.repository.ts)"]
+        Repository --> CoreClient
+    end
+
+    Controller --> QueryHook
+    CoreClient --> Backend["Backend API (lyora_backend: NestJS REST / WebSocket)"]
 ```
 
-## Phân định trách nhiệm các Layer
+---
 
-1. **Shared Resources Layer (`lyora_web_shared`):**
-   - Đóng gói các UI components nguyên tử (Button, Input, Loading, AppImage), hooks tiện ích, types chung và `apiClient` Axios instance tập trung.
-   - Quản lý cấu hình ESLint dùng chung (`sharedEslintConfig`) và file môi trường dùng chung (`.env`).
-2. **UI Presentation Layer (`src/components/`, `src/features/<feature>/components/`, `src/pages/`):**
-   - Chứa các React Component phụ trách render giao diện của từng ứng dụng.
-   - Tận dụng các component dùng chung từ `@lyora/web-shared`.
+## 2. Phân định trách nhiệm các Layer
+
+1. **Core Layer (`src/core/`):**
+   - Đóng gói các UI primitives nguyên tử (`Button`, `Input`, `LoadingSpinner`, `AppImage`), hooks hạ tầng, types chung và `apiClient` Axios instance tập trung.
+   - Quản lý storage, token storage, auth store, toast notification system.
+2. **Data Layer (`src/features/`):**
+   - Thuần TypeScript module (không chứa JSX/TSX).
+   - Đóng gói logic giao tiếp mạng qua Repository, business rules qua Service, và quản lý cache qua TanStack Query hooks.
+3. **UI Layer (`src/ui/`):**
+   - Tổ chức theo đúng 3 module: `admin`, `auth`, `client`.
+   - Áp dụng mô hình View-Controller: View chỉ khởi tạo Controller 1 lần và gọi trực tiếp `controller.property` hoặc `controller.handleAction`.
    - Sử dụng một giao diện thống nhất theo `DESIGN.md` (không có Light/Dark mode).
-3. **UI Controller / Custom Hook Layer (`use<Feature>Controller.ts`):**
-   - Quản lý Local UI State (mở/đóng dialog, cờ loading tạm thời, form state).
-   - Điều phối actions người dùng và gọi các mutations/queries từ State Layer.
-4. **Shared State Layer (Zustand Store / TanStack Query):**
-   - **Server State (TanStack Query):** Cache, revalidate dữ liệu từ backend API.
-   - **Client State (Zustand):** Lưu phiên đăng nhập (Token, User profile) của từng ứng dụng.
-5. **Feature Service Layer (`src/features/<feature>/services/`):**
-   - Đóng gói các hàm gọi API nghiệp vụ riêng của từng ứng dụng dựa trên `apiClient` dùng chung.
+4. **Router Layer (`src/routes/`):**
+   - Quản lý URL paths, phân chia quyền hạn qua `RoleRoute` và `GuestRoute`.
 
-## Các quy tắc bắt buộc
+---
 
-- Mọi tài nguyên có thể dùng chung giữa Client và Admin phải được đặt tại `lyora_web_shared`.
-- Không gọi trực tiếp API client từ Component mà phải thông qua Custom Hook / Service.
-- Không đưa backend secrets hoặc private keys vào `lyora_web_shared` hay frontends.
+## 3. Các quy tắc bắt buộc
+
+- Mọi tài nguyên hạ tầng dùng chung phải đặt tại `src/core/`.
+- Không gọi trực tiếp API client từ View hay Controller; phải thông qua Query Hook -> Service -> Repository.
+- Không đưa backend secrets hoặc private keys vào `lyora_web`.
 - Sử dụng ngôn ngữ Tiếng Việt thống nhất trên toàn bộ giao diện; không dùng i18n.

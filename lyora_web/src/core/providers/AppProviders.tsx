@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastContainer } from '@/core/toast';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export const AppProviders: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -9,15 +11,24 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000,
+            staleTime: 10 * 60 * 1000, // 10 minutes default cache as required by architecture
+            gcTime: 15 * 60 * 1000, // 15 minutes garbage collection time
             retry: 1,
             refetchOnWindowFocus: false,
+          },
+          mutations: {
+            retry: 0,
           },
         },
       }),
   );
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <ToastContainer />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
