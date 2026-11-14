@@ -1,12 +1,12 @@
 ---
 name: lya-createPR
 description: >-
-  Chuẩn bị code hiện tại và tạo Pull Request từ branch hiện tại vào dev.
+  Chuẩn bị code hiện tại và tạo Pull Request từ branch hiện tại vào main.
 ---
 
 # lya-createPR
 
-Mục đích: Chuẩn bị code hiện tại và tạo Pull Request từ branch hiện tại -> `dev`.
+Mục đích: Chuẩn bị code hiện tại và tạo Pull Request từ branch hiện tại -> `main`.
 
 ## Dependencies
 - [Shared Git Rules](../../rules/shared-git-rules.md)
@@ -27,7 +27,7 @@ Push code lên remote.
 **Lưu ý:** Trước các thao tác có khả năng thay đổi remote repository, phải kiểm tra trạng thái và đảm bảo branch đúng.
 
 ### Step 4 — Create PR URL
-Tạo GitHub Pull Request URL với: `base = dev`, `head = current branch`.
+Tạo GitHub Pull Request URL với: `base = main`, `head = current branch`.
 URL phải được tạo sao cho user có thể click mở trực tiếp trên trình duyệt.
 
 ### Step 5 — PR Body Template
