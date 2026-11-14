@@ -69,14 +69,13 @@ Xuất báo cáo tổng kết chi tiết dạng Markdown:
 1. **Bảng kết quả nạp dữ liệu**:
    | Tên Bảng (Table) | Entity | Dự kiến (Expected) | Thực tế (Actual) | Trạng thái (Status) |
    | :--- | :--- | :---: | :---: | :---: |
-   | `users` | `User` | 4 | 4 | `SUCCESS` |
+   | `users` | `User` | 3 | 3 | `SUCCESS` |
 
 2. **Bảng danh sách tài khoản thử nghiệm**:
    | Vai trò (Role) | Email | Mật khẩu mẫu | Trạng thái hoạt động | Ghi chú |
    | :--- | :--- | :--- | :---: | :--- |
-   | `ADMIN` | `admin@lyora.com` | `Admin@123456` | Active | Quản trị viên hệ thống |
-   | `STAFF` | `staff@lyora.com` | `Staff@123456` | Active | Nhân viên vận hành |
-   | `CLIENT` | `client@lyora.com` | `Client@123456` | Active | Khách hàng chuẩn |
+   | `ADMIN` | `admin@gmail.com` | `123456` | Active | Quản trị viên hệ thống |
+   | `CLIENT` | `user@gmail.com` | `123456` | Active | Người dùng tiêu chuẩn |
    | `CLIENT` | `inactive@lyora.com` | `Client@123456` | Inactive | Khách hàng tạm khóa |
 
 3. **Hướng dẫn bước tiếp theo**:

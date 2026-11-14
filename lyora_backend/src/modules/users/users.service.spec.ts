@@ -18,22 +18,28 @@ describe('UsersService - Statistics & Retrieval', () => {
     usersService = new UsersService(userRepository as Repository<User>);
   });
 
-  it('should compute user statistics correctly with real-time aggregates', async () => {
-    (userRepository.count as jest.Mock)
-      .mockResolvedValueOnce(25) // totalUsers
-      .mockResolvedValueOnce(20) // clientCount
-      .mockResolvedValueOnce(3) // adminCount
-      .mockResolvedValueOnce(2) // staffCount
-      .mockResolvedValueOnce(22) // activeCount
-      .mockResolvedValueOnce(3); // inactiveCount
-
-    const mockQueryBuilder = {
-      where: jest.fn().mockReturnThis(),
-      getCount: jest
-        .fn()
-        .mockResolvedValueOnce(4) // newUsersToday
-        .mockResolvedValueOnce(15), // newUsersThisMonth
+  function createAggregateBuilderMock(
+    rawResult: Record<string, string | number>,
+  ) {
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue(rawResult),
     };
+    return qb;
+  }
+
+  it('should compute user statistics with a single aggregate query and limit 4 recent users', async () => {
+    const mockQueryBuilder = createAggregateBuilderMock({
+      totalUsers: '25',
+      clientCount: '22',
+      adminCount: '3',
+      activeCount: '22',
+      inactiveCount: '3',
+      newUsersToday: '4',
+      newUsersThisMonth: '15',
+    });
 
     (userRepository.createQueryBuilder as jest.Mock).mockReturnValue(
       mockQueryBuilder,
@@ -54,14 +60,44 @@ describe('UsersService - Statistics & Retrieval', () => {
 
     const stats = await usersService.getStatistics();
 
+    expect(userRepository.createQueryBuilder).toHaveBeenCalledTimes(1);
+    expect(mockQueryBuilder.getRawOne).toHaveBeenCalledTimes(1);
     expect(stats.totalUsers).toBe(25);
-    expect(stats.clientCount).toBe(20);
+    expect(stats.clientCount).toBe(22);
     expect(stats.adminCount).toBe(3);
-    expect(stats.staffCount).toBe(2);
     expect(stats.activeCount).toBe(22);
     expect(stats.inactiveCount).toBe(3);
     expect(stats.newUsersToday).toBe(4);
     expect(stats.newUsersThisMonth).toBe(15);
     expect(stats.recentUsers).toEqual(mockRecentUsers);
+    expect(userRepository.find).toHaveBeenCalledWith({
+      where: undefined,
+      order: { createdAt: 'DESC' },
+      take: 4,
+    });
+  });
+
+  it('should filter recent users by role while keeping limit at 4', async () => {
+    const mockQueryBuilder = createAggregateBuilderMock({
+      totalUsers: '1',
+      clientCount: '0',
+      adminCount: '1',
+      activeCount: '1',
+      inactiveCount: '0',
+      newUsersToday: '0',
+      newUsersThisMonth: '0',
+    });
+    (userRepository.createQueryBuilder as jest.Mock).mockReturnValue(
+      mockQueryBuilder,
+    );
+    (userRepository.find as jest.Mock).mockResolvedValue([]);
+
+    await usersService.getStatistics(UserRole.ADMIN);
+
+    expect(userRepository.find).toHaveBeenCalledWith({
+      where: { role: UserRole.ADMIN },
+      order: { createdAt: 'DESC' },
+      take: 4,
+    });
   });
 });

@@ -9,11 +9,12 @@ export interface RecentUserSummary {
   createdAt: string;
 }
 
+export type UserRoleFilter = 'ALL' | UserRole;
+
 export interface UserStatistics {
   totalUsers: number;
   clientCount: number;
   adminCount: number;
-  staffCount: number;
   activeCount: number;
   inactiveCount: number;
   newUsersToday: number;

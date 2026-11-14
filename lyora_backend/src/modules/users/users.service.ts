@@ -99,7 +99,7 @@ export class UsersService {
     return { items, meta };
   }
 
-  async getStatistics(): Promise<UserStatisticsDto> {
+  async getStatistics(roleFilter?: UserRole): Promise<UserStatisticsDto> {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -107,46 +107,50 @@ export class UsersService {
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
 
-    const [
-      totalUsers,
-      clientCount,
-      adminCount,
-      staffCount,
-      activeCount,
-      inactiveCount,
-      newUsersToday,
-      newUsersThisMonth,
-      recentUsers,
-    ] = await Promise.all([
-      this.userRepository.count(),
-      this.userRepository.count({ where: { role: UserRole.CLIENT } }),
-      this.userRepository.count({ where: { role: UserRole.ADMIN } }),
-      this.userRepository.count({ where: { role: UserRole.STAFF } }),
-      this.userRepository.count({ where: { isActive: true } }),
-      this.userRepository.count({ where: { isActive: false } }),
-      this.userRepository
-        .createQueryBuilder('user')
-        .where('user.createdAt >= :todayStart', { todayStart })
-        .getCount(),
-      this.userRepository
-        .createQueryBuilder('user')
-        .where('user.createdAt >= :monthStart', { monthStart })
-        .getCount(),
-      this.userRepository.find({
-        order: { createdAt: 'DESC' },
-        take: 5,
-      }),
-    ]);
+    // Gộp toàn bộ số đếm vào 1 truy vấn SQL duy nhất để tránh tranh chấp pg-pool
+    const rawCounts = await this.userRepository
+      .createQueryBuilder('user')
+      .select('COUNT(*)', 'totalUsers')
+      .addSelect(
+        'COUNT(*) FILTER (WHERE user.role = :clientRole)',
+        'clientCount',
+      )
+      .addSelect('COUNT(*) FILTER (WHERE user.role = :adminRole)', 'adminCount')
+      .addSelect('COUNT(*) FILTER (WHERE user.isActive = true)', 'activeCount')
+      .addSelect(
+        'COUNT(*) FILTER (WHERE user.isActive = false)',
+        'inactiveCount',
+      )
+      .addSelect(
+        'COUNT(*) FILTER (WHERE user.createdAt >= :todayStart)',
+        'newUsersToday',
+      )
+      .addSelect(
+        'COUNT(*) FILTER (WHERE user.createdAt >= :monthStart)',
+        'newUsersThisMonth',
+      )
+      .setParameters({
+        clientRole: UserRole.CLIENT,
+        adminRole: UserRole.ADMIN,
+        todayStart,
+        monthStart,
+      })
+      .getRawOne<Record<string, string | number | null>>();
+
+    const recentUsers = await this.userRepository.find({
+      where: roleFilter ? { role: roleFilter } : undefined,
+      order: { createdAt: 'DESC' },
+      take: 4,
+    });
 
     return {
-      totalUsers,
-      clientCount,
-      adminCount,
-      staffCount,
-      activeCount,
-      inactiveCount,
-      newUsersToday,
-      newUsersThisMonth,
+      totalUsers: Number(rawCounts?.totalUsers ?? 0),
+      clientCount: Number(rawCounts?.clientCount ?? 0),
+      adminCount: Number(rawCounts?.adminCount ?? 0),
+      activeCount: Number(rawCounts?.activeCount ?? 0),
+      inactiveCount: Number(rawCounts?.inactiveCount ?? 0),
+      newUsersToday: Number(rawCounts?.newUsersToday ?? 0),
+      newUsersThisMonth: Number(rawCounts?.newUsersThisMonth ?? 0),
       recentUsers,
     };
   }

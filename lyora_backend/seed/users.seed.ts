@@ -27,13 +27,6 @@ export const SEED_USERS_DATA: SeedUserItem[] = [
     isActive: true,
   },
   {
-    email: 'staff@lyora.com',
-    rawPassword: 'Staff@123456',
-    fullName: 'Nhân Viên Vận Hành',
-    role: UserRole.STAFF,
-    isActive: true,
-  },
-  {
     email: 'inactive@lyora.com',
     rawPassword: 'Client@123456',
     fullName: 'Khách Hàng Tạm Khóa',

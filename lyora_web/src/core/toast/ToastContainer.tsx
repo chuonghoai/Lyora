@@ -6,13 +6,13 @@ const ToastIcon: React.FC<{ type: ToastType }> = ({ type }) => {
   switch (type) {
     case 'success':
       return (
-        <svg className="w-5 h-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-success shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       );
     case 'error':
       return (
-        <svg className="w-5 h-5 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-error shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -23,7 +23,7 @@ const ToastIcon: React.FC<{ type: ToastType }> = ({ type }) => {
       );
     case 'warning':
       return (
-        <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-warning shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -35,7 +35,7 @@ const ToastIcon: React.FC<{ type: ToastType }> = ({ type }) => {
     case 'info':
     default:
       return (
-        <svg className="w-5 h-5 text-[#2563eb] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-info shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -51,17 +51,17 @@ const ToastCard: React.FC<{ toast: ToastItem; onDismiss: (id: string) => void }>
   toast,
   onDismiss,
 }) => {
-  const typeBorders = {
-    success: 'border-l-4 border-l-emerald-500',
-    error: 'border-l-4 border-l-red-500',
-    warning: 'border-l-4 border-l-amber-500',
-    info: 'border-l-4 border-l-[#2563eb]',
+  const typeRing = {
+    success: 'border-success/30',
+    error: 'border-error/30',
+    warning: 'border-warning/30',
+    info: 'border-info/30',
   }[toast.type];
 
   return (
     <div
       role="alert"
-      className={`pointer-events-auto flex items-start gap-3 w-full max-w-sm rounded-xl bg-white p-4 shadow-[0_10px_25px_rgba(0,0,0,0.12)] border border-[#e2e8f0] ${typeBorders} transition-all duration-200 animate-in fade-in slide-in-from-top-2`}
+      className={`pointer-events-auto flex items-start gap-3 w-full max-w-sm rounded-2xl bg-card p-4 shadow-md border ${typeRing} transition-[opacity,transform] duration-150`}
     >
       <div className="mt-0.5">
         <ToastIcon type={toast.type} />
@@ -69,11 +69,11 @@ const ToastCard: React.FC<{ toast: ToastItem; onDismiss: (id: string) => void }>
 
       <div className="flex-1 min-w-0">
         {toast.title && (
-          <h4 className="text-sm font-semibold text-[#0f172a] mb-0.5 leading-tight">
+          <h4 className="text-sm font-semibold text-foreground mb-0.5 leading-tight">
             {toast.title}
           </h4>
         )}
-        <p className="text-sm text-[#334155] leading-relaxed break-words">
+        <p className="text-sm text-muted leading-relaxed break-words">
           {toast.message}
         </p>
       </div>
@@ -81,7 +81,7 @@ const ToastCard: React.FC<{ toast: ToastItem; onDismiss: (id: string) => void }>
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
-        className="text-[#94a3b8] hover:text-[#0f172a] transition-colors p-1 rounded-md cursor-pointer -mr-1 -mt-1"
+        className="text-muted hover:text-foreground hover:bg-background transition-colors p-1 rounded-lg cursor-pointer -mr-1 -mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         aria-label="Đóng thông báo"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

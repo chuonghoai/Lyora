@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 describe('Live API Contract & Connectivity Test', () => {
-  const BACKEND_BASE_URL = 'http://localhost:3000/api';
+  const BACKEND_BASE_URL = 'http://localhost:3000';
 
   it('STT 4: Backend availability and network error handling', async () => {
     try {

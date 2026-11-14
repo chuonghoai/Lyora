@@ -4,6 +4,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 import type { ApiError, ApiResponse } from '../types/api.types';
+import { CORE_CONSTANTS } from '../constants';
 import { TokenStorage } from '../storage';
 import { toast } from '../toast';
 import { logger } from '../utils/logger';
@@ -17,26 +18,42 @@ interface QueuedPromise {
   reject: (reason?: unknown) => void;
 }
 
-function resolveApiBaseUrl(rawUrl?: string): string {
-  if (!rawUrl) return '/api';
-  const trimmed = rawUrl.trim().replace(/\/+$/, '');
-  if (trimmed.startsWith('http') && !trimmed.endsWith('/api')) {
-    return `${trimmed}/api`;
-  }
-  return trimmed;
+/**
+ * Giữ nguyên cấu hình Base URL từ môi trường, tuyệt đối không tự ý ghép thêm prefix `/api`.
+ */
+export function resolveApiBaseUrl(rawUrl?: string): string {
+  if (!rawUrl) return '';
+  return rawUrl.trim().replace(/\/+$/, '');
 }
 
-const PUBLIC_ENDPOINTS = [
-  '/auth/login',
-  '/auth/register',
-  '/auth/forgot-password',
-  '/auth/refresh',
-  '/health',
+const PUBLIC_ENDPOINTS: readonly string[] = [
+  CORE_CONSTANTS.API_ENDPOINTS.HEALTH,
+  CORE_CONSTANTS.API_ENDPOINTS.AUTH_LOGIN,
+  CORE_CONSTANTS.API_ENDPOINTS.AUTH_REGISTER,
+  CORE_CONSTANTS.API_ENDPOINTS.AUTH_REGISTER_SEND_OTP,
+  CORE_CONSTANTS.API_ENDPOINTS.AUTH_FORGOT_PASSWORD_SEND_OTP,
+  CORE_CONSTANTS.API_ENDPOINTS.AUTH_FORGOT_PASSWORD_VERIFY_OTP,
+  CORE_CONSTANTS.API_ENDPOINTS.AUTH_FORGOT_PASSWORD_RESET,
+  CORE_CONSTANTS.API_ENDPOINTS.AUTH_REFRESH,
 ];
 
-function isPublicEndpoint(url?: string): boolean {
+function normalizeRequestPath(url: string): string {
+  const withoutQuery = url.split('?')[0].split('#')[0];
+  if (withoutQuery.startsWith('http://') || withoutQuery.startsWith('https://')) {
+    try {
+      return new URL(withoutQuery).pathname.replace(/\/+$/, '') || '/';
+    } catch {
+      return withoutQuery;
+    }
+  }
+  const normalized = withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`;
+  return normalized.replace(/\/+$/, '') || '/';
+}
+
+export function isPublicEndpoint(url?: string): boolean {
   if (!url) return false;
-  return PUBLIC_ENDPOINTS.some((p) => url === p || url.includes(p));
+  const path = normalizeRequestPath(url);
+  return PUBLIC_ENDPOINTS.includes(path);
 }
 
 export function createApiClient(customBaseURL?: string): AxiosInstance {
@@ -143,7 +160,7 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
 
         try {
           const refreshResponse = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
-            `${baseURL}/auth/refresh`,
+            `${baseURL}${CORE_CONSTANTS.API_ENDPOINTS.AUTH_REFRESH}`,
             { refreshToken: currentRefreshToken },
             { headers: { 'Content-Type': 'application/json' }, withCredentials: true },
           );

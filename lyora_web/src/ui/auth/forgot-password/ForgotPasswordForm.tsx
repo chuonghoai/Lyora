@@ -36,8 +36,8 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ controll
 
       {controller.step === 'OTP' && (
         <form onSubmit={controller.handleVerifyOtp} noValidate className="space-y-5">
-          <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-sm text-[#1d4ed8]">
-            <p className="font-semibold">Xác thực mã OTP</p>
+          <div className="rounded-xl border border-info/25 bg-info/10 px-4 py-3 text-sm text-foreground">
+            <p className="font-semibold text-info">Xác thực mã OTP</p>
             <p className="mt-1">Mã 6 chữ số đã được gửi tới <strong>{controller.formData.email}</strong>.</p>
           </div>
 
@@ -54,7 +54,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ controll
             value={controller.formData.otp}
             onChange={controller.handleFieldChange}
             error={controller.validationErrors.otp}
-            className="text-center tracking-[0.4em] text-xl font-bold"
+            className="text-center tracking-[0.4em] text-xl font-bold tabular-nums"
             required
           />
 
@@ -63,11 +63,11 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ controll
               type="button"
               onClick={controller.handleResendOtp}
               disabled={controller.cooldown > 0 || controller.isLoading}
-              className="font-medium text-[#2563eb] underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-[#94a3b8] disabled:no-underline"
+              className="font-medium text-primary underline-offset-4 hover:text-primary-hover hover:underline disabled:cursor-not-allowed disabled:text-muted/60 disabled:no-underline cursor-pointer"
             >
               {controller.cooldown > 0 ? `Gửi lại sau ${controller.cooldown}s` : 'Gửi lại mã OTP'}
             </button>
-            <button type="button" onClick={controller.handleBackToEmail} className="text-[#64748b] underline-offset-4 hover:text-[#0f172a] hover:underline">
+            <button type="button" onClick={controller.handleBackToEmail} className="text-muted underline-offset-4 hover:text-foreground hover:underline cursor-pointer">
               Thay đổi email
             </button>
           </div>
@@ -80,8 +80,8 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ controll
 
       {controller.step === 'RESET' && (
         <form onSubmit={controller.handleResetPassword} noValidate className="space-y-5">
-          <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-sm text-[#1d4ed8]">
-            <p className="font-semibold">Thiết lập mật khẩu mới</p>
+          <div className="rounded-xl border border-info/25 bg-info/10 px-4 py-3 text-sm text-foreground">
+            <p className="font-semibold text-info">Thiết lập mật khẩu mới</p>
             <p className="mt-1">Đặt lại mật khẩu cho <strong>{controller.formData.email}</strong>.</p>
           </div>
 

@@ -34,7 +34,7 @@ export interface IAuthRepository {
 
 export class AuthRepository implements IAuthRepository {
   async login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponseDto>> {
-    return apiClient.post('/api/auth/login', credentials);
+    return apiClient.post('/auth/login', credentials);
   }
 }
 
@@ -89,4 +89,4 @@ export const authService = new AuthService();
 - **Base URL:** `/` (proxy chuyển tiếp tới `http://localhost:3000` qua cấu hình Vite `vite.config.ts`).
 - **Request Interceptor:** Tự động lấy Access Token từ `TokenStorage.getAccessToken()` và gán vào header `Authorization: Bearer <token>`.
 - **Response Interceptor:** Trích xuất `response.data`.
-- **401 Refresh Token Queue:** Khi nhận HTTP 401, tự động giữ các request đồng thời vào hàng đợi, gọi API `/api/auth/refresh-token`, cập nhật token mới và replay lại các request đang chờ một cách mượt mà mà không làm gián đoạn phiên người dùng.
+- **401 Refresh Token Queue:** Khi nhận HTTP 401, tự động giữ các request đồng thời vào hàng đợi, gọi API `/auth/refresh`, cập nhật token mới và replay lại các request đang chờ một cách mượt mà mà không làm gián đoạn phiên người dùng.
