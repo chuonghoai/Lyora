@@ -3,8 +3,11 @@
 Mọi thay đổi liên quan đến mã nguồn (code) đều phải tuân thủ nghiêm ngặt các quy định về kiến trúc (Architecture) của dự án Lyora Monorepo.
 
 ## Source of Truth (Nguồn chân lý)
-- **Unified Web Frontend (`lyora_web`)**: Mọi code frontend (bao gồm Client Portal `src/features/client`, Admin Portal `src/features/admin` và Shared `src/shared`) phải tuân thủ tài liệu trong `architecture_web/`.
-- **Shared Web Resources (`lyora_web/src/shared`)**: Mọi tài nguyên dùng chung giữa Client và Admin (components, hooks, utils, types, API client) bắt buộc đặt tại `lyora_web/src/shared/` (import qua `@shared`).
+- **Unified Web Frontend (`lyora_web`)**: Mọi code frontend phải tuân thủ tài liệu trong `architecture_web/`.
+  - `src/core/`: Hạ tầng dùng chung (HTTP API Client, Storage, Toast, WebSocket, UI primitives). Import qua `@core` hoặc `@/core`.
+  - `src/features/`: Data Layer độc lập, thuần TypeScript (Services, Repositories, TanStack Query Hooks, Models, Types). Import qua `@features` hoặc `@/features`.
+  - `src/ui/`: View Layer tổ chức thành đúng 3 module: `admin`, `auth`, `client`. View khởi tạo Controller 1 lần và truy cập trực tiếp qua object `controller.`.
+  - `src/routes/`: Quản lý định tuyến và route guards.
 - **Backend API (`lyora_backend`)**: Mọi code backend API phải tuân thủ tài liệu trong `architecture_backend/`.
 - **UI Design System**: Mọi thành phần giao diện phải tuân thủ token màu sắc và typography thống nhất trong `DESIGN.md`.
 - **Code Quality**: Bắt buộc sử dụng ESLint cho cả `lyora_web` và `lyora_backend`.

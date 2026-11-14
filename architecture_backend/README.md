@@ -10,16 +10,16 @@ Dựa trên kiến trúc chuẩn của NestJS, luồng hoạt động của mọ
 
 ```mermaid
 graph TD
-    Client["Client Request (lyora_client / lyora_admin)"] --> Middleware["Middleware / Helmet / CORS"]
+    Client["Client Request (lyora_web)"] --> Middleware["Middleware / Helmet / CORS"]
     Middleware --> Guard["Guards (JwtAuthGuard / RolesGuard)"]
     Guard --> InterceptorPre["Interceptors (Pre-controller: Logging)"]
     InterceptorPre --> Pipe["Pipes (ValidationPipe)"]
     Pipe --> Controller["NestJS Controller (@Controller)"]
     Controller --> Service["Business Service (@Injectable)"]
-    Service --> DAL["Data Access Layer (TypeORM / Prisma Repository)"]
-    DAL --> Database[("Database (PostgreSQL / MySQL)")]
-    Service --> Redis[("Redis (Cache / Session / Blacklist)")]
-    Service -.-> External["External Services (Mail / Push Notification)"]
+    Service --> DAL["Data Access Layer (TypeORM Repository / Entities)"]
+    DAL --> Database[("Database (PostgreSQL)")]
+    Service --> Redis[("Redis (Token / Cache / Fallback In-Memory)")]
+    Service -.-> External["External Services"]
     Service --> InterceptorPost["Interceptors (Post-controller: TransformResponse)"]
     InterceptorPost --> Client
     Service -.-> ExceptionFilter["Exception Filters (HttpExceptionFilter)"]
@@ -30,10 +30,10 @@ graph TD
 
 ## 2. Ranh giới kiến trúc Monorepo & Bảo mật Secrets
 
-- **Độc lập tuyệt đối:** `lyora_backend` là một workspace backend độc lập. Không phụ thuộc vào source code của `lyora_client` hay `lyora_admin`.
-- **Không chia sẻ Secrets với `lyora_web_shared`:**
+- **Độc lập tuyệt đối:** `lyora_backend` là một workspace backend độc lập. Không phụ thuộc vào source code của `lyora_web`.
+- **Không chia sẻ Secrets với Frontend:**
   - Toàn bộ thông tin nhạy cảm (Database URL, Database Password, JWT Secret, Redis URL, API Keys bên thứ ba) **BẮT BUỘC** được lưu trữ trong file `.env` nội bộ của `lyora_backend` và nạp qua `ConfigService`.
-  - **TUYỆT ĐỐI KHÔNG** chia sẻ các secrets này sang `lyora_web_shared` hoặc bất kỳ nơi nào có thể bị đóng gói vào bundle của trình duyệt.
+  - **TUYỆT ĐỐI KHÔNG** chia sẻ các secrets này sang `lyora_web` hoặc bất kỳ nơi nào có thể bị đóng gói vào bundle của trình duyệt.
 - **Loại bỏ i18n:** Backend trả về các mã lỗi chuẩn (`statusCode`, `error`, `message`) bằng tiếng Việt thống nhất; không duy trì hệ thống đa ngôn ngữ `nestjs-i18n`.
 
 ---

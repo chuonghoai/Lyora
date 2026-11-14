@@ -7,44 +7,43 @@ description: >-
 
 # lya-newFeature
 
-Mục đích: Tiếp nhận mô tả chức năng mới và xây dựng Implementation Plan trước khi triển khai trong dự án Lyora Monorepo (`lyora_backend`, `lyora_client`, `lyora_admin`, `web_shared`).
+Mục đích: Tiếp nhận mô tả chức năng mới và xây dựng Implementation Plan trước khi triển khai trong dự án Lyora Monorepo (`lyora_backend` và `lyora_web`).
 
 ## Dependencies (Quy tắc phải tuân thủ)
 - [Shared Workflow](../../rules/shared-workflow.md)
 - [Shared Architecture Rules](../../rules/shared-architecture-rules.md)
 - [Shared UI & Content Consistency Rules](../../rules/shared-ui-l10n-rules.md)
 - [Design Taste Skill](../design-taste-frontend/SKILL.md) (Bắt buộc đọc và áp dụng nếu tính năng có giao diện Web UI)
-- Khuyến nghị tham khảo: `web_architecture/architecture/push_notification_rules.md` (nếu liên quan đến Notification).
 
 ## Quy trình thực hiện (Workflow)
 
 ### Step 1 — Understand requirement
 Đọc và phân tích toàn bộ mô tả chức năng user cung cấp.
 Xác định:
-- Mục tiêu, Actor (Khách hàng trên `lyora_client` hay Quản trị viên trên `lyora_admin`)
+- Mục tiêu, Actor (Khách hàng trên Cổng Client hay Quản trị viên trên Cổng Admin)
 - User flow, Business flow
-- Input / Output, Data schemas (Zod)
+- Input / Output, Data schemas (Zod trong Frontend, class-validator DTO trong Backend)
 - API cần sử dụng/tạo mới trong `lyora_backend` (REST Endpoints / WebSocket events)
-- Database (Entity, Migration), Web UI (theo `DESIGN.md`), State management (TanStack Query / Zustand).
-- Tái sử dụng: Kiểm tra `@lyora/web-shared` xem đã có components, hooks hoặc API utils liên quan chưa.
+- Database (TypeORM Entity, Schema), Web UI (theo `DESIGN.md`), State management (TanStack Query trong Data Layer / Zustand trong Core).
+- Tái sử dụng: Kiểm tra `lyora_web/src/core` (`@core`) xem đã có components, hooks hoặc API utils liên quan chưa.
 - Validation, Error handling, Permission (Guards), Edge cases.
 
-### Step 2 — Inspect existing code & shared resources
-Tìm các feature/module có liên quan trong `lyora_client/src/`, `lyora_admin/src/`, `lyora_backend/src/` và `web_shared/src/`.
-**Ràng buộc:** Không được tạo component trùng lặp nếu `@lyora/web-shared` đã cung cấp.
+### Step 2 — Inspect existing code & core resources
+Tìm các feature/module có liên quan trong `lyora_backend/src/` và `lyora_web/src/` (`core`, `features`, `ui`).
+**Ràng buộc:** Không được tạo component trùng lặp nếu `@core` đã cung cấp.
 
 ### Step 3 — Inspect architecture
-Đọc các architecture document liên quan: `web_architecture/` và `backend_architecture/`.
+Đọc các architecture document liên quan: `architecture_web/` và `architecture_backend/`.
 
 ### Step 4 — Inspect Git history
 Kiểm tra các commit gần đây liên quan đến module/feature tương tự.
 
 ### Step 5 — Create Implementation Plan
 Tạo Implementation Plan chỉ rõ:
-- File cần tạo, file cần sửa (phân chia rõ `lyora_backend`, `lyora_client`, `lyora_admin`, `web_shared`).
+- File cần tạo, file cần sửa (phân chia rõ `lyora_backend` và các layer của `lyora_web`: `core`, `features`, `ui`, `routes`).
 - Component, Custom Hook, API Service, Model/DTO/Entity cần thêm/sửa.
-- Flow dữ liệu, Architecture layer bị ảnh hưởng.
-- **Phân tích Routing (Frontend):** Khi tạo màn hình mới, tuân thủ React Router trong dự án đích (`src/routes/paths.ts`, `AppRoutes.tsx`, Page component).
+- Flow dữ liệu, Architecture layer bị ảnh hưởng (View -> Controller -> Query Hook -> Service -> Repository -> Core API Client -> Backend).
+- **Phân tích Routing (Frontend):** Khi tạo màn hình mới, tuân thủ React Router trong `src/routes/paths.ts` và `AppRoutes.tsx`.
 - **Phân tích Web UI:** MUST tuân thủ tokens thống nhất từ `DESIGN.md`. Nếu tính năng có tạo mới UI, MUST áp dụng [design-taste-frontend](../design-taste-frontend/SKILL.md): đưa ra 1 dòng "Design Read", xác lập The Three Dials (`DESIGN_VARIANCE`, `MOTION_INTENSITY`, `VISUAL_DENSITY`), và tuân thủ Anti-Default Discipline.
 - **Văn bản hiển thị:** Sử dụng tiếng Việt rõ ràng, mạch lạc, trực tiếp (không sử dụng i18n).
 - **ESLint & Testing:** Đảm bảo code mới vượt qua ESLint (`npm run lint`), build (`npm run build`) và test.

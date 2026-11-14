@@ -7,7 +7,7 @@ description: >-
 
 # lya-fixbug
 
-Mục đích: Phân tích bug và tạo Implementation Plan để sửa bug trong dự án Lyora Monorepo (`lyora_backend`, `lyora_client`, `lyora_admin`, `web_shared`).
+Mục đích: Phân tích bug và tạo Implementation Plan để sửa bug trong dự án Lyora Monorepo (`lyora_backend` và `lyora_web`).
 
 ## Dependencies
 - [Shared Workflow](../../rules/shared-workflow.md)
@@ -20,12 +20,12 @@ Mục đích: Phân tích bug và tạo Implementation Plan để sửa bug tron
 Đọc kỹ bug description. Xác định:
 - Expected behavior vs Actual behavior
 - Reproduction condition
-- Affected workspace: `lyora_client`, `lyora_admin`, `lyora_backend`, hay `web_shared`
+- Affected workspace: `lyora_backend` hoặc `lyora_web` (phân lớp: `core`, `features`, `ui`, `routes`)
 - Severity
 
 ### Step 2 — Trace
 Tìm tất cả code liên quan. KHÔNG chỉ tìm file có tên giống bug.
-Phải trace toàn bộ flow: `UI Component (Client/Admin) -> Custom Hook -> Shared Component/apiClient (@lyora/web-shared) -> NestJS Controller -> NestJS Service -> Repository / Database` (khi phù hợp).
+Phải trace toàn bộ flow: `UI View (*View.tsx) -> UI Controller (*.controller.ts) -> Query Hook (*.query.ts) -> Feature Service -> Feature Repository -> Core apiClient -> NestJS Controller -> NestJS Service -> Repository / Database` (khi phù hợp).
 
 ### Step 3 — Inspect Git history
 Kiểm tra commit gần nhất, commit thay đổi behavior, commit liên quan feature, commit fix bug tương tự.
@@ -39,7 +39,6 @@ Plan phải bao gồm:
 - Affected files & Affected flow
 - Proposed fix
 - Nếu fix có thay đổi UI/Text: MUST đảm bảo tuân thủ tokens thống nhất từ `DESIGN.md` và tiếng Việt chuẩn mực theo `shared-ui-l10n-rules.md`. Áp dụng các nguyên tắc từ [design-taste-frontend](../design-taste-frontend/SKILL.md) trong phạm vi cục bộ của bug; **TUYỆT ĐỐI KHÔNG** tự ý redesign toàn bộ màn hình hoặc mở rộng phạm vi ngoài yêu cầu sửa lỗi.
-- Nếu fix liên quan đến Shared Resources: Kiểm tra xem thay đổi trong `web_shared` có gây ảnh hưởng (side effects) đến dự án frontend còn lại hay không.
 - Side effects & Regression risks
 - Test cases cần kiểm tra
 

@@ -20,8 +20,12 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@shared": ["./src/shared/index.ts"],
-      "@shared/*": ["./src/shared/*"]
+      "@core": ["./src/core/index.ts"],
+      "@core/*": ["./src/core/*"],
+      "@features": ["./src/features/index.ts"],
+      "@features/*": ["./src/features/*"],
+      "@ui": ["./src/ui/index.ts"],
+      "@ui/*": ["./src/ui/*"]
     },
 
     /* Linting */

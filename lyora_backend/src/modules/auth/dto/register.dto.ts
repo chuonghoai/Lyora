@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @IsNotEmpty({ message: 'Email không được để trống' })
@@ -13,4 +19,8 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'Họ và tên không được để trống' })
   @IsString({ message: 'Họ và tên phải là chuỗi ký tự' })
   fullName: string;
+
+  @IsNotEmpty({ message: 'Mã OTP không được để trống' })
+  @Matches(/^\d{6}$/, { message: 'Mã OTP phải bao gồm đúng 6 chữ số' })
+  otp: string;
 }

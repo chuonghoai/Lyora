@@ -6,7 +6,7 @@ description: >-
 
 # lya-reviewPR
 
-Mục đích: Workflow tổng hợp và là Skill quan trọng nhất để quản lý vòng đời Pull Request (PR) trong dự án Lyora Monorepo (`lyora_backend`, `lyora_client`, `lyora_admin`, `web_shared`).
+Mục đích: Workflow tổng hợp và là Skill quan trọng nhất để quản lý vòng đời Pull Request (PR) trong dự án Lyora Monorepo (`lyora_backend` và `lyora_web`).
 
 ## Dependencies
 - [lya-review-code](../lya-review-code/SKILL.md)
@@ -18,28 +18,28 @@ Mục đích: Workflow tổng hợp và là Skill quan trọng nhất để qu�
 ## Quy trình thực hiện (Workflow)
 
 ### Step 1 — Branch comparison
-So sánh branch được chỉ định với `dev`. Xác định commits, files, additions, modifications, deletions theo từng workspace (`lyora_backend`, `lyora_client`, `lyora_admin`, `web_shared`).
+So sánh branch được chỉ định với `dev`. Xác định commits, files, additions, modifications, deletions theo từng workspace (`lyora_backend`, `lyora_web`).
 
 ### Step 2 — Understand implementation
 Đọc code của branch để hiểu toàn bộ chức năng và luồng dữ liệu.
 
 ### Step 3 — Thực hiện `lya-review-code`
-Đánh giá Functional, Architecture, Code Quality, Design, việc sử dụng `web_shared` và ESLint.
+Đánh giá Functional, Architecture, Code Quality, Design, việc sử dụng `@core` và ESLint.
 
 ### Step 4 — Thực hiện `lya-reviewSecurityPerformance`
-Đánh giá Security và Performance. Đảm bảo tuyệt đối không rò rỉ secrets backend vào `web_shared` hay frontend.
+Đánh giá Security và Performance. Đảm bảo tuyệt đối không rò rỉ secrets backend vào frontend.
 
 ### Step 5 — Audit Report
 Tạo PR Audit Report với format sau:
 ```markdown
 # PR Audit Report
 ## 1. Branch Information
-## 2. Scope of Changes (lyora_backend, lyora_client, lyora_admin, web_shared)
+## 2. Scope of Changes (lyora_backend, lyora_web: core, features, ui, routes)
 ## 3. Functional Assessment
-## 4. Architecture Assessment (Shared resources usage)
+## 4. Architecture Assessment (Layer separation, Core usage, View-Controller)
 ## 5. Design Assessment (DESIGN.md tokens, unified theme)
 ## 6. Security Assessment (Backend secrets protection)
-## 7. Performance Assessment
+## 7. Performance Assessment (Cache staleTime/gcTime, query invalidation)
 ## 8. Code Quality Assessment (ESLint compliance)
 ## 9. Issues (Severity, File, Location, Problem, Why it matters, Recommendation)
 ## 10. Risk Assessment

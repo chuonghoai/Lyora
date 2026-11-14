@@ -1,15 +1,24 @@
 import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { ClientLayout } from '@/layouts/ClientLayout';
-import { AdminLayout } from '@/layouts/AdminLayout';
-import { LoadingSpinner } from '@shared';
+import { ClientLayout } from '@/ui/client/ClientLayout';
+import { AdminLayout } from '@/ui/admin/AdminLayout';
+import { RoleRoute, GuestRoute, LoadingSpinner } from '@/core';
 import { ROUTES } from './paths';
 
-const ClientHomePage = lazy(
-  () => import('@/features/client/pages/ClientHomePage'),
+const ClientHomeView = lazy(
+  () => import('@/ui/client/home/HomeView'),
 );
-const AdminDashboardPage = lazy(
-  () => import('@/features/admin/pages/AdminDashboardPage'),
+const AdminDashboardView = lazy(
+  () => import('@/ui/admin/dashboard/DashboardView'),
+);
+const LoginView = lazy(
+  () => import('@/ui/auth/login/LoginView'),
+);
+const RegisterView = lazy(
+  () => import('@/ui/auth/register/RegisterView'),
+);
+const ForgotPasswordView = lazy(
+  () => import('@/ui/auth/forgot-password/ForgotPasswordView'),
 );
 
 const PageLoader: React.FC = () => (
@@ -20,6 +29,48 @@ const PageLoader: React.FC = () => (
 
 export const router = createBrowserRouter([
   {
+    path: ROUTES.AUTH.LOGIN,
+    element: <GuestRoute />,
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <LoginView />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  {
+    path: ROUTES.AUTH.REGISTER,
+    element: <GuestRoute />,
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RegisterView />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  {
+    path: ROUTES.AUTH.FORGOT_PASSWORD,
+    element: <GuestRoute />,
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ForgotPasswordView />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  {
     path: ROUTES.CLIENT.ROOT,
     element: <ClientLayout />,
     children: [
@@ -27,7 +78,7 @@ export const router = createBrowserRouter([
         index: true,
         element: (
           <Suspense fallback={<PageLoader />}>
-            <ClientHomePage />
+            <ClientHomeView />
           </Suspense>
         ),
       },
@@ -35,15 +86,20 @@ export const router = createBrowserRouter([
   },
   {
     path: ROUTES.ADMIN.ROOT,
-    element: <AdminLayout />,
+    element: <RoleRoute allowedRoles={['ADMIN', 'STAFF']} requireAuth={true} />,
     children: [
       {
-        index: true,
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <AdminDashboardPage />
-          </Suspense>
-        ),
+        element: <AdminLayout />,
+        children: [
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <AdminDashboardView />
+              </Suspense>
+            ),
+          },
+        ],
       },
     ],
   },
