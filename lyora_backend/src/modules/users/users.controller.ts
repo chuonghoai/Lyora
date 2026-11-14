@@ -25,6 +25,13 @@ export class UsersController {
     return this.usersService.findAllPaginated(query);
   }
 
+  @Get('statistics')
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
+  @ResponseMessage('Lấy dữ liệu thống kê người dùng thành công')
+  async getStatistics() {
+    return this.usersService.getStatistics();
+  }
+
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.STAFF)
   @ResponseMessage('Lấy thông tin người dùng thành công')

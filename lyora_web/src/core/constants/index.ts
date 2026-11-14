@@ -21,6 +21,7 @@ export const CORE_CONSTANTS = {
     AUTH_LOGOUT: '/auth/logout',
     AUTH_ME: '/auth/me',
     USERS: '/users',
+    USERS_STATISTICS: '/users/statistics',
   },
 } as const;
 

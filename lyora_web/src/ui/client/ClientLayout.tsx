@@ -1,10 +1,14 @@
 import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Navigate, Outlet } from 'react-router-dom';
 import { ROUTES } from '@/routes/paths';
 import { useClientLayoutController } from './client-layout.controller';
 
 export const ClientLayout: React.FC = () => {
   const controller = useClientLayoutController();
+
+  if (controller.user?.role === 'ADMIN') {
+    return <Navigate to={ROUTES.ADMIN.DASHBOARD} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#334155]">
@@ -37,15 +41,6 @@ export const ClientLayout: React.FC = () => {
             >
               Trang chủ Client
             </Link>
-
-            {controller.user?.role === 'ADMIN' && (
-              <Link
-                to={ROUTES.ADMIN.DASHBOARD}
-                className="px-3.5 py-2 rounded-lg text-sm font-medium border border-[#cbd5e1] text-[#334155] bg-white hover:bg-[#f8fafc] transition-colors duration-150"
-              >
-                Cổng Quản Trị →
-              </Link>
-            )}
 
             {controller.isAuthenticated ? (
               <div className="flex items-center gap-3 pl-2 border-l border-[#e2e8f0]">
