@@ -1,13 +1,13 @@
 ---
 name: lya-review-code
 description: >-
-  Review branch hiện tại so với branch dev. 
+  Review branch hiện tại so với branch main. 
   Đánh giá functional, architecture, code quality, và design trong Lyora Monorepo.
 ---
 
 # lya-review-code
 
-Mục đích: Review branch hiện tại so với `dev` trong dự án Lyora Monorepo (`lyora_backend` và `lyora_web`).
+Mục đích: Review branch hiện tại so với `main` trong dự án Lyora Monorepo (`lyora_backend` và `lyora_web`).
 
 ## Dependencies
 - [Shared Architecture Rules](../../rules/shared-architecture-rules.md)
@@ -19,10 +19,10 @@ Mục đích: Review branch hiện tại so với `dev` trong dự án Lyora Mon
 
 ### Step 1 — Xác định branch
 - Current branch
-- Target branch = `dev`
+- Target branch = `main` (hoặc `origin/main`)
 
 ### Step 2 — Compare
-So sánh branch hiện tại với `dev`. Xác định chính xác files added, modified, deleted giữa các workspace (`lyora_backend`, `lyora_web`).
+So sánh branch hiện tại với `main` (hoặc `origin/main`). Xác định chính xác files added, modified, deleted giữa các workspace (`lyora_backend`, `lyora_web`).
 
 ### Step 3 — Understand implementation
 Đọc implementation của branch hiện tại để hiểu: chức năng, business flow, data flow, architecture, dependency chéo.

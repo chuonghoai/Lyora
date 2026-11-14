@@ -18,7 +18,7 @@ Mục đích: Workflow tổng hợp và là Skill quan trọng nhất để qu�
 ## Quy trình thực hiện (Workflow)
 
 ### Step 1 — Branch comparison
-So sánh branch được chỉ định với `dev`. Xác định commits, files, additions, modifications, deletions theo từng workspace (`lyora_backend`, `lyora_web`).
+So sánh branch được chỉ định với `main` (hoặc `origin/main`). Xác định commits, files, additions, modifications, deletions theo từng workspace (`lyora_backend`, `lyora_web`).
 
 ### Step 2 — Understand implementation
 Đọc code của branch để hiểu toàn bộ chức năng và luồng dữ liệu.
@@ -53,9 +53,9 @@ Phải dừng và chờ user xác nhận. Chỉ khi user explicitly accept/appro
 
 ### Step 7 — Merge và Cleanup
 Sau khi user xác nhận merge:
-1. Merge branch vào `dev`.
+1. Merge branch vào `main`.
 2. Kiểm tra merge thành công.
 3. Xác nhận working tree.
-4. Xóa branch local và remote.
-5. Checkout và pull `dev`.
+4. Xóa branch local và remote (nếu là feature branch riêng).
+5. Checkout và pull `main` (`git checkout main && git pull origin main`).
 6. Clean workspace.

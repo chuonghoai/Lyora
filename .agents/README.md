@@ -52,7 +52,7 @@ Mọi thay đổi do AI Agent thực hiện phải tuân thủ các tài liệu 
     ├── lya-newFeature/                     # Phân tích yêu cầu và lập kế hoạch tính năng mới
     ├── lya-newTesting/                     # Quy chuẩn viết Integration Test Backend (Jest runner)
     ├── lya-newWeeklyReport/                # Tự động hóa audit codebase & lập 4 file báo cáo tiến độ tuần
-    ├── lya-review-code/                    # Review code branch hiện tại so với dev
+    ├── lya-review-code/                    # Review code branch hiện tại so với main
     ├── lya-reviewPR/                       # Tổng hợp: Review toàn diện và Merge PR
     └── lya-reviewSecurityPerformance/      # Đánh giá an toàn, bảo mật và hiệu năng
 ```
@@ -66,10 +66,10 @@ Mọi thay đổi do AI Agent thực hiện phải tuân thủ các tài liệu 
 | `/lya-newFeature` | Phân tích và lập kế hoạch tính năng mới (`lyora_web` / `lyora_backend`) | Mô tả tính năng | Có (khi user cho phép) | Không | **Có** (cho Implementation Plan) |
 | `/lya-fixbug` | Phân tích root cause và lập kế hoạch sửa bug | Mô tả lỗi | Có (khi user cho phép) | Không | **Có** (cho Implementation Plan) |
 | `/lya-analyzeTask` | Phân tích scope, rủi ro và tác động kiến trúc | Mô tả task | Không | Không | Không |
-| `/lya-review-code` | Review branch hiện tại so với `dev` (Functional, Arch, Quality, Design) | Branch name / Không | Không | Không | Không |
-| `/lya-reviewPR` | **Tổng hợp:** Review toàn diện và Merge PR | Branch name | Không | Có (merge, xóa branch) | **CÓ** (trước khi Merge) |
-| `/lya-reviewSecurityPerformance` | Đánh giá an toàn, bảo mật và hiệu năng | Branch name | Không | Không | Không |
-| `/lya-createPR` | Push code và tạo Pull Request lên remote | Không | Không | Có (push) | Không (chỉ tạo PR) |
+| `/lya-review-code` | Review branch hiện tại so với `main` (Functional, Arch, Quality, Design) | Branch name / Không | Không | Không | Không |
+| `/lya-reviewPR` | **Tổng hợp:** Review toàn diện và Merge PR vào `main` | Branch name | Không | Có (merge, xóa branch) | **CÓ** (trước khi Merge) |
+| `/lya-reviewSecurityPerformance` | Đánh giá an toàn, bảo mật và hiệu năng so với `main` | Branch name | Không | Không | Không |
+| `/lya-createPR` | Push code và tạo Pull Request vào `main` | Không | Không | Có (push) | Không (chỉ tạo PR) |
 | `/lya-createSeedDB` | Audit Database Entities & tạo/cập nhật seed files trong `seed/` | Không / Option | Có (tạo/sửa seed files) | Không | **Có** (Interactive Process) |
 | `/lya-insertSeedDB` | Reset CSDL và chèn toàn bộ dữ liệu mẫu (Seed Data) | Không | Có (can thiệp DB) | Không | **Có** (Xác nhận an toàn) |
 | `/lya-createTestCase` | Đọc code thực tế để tạo Test Cases | Không / Mô tả | Không | Không | Không |

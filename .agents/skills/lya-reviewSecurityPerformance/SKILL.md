@@ -1,12 +1,12 @@
 ---
 name: lya-reviewSecurityPerformance
 description: >-
-  Review security, safety, performance và quality của branch được chỉ định so với dev trong Lyora Monorepo.
+  Review security, safety, performance và quality của branch được chỉ định so với main trong Lyora Monorepo.
 ---
 
 # lya-reviewSecurityPerformance
 
-Mục đích: Review security, safety, performance và quality của branch được chỉ định so với `dev` trong dự án Lyora Monorepo (`lyora_backend` và `lyora_web`).
+Mục đích: Review security, safety, performance và quality của branch được chỉ định so với `main` trong dự án Lyora Monorepo (`lyora_backend` và `lyora_web`).
 
 ## Dependencies
 - [Shared Architecture Rules](../../rules/shared-architecture-rules.md)
@@ -15,7 +15,7 @@ Mục đích: Review security, safety, performance và quality của branch đư
 ## Quy trình thực hiện (Workflow)
 
 ### Step 1 — Compare
-So sánh target branch vs `dev`. Xác định toàn bộ code thay đổi giữa các workspace.
+So sánh target branch vs `main` (hoặc `origin/main`). Xác định toàn bộ code thay đổi giữa các workspace.
 
 ### Step 2 — Security Review
 Kiểm tra các khía cạnh:
