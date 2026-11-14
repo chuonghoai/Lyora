@@ -65,4 +65,3 @@ describe('UsersService - Statistics & Retrieval', () => {
     expect(stats.recentUsers).toEqual(mockRecentUsers);
   });
 });
-

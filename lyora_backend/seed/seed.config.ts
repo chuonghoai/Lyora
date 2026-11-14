@@ -1,6 +1,10 @@
-import 'dotenv/config';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 import { DataSource } from 'typeorm';
+import { parsePostgresConnectionConfig } from '../src/database/postgres-connection.util';
 import { User } from '../src/modules/users/entities/user.entity';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 /**
  * Danh sách toàn bộ các Entity trong hệ sinh thái Lyora Backend
@@ -42,16 +46,25 @@ export function assertSafeEnvironment(): void {
 /**
  * Khởi tạo TypeORM DataSource dành riêng cho Seed & Script runner
  */
-export function createSeedDataSource(): DataSource {
-  const dbUrl =
+export function createSeedDataSource(options?: {
+  synchronize?: boolean;
+}): DataSource {
+  const rawUrl =
     process.env.DATABASE_URL ??
     'postgresql://postgres:postgres@localhost:5432/lyora_db';
+  const { url, ssl } = parsePostgresConnectionConfig(rawUrl);
+  const nodeEnv = (process.env.NODE_ENV ?? 'development').toLowerCase();
+  const isDevEnv = nodeEnv === 'dev' || nodeEnv === 'development';
 
   return new DataSource({
     type: 'postgres',
-    url: dbUrl,
+    url,
+    ssl,
     entities: SEED_ENTITIES,
-    synchronize: false,
+    synchronize: options?.synchronize ?? isDevEnv,
     logging: false,
+    extra: {
+      connectionTimeoutMillis: 20000,
+    },
   });
 }

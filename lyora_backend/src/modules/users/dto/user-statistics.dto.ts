@@ -11,4 +11,3 @@ export class UserStatisticsDto {
   newUsersThisMonth: number;
   recentUsers: User[];
 }
-
