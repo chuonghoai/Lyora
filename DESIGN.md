@@ -1,32 +1,36 @@
 ---
 name: Lyora Design System
-description: Hệ thống thiết kế chuẩn mực cho hệ sinh thái Cyber Keys & Software của Lyora
+description: Hệ thống thiết kế chuẩn mực cho nền tảng Cộng Đồng Số — Tương tác bài viết, Nhắn tin & Chia sẻ Lyora (Coral & Warm Neutral, Violet & Lavender cho AI)
 colors:
-  primary: "#2563eb"
-  primary-hover: "#1d4ed8"
-  primary-shadow: "rgba(37, 99, 235, 0.3)"
-  accent: "#aa3bff"
-  accent-dark: "#c084fc"
-  accent-bg: "rgba(170, 59, 255, 0.1)"
-  accent-border: "rgba(170, 59, 255, 0.5)"
-  background: "#ffffff"
-  background-subtle: "#f8fafc"
-  surface: "#ffffff"
-  surface-gradient-from: "#f8fafc"
-  surface-gradient-to: "#e2e8f0"
-  glow-blue: "rgba(96, 165, 250, 0.2)"
-  glow-indigo: "rgba(99, 102, 241, 0.15)"
-  text-primary: "#0f172a"
-  text-body: "#334155"
-  text-body-alt: "#475569"
-  text-muted: "#64748b"
-  text-placeholder: "#94a3b8"
-  text-dark-h: "#f3f4f6"
-  text-dark-body: "#9ca3af"
-  border: "#cbd5e1"
-  border-checkbox: "#d1d5db"
-  border-subtle: "#e5e4e7"
-  border-subtle-dark: "#2e303a"
+  color-primary: "#E96862"
+  color-primary-hover: "#D95652"
+  color-primary-active: "#C94845"
+  color-secondary: "#FF9B85"
+  color-accent: "#FFC2AD"
+  color-accent-soft: "#FFF0E9"
+  color-background: "#FAF8F7"
+  color-surface: "#FFFFFF"
+  color-surface-secondary: "#FFF5F1"
+  color-surface-tertiary: "#F3EFED"
+  color-surface-hover: "#F8EFEC"
+  color-text-primary: "#292321"
+  color-text-secondary: "#766B67"
+  color-text-tertiary: "#A49A95"
+  color-text-disabled: "#C7BFBB"
+  color-text-inverse: "#FFFFFF"
+  color-border: "#EEE5E1"
+  color-border-strong: "#DED2CC"
+  color-border-focus: "#E96862"
+  color-success: "#16834A"
+  color-warning: "#B7791F"
+  color-error: "#D14343"
+  color-info: "#3478D4"
+  color-ai-primary: "#7656D6"
+  color-ai-secondary: "#9A7AE8"
+  color-ai-accent: "#C5B3FA"
+  color-ai-background: "#F2EDFF"
+  color-ai-text: "#5538A6"
+  color-ai-border: "#DED3FA"
 typography:
   display:
     fontFamily: "system-ui, 'Segoe UI', Roboto, sans-serif"
@@ -72,174 +76,322 @@ spacing:
   2xl: "32px"
 components:
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "#ffffff"
+    backgroundColor: "{colors.color-primary}"
+    textColor: "{colors.color-text-inverse}"
     rounded: "{rounded.md}"
     padding: "10px 16px"
   button-primary-hover:
-    backgroundColor: "{colors.primary-hover}"
+    backgroundColor: "{colors.color-primary-hover}"
+  button-primary-active:
+    backgroundColor: "{colors.color-primary-active}"
   card-container:
-    backgroundColor: "{colors.surface}"
+    backgroundColor: "{colors.color-surface}"
+    borderColor: "{colors.color-border}"
     rounded: "{rounded.lg}"
     padding: "24px 32px"
   input-field:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text-primary}"
+    backgroundColor: "{colors.color-surface}"
+    textColor: "{colors.color-text-primary}"
+    borderColor: "{colors.color-border-strong}"
+    focusBorderColor: "{colors.color-border-focus}"
     rounded: "{rounded.md}"
     padding: "8px 12px"
 ---
 
 # Design System: Lyora
 
-## Overview
+## 1. Overview
 
-**Creative North Star: "Cyber Precision & Ambient Clarity"**
+**Định hướng nhận diện:** *Coral & Warm Neutral — Balanced, Modern, Friendly*
 
-Hệ thống thiết kế Lyora kiến tạo một diện mạo công nghệ hiện đại, tinh gọn và chuẩn xác cho nền tảng thương mại điện tử giải pháp phần mềm và Cyber Keys. Lấy cảm hứng từ sự sắc sảo của các công cụ kỹ thuật số hàng đầu thế giới, giao diện tôn vinh tính minh bạch, tương phản cao, và khả năng điều hướng thông tin mượt mà.
+Hệ thống thiết kế Lyora định hình diện mạo ấm áp, hiện đại, thân thiện và cân bằng cho nền tảng **Cộng đồng số — Tương tác bài viết, Nhắn tin & Chia sẻ thời gian thực** (hoàn toàn phi thương mại). Toàn bộ nguồn chân lý về bảng màu và Design Tokens được đồng bộ trực tiếp từ [`design_new.css`](./design_new.css).
 
-Màu xanh **Primary Blue (`#2563eb`)** đóng vai trò ngọn hải đăng cho mọi tương tác chính, tương phản tự nhiên trên nền sáng tinh khiết (`#ffffff` và `#f8fafc`). Hiệu ứng bóng phát quang có màu sắc thương hiệu (`blue-500/30`) cùng các điểm nhấn tím công nghệ (`#aa3bff`) đem đến nét cá tính công nghệ mà vẫn duy trì sự nhã nhặn, sang trọng.
+- **Brand Style:** **Coral & Warm Neutral** — sắc san hô ấm (`#E96862`) đóng vai trò điểm nhấn thương hiệu trên nền trung tính ấm dịu mắt (`#FAF8F7`, `#FFFFFF`), mang lại cảm giác gần gũi cho tương tác xã hội dài lâu.
+- **UI Mode:** **Light Mode** thống nhất (Unified Theme) trên toàn bộ nền tảng; không triển khai chuyển đổi Dark Mode.
+- **Design Personality:** **Balanced, Modern, Friendly** — phân cấp rõ ràng, khoảng thở hợp lý, dễ đọc và không phô trương.
+- **AI Identity:** **Violet & Lavender** — dải màu tím (`#7656D6`, `#F2EDFF`) được tách biệt hoàn toàn để nhận diện các tính năng AI Assistant và nội dung do AI hỗ trợ.
 
-Dự án tuân thủ nghiêm ngặt nguyên tắc **Giao diện trực quan thống nhất (Unified Theme)** theo tiêu chuẩn Light mode chủ đạo; toàn bộ kiểu chữ và thành phần giao diện hướng đến sự nhanh nhạy, êm ái với trải nghiệm người dùng Việt Nam.
+---
 
-**Key Characteristics:**
-- **Nhận diện sắc sảo:** Sắc xanh công nghệ `#2563eb` kết hợp ánh phát quang nhẹ nhàng (tinted glow) khẳng định uy tín và chuyên môn kỹ thuật.
-- **Tối ưu hiệu năng bản địa (Zero-Cost System Fonts):** Tận dụng tối đa bộ font hệ điều hành (`system-ui`) giúp tải trang tức thời, sắc nét hoàn hảo trên mọi độ phân giải.
-- **Phân tầng bo góc chặt chẽ:** 4px (phần tử vi mô), 8px (controls/buttons), 16px (thẻ chứa/containers).
-- **Kỷ luật chống AI-Slop (Anti-Default Discipline):** Loại bỏ triệt để các dải gradient tím rập khuôn AI, bố cục 3 thẻ vô hồn và lạm dụng kính mờ (glassmorphism).
+## 2. Design Principles
 
-## Colors
+1. **Consistency (Tính nhất quán):** Đồng nhất giao diện, tokens và hành vi thành phần trên toàn bộ nền tảng Lyora (Cổng Người Dùng, Trung Tâm Quản Trị và Phân Hệ Xác Thực).
+2. **Visual Hierarchy (Phân cấp thị giác):** Tạo tầng bậc rõ ràng giữa nền ứng dụng (`--color-background`), bề mặt thẻ (`--color-surface`), văn bản chính/phụ và nút hành động trọng tâm.
+3. **Readability (Khả năng đọc):** Ưu tiên độ rõ nét và sự thoải mái khi đọc bài viết, bình luận và hội thoại dài trên nền trung tính ấm với chữ chính tương phản cao (`--color-text-primary`).
+4. **Color Restraint (Tiết chế màu sắc):** Sử dụng màu sắc có kiểm soát; không lạm dụng màu Primary (`--color-primary`) cho các icon, viền hay thành phần phụ trợ không cần nhấn mạnh.
+5. **Brand Recognition (Nhận diện thương hiệu):** Giữ sắc Coral (`--color-primary`) làm dấu ấn nhận diện thương hiệu xuyên suốt cho các điểm chạm chính.
+6. **Functional Distinction (Phân biệt chức năng):** Tách biệt rạch ròi giữa hệ màu **AI** (Violet & Lavender), hệ màu **tương tác xã hội & thương hiệu** (Coral & Warm Neutral) và **trạng thái hệ thống** (Semantic Colors).
 
-Bảng màu mang phong cách hiện đại, thanh lịch với tông xanh Primary Blue chủ lực, kết hợp cùng các sắc độ trung tính chuẩn mực của dòng Slate và điểm xuyết sắc tím Accent độc đáo.
+---
 
-### Primary
-- **Primary Blue** (`#2563eb` - `blue-600`): Màu thương hiệu chính, áp dụng cho nút bấm hành động chính (Primary Button), viền khi focus trường dữ liệu (`focus:border-[#2563eb]`), liên kết đang hoạt động và biểu tượng active.
-- **Primary Hover** (`#1d4ed8` - `blue-700`): Trạng thái hover tương tác của nút bấm chính.
-- **Primary Shadow** (`rgba(37, 99, 235, 0.3)` - `blue-500/30`): Bóng đổ phát quang nhẹ cho nút bấm chính, tạo chiều sâu thị giác.
+## 3. Design Tokens (`design_new.css`)
 
-### Secondary
-- **Accent Purple** (`#aa3bff`): Màu điểm nhấn công nghệ, sử dụng cho huy hiệu (badge) công nghệ, nhãn nổi bật hoặc hiệu ứng phát sáng nhẹ.
-- **Accent Background** (`rgba(170, 59, 255, 0.1)`): Nền mờ cho các badge trạng thái đặc thù hoặc vùng đánh dấu phụ.
-- **Accent Border** (`rgba(170, 59, 255, 0.5)`): Viền nhấn mạnh của thành phần công nghệ nổi bật.
+Toàn bộ 29 CSS Variables trong `:root` của `design_new.css` là nguồn chân lý duy nhất cho hệ thống màu sắc của Lyora.
 
-### Neutral
-- **App Background** (`#ffffff` / `#f8fafc`): Nền tổng thể của toàn bộ ứng dụng, tạo cảm giác thoáng đãng và sạch sẽ.
-- **Card Surface** (`#ffffff`): Nền trắng tinh khiết của các khối thẻ (Card), ô đăng nhập (Form container), bảng điều khiển và hộp thoại (Modal).
-- **Visual Gradient** (`from-[#f8fafc] to-[#e2e8f0]`): Dải chuyển màu tinh tế dùng làm nền phân tách phân đoạn hoặc khối trang trí.
-- **Decorative Glowing** (`rgba(96, 165, 250, 0.2)` / `rgba(99, 102, 241, 0.15)`): Các quầng sáng mờ ảo kết hợp với `blur` lớn để tăng chiều sâu công nghệ cho trang.
-- **Text Headings** (`#0f172a`): Màu văn bản tiêu đề chính, đảm bảo độ tương phản vượt trội (Contrast ratio > 10:1).
-- **Text Body** (`#334155` / `#475569`): Màu văn bản nội dung thông thường, rõ nét và êm dịu cho mắt khi đọc lâu.
-- **Text Muted** (`#64748b` - `text-slate-500`): Màu của timestamp, văn bản phụ trợ, nhãn hướng dẫn phụ.
-- **Text Placeholder** (`#94a3b8` - `text-slate-400`): Văn bản gợi ý mờ trong các ô nhập liệu.
-- **Border Input** (`#cbd5e1` - `border-slate-300`): Đường viền tiêu chuẩn của trường nhập liệu và khung chọn.
-- **Border Checkbox** (`#d1d5db` - `border-gray-300`): Đường viền cho ô đánh dấu kiểm (checkbox).
-- **Border Subtle** (`#e5e4e7`): Đường phân tách mỏng nhẹ giữa các danh mục hoặc đường biên ngoài trang web.
+### 3.1. Brand Colors
 
-### Named Rules
-**The Blue Dominance Rule.** Màu Primary Blue `#2563eb` là điểm nhấn hành động chính duy nhất; không sử dụng màu sắc rực rỡ khác để cạnh tranh với các nút kêu gọi hành động (CTA).
-**The Glow Restraint Rule.** Hiệu ứng phát quang (`bg-blue-400/20`, `blue-500/30`) chỉ đóng vai trò điểm xuyết chiều sâu vi mô, tuyệt đối không lạm dụng phủ bóng màu trên diện rộng gây rối mắt.
-**The Unified Theme Authority Rule.** Dự án áp dụng duy nhất một chuẩn hiển thị thống nhất (Light Mode), không chuyển đổi Dark Mode hay dùng mã màu nằm ngoài hệ thống token đã định nghĩa.
+| CSS Variable | HEX | Vai trò & Mục đích sử dụng |
+| :--- | :--- | :--- |
+| `--color-primary` | `#E96862` | Màu nhận diện thương hiệu chính (Coral); dùng cho CTA chính, active indicator và điểm nhấn tương tác quan trọng |
+| `--color-primary-hover` | `#D95652` | Trạng thái di chuột (hover) của nút bấm và liên kết dùng `--color-primary` |
+| `--color-primary-active` | `#C94845` | Trạng thái nhấn giữ (active/pressed) của nút bấm chính và điểm nhấn đậm hơn |
+| `--color-secondary` | `#FF9B85` | Màu thương hiệu phụ trợ (Warm Coral); dùng cho nhấn phụ, minh họa hoặc chỉ báo phụ |
+| `--color-accent` | `#FFC2AD` | Màu nhấn nhẹ (Soft Peach); dùng cho viền nhấn nhẹ, điểm nhấn nền hoặc badge phụ trợ |
+| `--color-accent-soft` | `#FFF0E9` | Nền nhấn dịu nhẹ của thương hiệu; dùng cho pill active, tag nổi bật nhẹ hoặc nền nút tonal |
 
-## Typography
+### 3.2. Background & Surface Colors
+
+| CSS Variable | HEX | Vai trò & Mục đích sử dụng |
+| :--- | :--- | :--- |
+| `--color-background` | `#FAF8F7` | Màu nền tổng thể (Warm Neutral Canvas) của ứng dụng và vùng chứa bảng tin |
+| `--color-surface` | `#FFFFFF` | Màu bề mặt chính của Card, bài viết, ô nhập liệu, thanh điều hướng và hộp thoại |
+| `--color-surface-secondary` | `#FFF5F1` | Bề mặt phụ ấm nhẹ; dùng cho mục thông báo chưa đọc, vùng nổi bật nhẹ hoặc card phụ |
+| `--color-surface-tertiary` | `#F3EFED` | Bề mặt trung tính cấp ba; dùng cho bong bóng tin nhắn đến, trích dẫn bài viết, khối code/well và nền disabled |
+| `--color-surface-hover` | `#F8EFEC` | Màu nền phản hồi khi người dùng di chuột (hover) lên hàng bảng, mục menu hoặc nút phụ |
+
+### 3.3. Text Colors
+
+| CSS Variable | HEX | Vai trò & Mục đích sử dụng |
+| :--- | :--- | :--- |
+| `--color-text-primary` | `#292321` | Màu chữ chính cho tiêu đề, tên tác giả, nội dung bài viết và tin nhắn |
+| `--color-text-secondary` | `#766B67` | Màu chữ phụ cho mô tả, nhãn điều hướng mặc định và nội dung bổ trợ |
+| `--color-text-tertiary` | `#A49A95` | Màu chữ cấp ba cho timestamp, metadata phụ, số đếm phụ và placeholder input |
+| `--color-text-disabled` | `#C7BFBB` | Màu chữ và biểu tượng ở trạng thái vô hiệu hóa (disabled) |
+| `--color-text-inverse` | `#FFFFFF` | Màu chữ tương phản trên nền tối/đậm như nút `--color-primary`, `--color-ai-primary` hoặc badge semantic đậm |
+
+### 3.4. Border Colors
+
+| CSS Variable | HEX | Vai trò & Mục đích sử dụng |
+| :--- | :--- | :--- |
+| `--color-border` | `#EEE5E1` | Viền mảnh mặc định phân tách Card, thanh điều hướng, bảng dữ liệu và khung hội thoại |
+| `--color-border-strong` | `#DED2CC` | Viền đậm hơn cho các control tương tác (input mặc định, outline button, checkbox) |
+| `--color-border-focus` | `#E96862` | Màu viền khi trường nhập liệu hoặc thành phần tương tác nhận trạng thái focus |
+
+### 3.5. Interactive States
+
+Bảng tổng hợp quy chuẩn các trạng thái tương tác sử dụng trực tiếp các tokens từ `design_new.css`:
+
+| Trạng thái | Thành phần Primary | Thành phần Surface / Navigation | Thành phần Input / Control |
+| :--- | :--- | :--- | :--- |
+| **Default** | Nền `--color-primary` (`#E96862`), chữ `--color-text-inverse` (`#FFFFFF`) | Nền `--color-surface` (`#FFFFFF`), chữ `--color-text-secondary` (`#766B67`) | Nền `--color-surface` (`#FFFFFF`), viền `--color-border-strong` (`#DED2CC`) |
+| **Hover** | Nền `--color-primary-hover` (`#D95652`) | Nền `--color-surface-hover` (`#F8EFEC`), chữ `--color-text-primary` (`#292321`) | Viền `--color-border-strong` (`#DED2CC`), nền `--color-surface` (`#FFFFFF`) |
+| **Active** | Nền `--color-primary-active` (`#C94845`) | Nền `--color-accent-soft` (`#FFF0E9`), chữ/icon `--color-primary` (`#E96862`) | Viền `--color-border-focus` (`#E96862`) |
+| **Focus** | Viền focus `--color-border-focus` (`#E96862`) | Viền focus `--color-border-focus` (`#E96862`) | Viền `--color-border-focus` (`#E96862`) |
+| **Disabled** | Nền `--color-surface-tertiary` (`#F3EFED`), chữ `--color-text-disabled` (`#C7BFBB`) | Nền `--color-surface-tertiary` (`#F3EFED`), chữ `--color-text-disabled` (`#C7BFBB`) | Nền `--color-surface-tertiary` (`#F3EFED`), chữ `--color-text-disabled` (`#C7BFBB`) |
+
+### 3.6. Semantic Colors
+
+| CSS Variable | HEX | Vai trò & Mục đích sử dụng |
+| :--- | :--- | :--- |
+| `--color-success` | `#16834A` | Trạng thái thành công, xác nhận hoàn tất, chỉ báo trực tuyến (online) hoặc tài khoản kích hoạt |
+| `--color-warning` | `#B7791F` | Cảnh báo cần chú ý, trạng thái chờ kiểm duyệt hoặc giới hạn thao tác |
+| `--color-error` | `#D14343` | Thông báo lỗi hệ thống, lỗi validation input, thao tác xóa/khóa hoặc báo cáo vi phạm nghiêm trọng |
+| `--color-info` | `#3478D4` | Thông tin hướng dẫn hệ thống, thông báo trung tính hoặc trạng thái đang đồng bộ |
+
+### 3.7. AI Color System
+
+| CSS Variable | HEX | Vai trò & Mục đích sử dụng |
+| :--- | :--- | :--- |
+| `--color-ai-primary` | `#7656D6` | Màu chủ đạo cho nút kích hoạt AI, icon AI và các hành động tạo/tóm tắt nội dung bằng AI |
+| `--color-ai-secondary` | `#9A7AE8` | Màu phụ trợ cho trạng thái hover hoặc điểm nhấn thứ cấp trong giao diện AI |
+| `--color-ai-accent` | `#C5B3FA` | Màu nhấn nhẹ cho huy hiệu (badge), tag hoặc thanh trang trí nhỏ thuộc thành phần AI |
+| `--color-ai-background` | `#F2EDFF` | Màu nền phân biệt cho khung trợ lý AI, hộp thoại gợi ý và khối nội dung do AI tạo |
+| `--color-ai-text` | `#5538A6` | Màu chữ chính trên nền `--color-ai-background` đảm bảo độ tương phản và nhận diện AI |
+| `--color-ai-border` | `#DED3FA` | Đường viền bao quanh thẻ AI, khung gợi ý và chip tính năng AI |
+
+### 3.8. Reference CSS Root Tokens
+
+```css
+:root {
+  /* Brand */
+  --color-primary: #E96862;
+  --color-primary-hover: #D95652;
+  --color-primary-active: #C94845;
+  --color-secondary: #FF9B85;
+  --color-accent: #FFC2AD;
+  --color-accent-soft: #FFF0E9;
+
+  /* Background & Surface */
+  --color-background: #FAF8F7;
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #FFF5F1;
+  --color-surface-tertiary: #F3EFED;
+  --color-surface-hover: #F8EFEC;
+
+  /* Text */
+  --color-text-primary: #292321;
+  --color-text-secondary: #766B67;
+  --color-text-tertiary: #A49A95;
+  --color-text-disabled: #C7BFBB;
+  --color-text-inverse: #FFFFFF;
+
+  /* Border */
+  --color-border: #EEE5E1;
+  --color-border-strong: #DED2CC;
+  --color-border-focus: #E96862;
+
+  /* Semantic */
+  --color-success: #16834A;
+  --color-warning: #B7791F;
+  --color-error: #D14343;
+  --color-info: #3478D4;
+
+  /* AI */
+  --color-ai-primary: #7656D6;
+  --color-ai-secondary: #9A7AE8;
+  --color-ai-accent: #C5B3FA;
+  --color-ai-background: #F2EDFF;
+  --color-ai-text: #5538A6;
+  --color-ai-border: #DED3FA;
+}
+```
+
+---
+
+## 4. Color Usage Guidelines
+
+### 4.1. Nguyên Tắc Phân Bổ Màu Chung
+- **Coral (`--color-primary` `#E96862`)** là màu nhận diện thương hiệu chính: chỉ đặt tại nút kêu gọi hành động (CTA) trọng tâm, mục đang kích hoạt và tín hiệu tương tác tích cực cần chú ý.
+- **Warm Neutral (`--color-background` `#FAF8F7`, `--color-surface` `#FFFFFF`, `--color-surface-tertiary` `#F3EFED`)** là nền tảng chiếm phần lớn diện tích màn hình để nội dung người dùng tạo nổi bật tự nhiên.
+- **Violet & Lavender (`--color-ai-*`)** chỉ dành riêng cho tính năng AI; tuyệt đối không dùng cho nút xã hội thông thường hay trạng thái hệ thống.
+- **Semantic Colors (`--color-success`, `--color-warning`, `--color-error`, `--color-info`)** chỉ dùng cho trạng thái hệ thống, validation và kiểm duyệt.
+- **Không lạm dụng màu Primary** cho hàng loạt icon điều hướng thụ động, icon trang trí hoặc đường viền thẻ thông thường.
+
+### 4.2. Áp Dụng Màu Theo Khu Vực Giao Diện
+
+1. **Navigation và Sidebar**
+   - Nền thanh điều hướng và sidebar dùng `--color-surface` (`#FFFFFF`), phân tách với nền chính bằng đường viền `--color-border` (`#EEE5E1`).
+   - Mục menu ở trạng thái mặc định dùng chữ và icon `--color-text-secondary` (`#766B67`); khi hover chuyển nền `--color-surface-hover` (`#F8EFEC`) và chữ `--color-text-primary` (`#292321`).
+   - Mục đang được chọn (Active route) dùng nền `--color-accent-soft` (`#FFF0E9`) kèm chữ/icon `--color-primary` (`#E96862`) hoặc `--color-primary-active` (`#C94845`).
+
+2. **Buttons và Interactive Elements**
+   - **Primary Button:** Nền `--color-primary` (`#E96862`), chữ `--color-text-inverse` (`#FFFFFF`); hover `--color-primary-hover` (`#D95652`); active `--color-primary-active` (`#C94845`).
+   - **Secondary / Tonal Button:** Nền `--color-surface-secondary` (`#FFF5F1`) hoặc `--color-accent-soft` (`#FFF0E9`), chữ `--color-primary-active` (`#C94845`), hover `--color-surface-hover` (`#F8EFEC`).
+   - **Outline / Neutral Button:** Nền `--color-surface` (`#FFFFFF`), viền `--color-border-strong` (`#DED2CC`), chữ `--color-text-primary` (`#292321`), hover `--color-surface-hover` (`#F8EFEC`).
+   - **Disabled Button:** Nền `--color-surface-tertiary` (`#F3EFED`), chữ `--color-text-disabled` (`#C7BFBB`).
+
+3. **Social Feed và Post Cards**
+   - Vùng nền của bảng tin (Newsfeed) sử dụng `--color-background` (`#FAF8F7`).
+   - Mỗi thẻ bài viết (Post Card) dùng nền `--color-surface` (`#FFFFFF`) với viền `--color-border` (`#EEE5E1`).
+   - Khối bài viết chia sẻ lại (Repost/Quote) hoặc thẻ đính kèm liên kết bên trong bài viết dùng nền `--color-surface-tertiary` (`#F3EFED`) hoặc `--color-surface-secondary` (`#FFF5F1`).
+   - Tên người đăng và nội dung văn bản bài viết dùng `--color-text-primary` (`#292321`); mô tả phụ dùng `--color-text-secondary` (`#766B67`); thời gian đăng và lượt đếm dùng `--color-text-tertiary` (`#A49A95`).
+
+4. **Like, Comment, Share, Follow**
+   - Ở trạng thái mặc định (chưa tương tác), cả 3 nút **Thích (Like)**, **Bình luận (Comment)** và **Chia sẻ (Share)** dùng icon và chữ `--color-text-secondary` (`#766B67`) để giữ bảng tin thanh thoát, không bị rối màu.
+   - Khi hover vào các nút tương tác, sử dụng nền `--color-surface-hover` (`#F8EFEC`) và chữ `--color-text-primary` (`#292321`).
+   - Khi người dùng đã bày tỏ cảm xúc (**Liked**): icon và số đếm chuyển sang `--color-primary` (`#E96862`), có thể kết hợp nền pill `--color-accent-soft` (`#FFF0E9`).
+   - Nút **Theo dõi (Follow)**: trạng thái chưa theo dõi dùng nút chính `--color-primary` (`#E96862`) chữ `--color-text-inverse` (`#FFFFFF`) hoặc nút tonal `--color-accent-soft` (`#FFF0E9`) chữ `--color-primary-active` (`#C94845`); trạng thái **Đang theo dõi (Following)** chuyển về nút trung tính nền `--color-surface-tertiary` (`#F3EFED`) chữ `--color-text-secondary` (`#766B67`).
+
+5. **Messaging và Chat Interface**
+   - Cửa sổ danh sách hội thoại và khung trò chuyện dùng nền `--color-surface` (`#FFFFFF`), ngăn cách cột bằng `--color-border` (`#EEE5E1`).
+   - Hội thoại đang chọn dùng nền `--color-surface-secondary` (`#FFF5F1`); hội thoại khi hover dùng `--color-surface-hover` (`#F8EFEC`).
+   - Tin nhắn nhận (Incoming) dùng nền `--color-surface-tertiary` (`#F3EFED`) và chữ `--color-text-primary` (`#292321`).
+   - Tin nhắn gửi đi (Outgoing) dùng nền `--color-primary` (`#E96862`) và chữ `--color-text-inverse` (`#FFFFFF`).
+   - Trạng thái trực tuyến (Online) dùng chấm chỉ báo `--color-success` (`#16834A`); timestamp dùng `--color-text-tertiary` (`#A49A95`).
+
+6. **Notification**
+   - Mục thông báo chưa đọc dùng nền `--color-surface-secondary` (`#FFF5F1`) kèm chấm chỉ báo `--color-primary` (`#E96862`).
+   - Mục thông báo đã đọc dùng nền `--color-surface` (`#FFFFFF`), hover dùng `--color-surface-hover` (`#F8EFEC`).
+   - Thông báo trạng thái hệ thống (Toast, Banner, Alert) giữ nền `--color-surface` (`#FFFFFF`) kèm viền/icon theo đúng Semantic Color: `--color-success` (`#16834A`), `--color-warning` (`#B7791F`), `--color-error` (`#D14343`), `--color-info` (`#3478D4`).
+
+7. **AI Assistant và AI-generated Content**
+   - Khối hộp thoại trợ lý AI, tóm tắt bài viết bằng AI hoặc gợi ý trả lời tin nhắn bằng AI dùng nền `--color-ai-background` (`#F2EDFF`) và viền `--color-ai-border` (`#DED3FA`).
+   - Văn bản tiêu đề/nhãn AI dùng `--color-ai-text` (`#5538A6`).
+   - Nút kích hoạt AI và biểu tượng AI dùng `--color-ai-primary` (`#7656D6`) với chữ `--color-text-inverse` (`#FFFFFF`); trạng thái phụ dùng `--color-ai-secondary` (`#9A7AE8`) và `--color-ai-accent` (`#C5B3FA`).
+
+8. **Forms, Inputs và Dialogs**
+   - Trường nhập liệu (`Input`, `Textarea`, `Select`) dùng nền `--color-surface` (`#FFFFFF`), chữ `--color-text-primary` (`#292321`), placeholder `--color-text-tertiary` (`#A49A95`) và viền `--color-border-strong` (`#DED2CC`).
+   - Khi focus, viền chuyển sang `--color-border-focus` (`#E96862`).
+   - Khi có lỗi nhập liệu (Validation Error), viền và chữ báo lỗi dùng `--color-error` (`#D14343`).
+   - Khi bị khóa (Disabled), nền chuyển sang `--color-surface-tertiary` (`#F3EFED`) và chữ dùng `--color-text-disabled` (`#C7BFBB`).
+   - Dialog và Modal dùng nền `--color-surface` (`#FFFFFF`), viền `--color-border` (`#EEE5E1`), tiêu đề `--color-text-primary` (`#292321`), nội dung mô tả `--color-text-secondary` (`#766B67`).
+
+---
+
+## 5. Typography
 
 **Display Font:** `system-ui, 'Segoe UI', Roboto, sans-serif` (biến `--sans` và `--heading`)  
 **Body Font:** `system-ui, 'Segoe UI', Roboto, sans-serif` (biến `--sans`)  
 **Label/Mono Font:** `ui-monospace, Consolas, monospace` (biến `--mono`)
 
-**Character:** Hệ thống kiểu chữ tối ưu hóa font gốc hệ thống (Native System Fonts) để loại bỏ độ trễ tải mạng, đem lại độ nét tối đa trên mọi loại màn hình. Phông chữ Monospace được cách ly chặt chẽ cho mã bản quyền, key kích hoạt và code block.
+**Character:** Hệ thống kiểu chữ tối ưu hóa font gốc hệ thống (Native System Fonts) để loại bỏ độ trễ tải mạng, đem lại độ nét tối đa trên mọi loại màn hình. Phông chữ Monospace được cách ly chặt chẽ cho dữ liệu kỹ thuật, mã định danh phiên, token và code block.
 
 ### Hierarchy
-- **Display** (Extra-bold 800, `48px` - `56px`, line-height 1.1, letter-spacing `-1.68px`): Sử dụng cho Hero Headings lớn trên landing page (co về `36px` trên màn hình tablet/mobile ≤1024px).
+- **Display** (Extra-bold 800, `48px` - `56px`, line-height 1.1, letter-spacing `-1.68px`): Sử dụng cho Hero Headings lớn trên trang chính (co về `36px` trên màn hình tablet/mobile ≤1024px).
 - **Headline** (Bold 700, `36px`, line-height 1.2, letter-spacing `-0.8px`): Tiêu đề trang chính (Page titles).
 - **Sub-headline / Title** (Semi-bold 600, `24px` - `28px`, line-height 1.25, letter-spacing `-0.24px`): Tiêu đề phần mục, tiêu đề thẻ Card lớn (`h2`).
-- **Body** (Regular 400 đến Medium 500, `15px` - `18px`, line-height 1.45 - 1.5, letter-spacing `0.18px`): Nội dung bài viết, mô tả sản phẩm, văn bản đoạn văn.
+- **Body** (Regular 400 đến Medium 500, `15px` - `18px`, line-height 1.45 - 1.5, letter-spacing `0.18px`): Nội dung bài viết cộng đồng, bình luận, tin nhắn, văn bản đoạn văn.
 - **Label / Small text** (Medium 500, `13px` - `14px`, line-height 1.4): Nhãn ô nhập liệu, thẻ tag, thông tin metadata phụ trợ.
-- **Code / Monospace** (Regular 400, `13px` - `15px`, line-height 1.5): Mã khóa bản quyền (License Key), chuỗi mã hóa, thông số kỹ thuật.
+- **Code / Monospace** (Regular 400, `13px` - `15px`, line-height 1.5): Mã định danh hệ thống (ID), token kết nối, chuỗi mã hóa, thông số kỹ thuật.
 
 ### Named Rules
-**The System Native First Rule.** Mọi văn bản giao diện bắt buộc dùng sans-serif hệ thống gốc để bảo toàn tốc độ hiển thị và trải nghiệm mượt mà tự nhiên của hệ điều hành.
-**The Monospace Purpose Rule.** Font Monospace chỉ được sử dụng cho dữ liệu kỹ thuật (License key, token, code block), tuyệt đối không dùng cho tiêu đề hay nội dung giao tiếp thông thường.
+- **The System Native First Rule:** Mọi văn bản giao diện bắt buộc dùng sans-serif hệ thống gốc để bảo toàn tốc độ hiển thị và trải nghiệm mượt mà tự nhiên của hệ điều hành.
+- **The Monospace Purpose Rule:** Font Monospace chỉ được sử dụng cho dữ liệu kỹ thuật (ID, token, code block), tuyệt đối không dùng cho tiêu đề hay nội dung giao tiếp thông thường.
 
-## Layout
+---
+
+## 6. Layout & Spacing
 
 Hệ thống bố cục được xây dựng dựa trên lưới nhịp điệu 4px/8px chuẩn mực, bảo đảm tính linh hoạt và khả năng hiển thị responsive hoàn hảo trên mọi kích thước màn hình.
 
-- **Khung chứa chính (Root Container):** Bề rộng tối đa `1126px` căn giữa (`max-w-[1126px] mx-auto`), có đường viền phân tách mờ hai bên (`border-inline: 1px solid var(--border)`).
+- **Khung chứa chính (Root Container):** Bề rộng tối đa `1126px` căn giữa (`max-w-[1126px] mx-auto`), có đường viền phân tách hai bên bằng `--color-border` (`#EEE5E1`).
 - **Form Card / Login Container:** Giới hạn chiều rộng tối ưu `max-w-[400px]` đi kèm `w-full` để luôn vừa vặn trên các màn hình di động nhỏ mà vẫn giữ sự cân đối trên desktop.
 - **Độ giãn cách phần tử (Spacing Scale):**
-  - `space-y-2` và `gap-2` (8px): Khoảng cách giữa các phần tử cùng nhóm (input với nhãn, icon với text).
-  - `mb-3` (12px): Khoảng cách giữa các khối trường thông tin.
-  - `mt-6` (24px): Khoảng cách trên đầu nút bấm hoặc phân đoạn lớn trong form.
+  - `xs` (`4px`): Khoảng cách vi mô giữa icon và nhãn nhỏ.
+  - `sm` (`8px` - `space-y-2`, `gap-2`): Khoảng cách giữa các phần tử cùng nhóm (input với nhãn, icon với text).
+  - `md` (`12px` - `mb-3`, `gap-3`): Khoảng cách giữa các khối trường thông tin.
+  - `lg` (`16px` - `gap-4`): Khoảng cách giữa các card liền kề trên bảng tin.
+  - `xl` (`24px` - `mt-6`): Khoảng cách trên đầu nút bấm hoặc phân đoạn lớn trong form.
+  - `2xl` (`32px`): Vùng đệm lớn cho container hoặc phân tách khối lớn.
 - **Vùng đệm nội dung (Padding):**
-  - Card & Container: `p-6 sm:p-7` hoặc `p-6 sm:p-8` (24px đến 32px) tạo cảm giác thoáng đãng, sang trọng.
-  - Controls (Input, Button): `px-3 py-2` (12px dọc, 8px ngang) hoặc `px-3.5 py-2.5` (14px dọc, 10px ngang).
+  - Card & Container: `24px` đến `32px` (`p-6 sm:p-7` hoặc `p-6 sm:p-8`).
+  - Controls (Input, Button): `8px 12px` đến `10px 16px` (`px-3 py-2` hoặc `px-3.5 py-2.5`).
 
-## Elevation & Depth
+---
 
-Giao diện áp dụng triết lý phân tầng phẳng tinh gọn (tonal layering) kết hợp với các hiệu ứng đổ bóng mềm (soft ambient shadow) và bóng màu thương hiệu (tinted glow) để tạo chiều sâu tự nhiên mà không gây nặng nề.
+## 7. Shapes & Elevation
 
-### Shadow Vocabulary
-- **Card Deep Ambient** (`box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08)`): Đổ bóng mềm lan tỏa rộng dưới nền form container và modal, tạo cảm giác bề mặt lơ lửng trên nền sáng.
-- **Button Primary Glow** (`box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3), 0 2px 4px -2px rgba(37, 99, 235, 0.3)`): Bóng đổ màu xanh công nghệ dưới nút Primary, tăng độ nổi bật và phản hồi trực quan.
-- **System Layer Subtle** (`box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)`): Bóng đổ phân tầng mỏng cho menu thả xuống (dropdown) và tooltip.
+### Shapes (Border Radius)
+Ngôn ngữ hình học thân thiện, hiện đại với phân cấp kích thước rõ ràng:
+- **Khối điều khiển vi mô (Checkbox, Radio):** Bo góc `4px` (`rounded`).
+- **Khối nhập liệu & Nút bấm (Input, Button):** Bo góc `8px` (`rounded-lg`).
+- **Khối thẻ & Hộp thoại (Card, Modal, Container):** Bo góc lớn `16px` (`rounded-2xl`).
+- **Khối huy hiệu & Avatar (Badge, Pill, Avatar):** Bo tròn hoàn toàn `9999px` (`rounded-full`).
 
-### Named Rules
-**The Soft Lift Rule.** Các bề mặt ở trạng thái nghỉ giữ độ phẳng tinh tế; chỉ nâng cao độ sâu (lift) với bóng đổ mềm khi là khối tương tác trọng tâm (Form Card) hoặc khi người dùng hover/focus.
+Đường viền luôn duy trì độ mảnh `1px`, sử dụng `--color-border` (`#EEE5E1`) hoặc `--color-border-strong` (`#DED2CC`) ở trạng thái tĩnh và chuyển sang `--color-border-focus` (`#E96862`) khi được kích hoạt focus.
 
-## Shapes
+### Elevation & Depth
+Giao diện áp dụng triết lý phân tầng ấm áp (tonal layering) giữa nền `--color-background` (`#FAF8F7`), thẻ `--color-surface` (`#FFFFFF`) và bề mặt thứ cấp `--color-surface-tertiary` (`#F3EFED`), kết hợp bóng đổ trung tính nhẹ nhàng:
+- **Card Deep Ambient** (`box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08)`): Dùng cho Form Card trọng tâm hoặc Modal nổi trên nền sáng.
+- **System Layer Subtle** (`box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`): Dùng cho menu thả xuống (dropdown), popover và tooltip.
+- **The Soft Lift Rule:** Các bề mặt ở trạng thái nghỉ giữ độ phẳng tinh tế với viền `1px` `--color-border` (`#EEE5E1`); chỉ nâng độ sâu bằng bóng đổ mềm khi là hộp thoại, dropdown hoặc form nổi.
 
-Ngôn ngữ hình học thể hiện sự chuẩn xác kỹ thuật với các góc bo mềm mại nhưng có kỷ luật rõ ràng theo phân cấp kích thước:
+---
 
-- **Khối điều khiển vi mô (Checkbox, Radio):** Bo góc `4px` (`rounded`), tạo sự dứt khoát, chuẩn mực.
-- **Khối nhập liệu & Nút bấm (Input, Button):** Bo góc `8px` (`rounded-lg`), cân bằng hoàn hảo giữa tính hiện đại và dễ bấm.
-- **Khối thẻ & Hộp thoại (Card, Modal, Container):** Bo góc lớn `16px` (`rounded-2xl`), tạo sự êm dịu, bao bọc và tập trung chú ý.
-- **Khối huy hiệu & Quầng trang trí (Badge, Glowing Orb):** Bo tròn hoàn toàn `9999px` (`rounded-full`).
+## 8. Core Components (`@core`)
 
-Đường viền (Borders) luôn duy trì độ mảnh 1px (`border`), sử dụng màu trung tính mờ (`#cbd5e1` hoặc `#e5e4e7`) ở trạng thái tĩnh và chuyển sáng rực sang Primary Blue (`#2563eb`) kèm viền phát quang khi được kích hoạt focus.
+Mọi màn hình trong `lyora_web` ưu tiên tái sử dụng các thành phần nền tảng từ `@core` (`Button`, `Input`, `LoadingSpinner`, `AppImage`) kết hợp đúng Design Tokens của hệ thống:
 
-## Components
+- **Buttons:** Bo góc `8px` (`rounded-lg`), sử dụng `--color-primary` (`#E96862`) cho nút chính, `--color-primary-hover` (`#D95652`) khi hover, `--color-primary-active` (`#C94845`) khi nhấn, `--color-text-inverse` (`#FFFFFF`) cho chữ.
+- **Inputs / Fields:** Bo góc `8px` (`rounded-lg`), nền `--color-surface` (`#FFFFFF`), viền `--color-border-strong` (`#DED2CC`), chữ `--color-text-primary` (`#292321`), placeholder `--color-text-tertiary` (`#A49A95`), focus `--color-border-focus` (`#E96862`), lỗi `--color-error` (`#D14343`).
+- **Cards / Containers:** Bo góc `16px` (`rounded-2xl`), nền `--color-surface` (`#FFFFFF`), viền `--color-border` (`#EEE5E1`).
+- **Checkboxes:** Bo góc `4px` (`rounded`), viền `--color-border-strong` (`#DED2CC`), màu kích hoạt `--color-primary` (`#E96862`).
 
-Hệ thống thành phần được thiết kế để tái sử dụng cao, tối ưu khả năng tương tác và bảo toàn tính nhất quán trong toàn bộ hệ sinh thái.
+---
 
-### Buttons
-- **Hình dáng:** Bo góc 8px (`rounded-lg`), chiều rộng mở rộng toàn phần `w-full` trong khối form hoặc vừa vặn nội dung (`inline-flex`).
-- **Primary Button:** Nền xanh `#2563eb`, chữ trắng tinh khiết `#ffffff`, độ đậm semi-bold (600), đệm `px-4 py-2` hoặc `px-3.5 py-2.5`, bóng phát quang `shadow-md shadow-blue-500/30`.
-- **Hover & Focus:** Chuyển đổi mượt mà với `transition-colors duration-150`, nền đổi sang `#1d4ed8`.
-- **Trạng thái Disabled:** Độ mờ `opacity-50`, con trỏ `cursor-not-allowed`.
-
-### Inputs / Fields
-- **Kiểu dáng:** Bo góc 8px (`rounded-lg`), đường viền 1px mỏng màu `#cbd5e1`, nền trắng `#ffffff`, chữ `#0f172a`.
-- **Nhãn trường (Label):** Chữ cỡ `14px` (`text-sm`), độ đậm medium (500), màu `#334155`, căn khoảng cách `gap-1.5` phía trên ô nhập.
-- **Trạng thái Focus:** Viền chuyển màu sang Primary Blue (`focus:border-[#2563eb]`) kết hợp vòng viền sáng nhẹ (`focus:ring-1 focus:ring-[#2563eb]`).
-- **Trạng thái Lỗi:** Viền chuyển sang đỏ (`border-red-500`), văn bản thông báo lỗi `text-xs text-red-600`.
-
-### Cards / Containers
-- **Hình dáng & Kích thước:** Bo góc 16px (`rounded-2xl`), chiều rộng tối đa `max-w-[400px]` (cho form đăng nhập/giao dịch) với `w-full`.
-- **Nền & Chiều sâu:** Nền trắng tinh khôi `#ffffff` kết hợp bóng đổ lan tỏa `shadow-[0_8px_30px_rgb(0,0,0,0.08)]`.
-- **Khoảng đệm nội bộ:** `p-6 sm:p-7` hoặc `p-6 sm:p-8`.
-
-### Checkboxes
-- **Kiểu dáng:** Bo góc 4px (`rounded`), viền xám `#d1d5db` (`border-gray-300`), màu kích hoạt đồng bộ Primary Blue.
-
-### Visual & Decorative Elements
-- **Khối chuyển màu (Gradient):** `bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0]`.
-- **Quầng sáng phát quang:** Các khối tròn `bg-blue-400/20` và `bg-indigo-500/15` đi kèm `blur-3xl` tạo không gian công nghệ mờ ảo phía sau giao diện.
-- **Hoạt ảnh chuyển động (Animations):** `animate-spin` cho vòng xoay tải dữ liệu (loading spinner); các chuyển động trang trí công nghệ nhẹ nhàng (`animate-line`, `animate-triangle`, `animate-keyboard`).
-- **Hòa trộn hình ảnh (Blend Mode):** `mix-blend-multiply` để hòa trộn các ảnh minh họa kỹ thuật số với nền trang trí.
-
-## Do's and Don'ts
+## 9. Do's and Don'ts
 
 ### Do:
-- **Do** tuân thủ tuyệt đối các mã màu chính thức: Primary `#2563eb`, Primary Hover `#1d4ed8`, Accent `#aa3bff`, Headings `#0f172a`, Body `#334155`.
-- **Do** sử dụng đúng quy chuẩn bo góc: `rounded-lg` (8px) cho Input/Button và `rounded-2xl` (16px) cho Form Card.
-- **Do** áp dụng bóng đổ có màu `shadow-md shadow-blue-500/30` cho nút bấm Primary để đồng bộ nhận diện thương hiệu.
-- **Do** thiết lập `focus:border-[#2563eb]` và `focus:ring-1 focus:ring-[#2563eb]` trên mọi trường input tương tác.
+- **Do** sử dụng chính xác tên CSS Variables và mã HEX trong `design_new.css` (`--color-primary` `#E96862`, `--color-background` `#FAF8F7`, `--color-surface` `#FFFFFF`, `--color-text-primary` `#292321`, `--color-ai-primary` `#7656D6`, ...).
+- **Do** tách biệt rạch ròi màu **Coral (`#E96862`)** cho thương hiệu/hành động chính, **Warm Neutral** cho nền/bề mặt, **Violet & Lavender (`#7656D6` / `#F2EDFF`)** cho AI, và **Semantic Colors** cho trạng thái hệ thống.
+- **Do** sử dụng đúng quy chuẩn bo góc (`4px`, `8px`, `16px`, `9999px`) và font hệ thống gốc (`system-ui`).
 - **Do** viết toàn bộ văn bản giao diện (Button, Label, Title, Modal, Thông báo) trực tiếp bằng tiếng Việt chuẩn mực, rõ ràng, gãy gọn.
-- **Do** tái sử dụng tối đa các thành phần UI chung từ `@lyora/web-shared` (`Button`, `Input`, `LoadingSpinner`, `AppImage`).
+- **Do** tái sử dụng tối đa các thành phần UI chung từ `@core` (`Button`, `Input`, `LoadingSpinner`, `AppImage`).
 
 ### Don't:
-- **Don't** tự ý thêm bộ chuyển đổi Light/Dark mode hoặc viết các class `dark:` gây phân mảnh trải nghiệm giao diện thống nhất.
-- **Don't** sử dụng font Monospace cho văn bản thông thường (chỉ dùng duy nhất cho code, token, license key).
-- **Don't** áp dụng gradient tím-hồng rập khuôn AI (AI-slop) khắp màn hình.
-- **Don't** sử dụng bo góc tùy tiện ngoài hệ thống chuẩn (`4px`, `8px`, `16px`, `9999px`).
-- **Don't** dùng các đường kẻ hairline divider xám ngang dọc dày đặc; hãy ưu tiên dùng khoảng trắng (`gap`, `space-y`) và phân tách nền.
-- **Don't** sử dụng các mã màu cố định ngoài hệ thống token đã được quy định trong tài liệu này.
+- **Don't** sử dụng lại các bảng màu cũ hoặc tự ý tạo thêm bất kỳ mã HEX/token nào ngoài danh sách đã định nghĩa trong `design_new.css`.
+- **Don't** tự ý thêm bộ chuyển đổi Light/Dark mode hoặc viết các class `dark:` gây phá vỡ tính thống nhất của Light Mode.
+- **Don't** dùng màu AI (`--color-ai-primary` `#7656D6`, `--color-ai-background` `#F2EDFF`) cho các chức năng xã hội thông thường, hay dùng màu Coral cho tính năng AI.
+- **Don't** tô màu `--color-primary` (`#E96862`) lên toàn bộ icon thụ động hoặc các thành phần không cần nhấn mạnh.
+- **Don't** sử dụng font Monospace cho văn bản thông thường (chỉ dùng duy nhất cho code, token, ID kỹ thuật).
+- **Don't** đưa các nội dung hoặc thành phần giao diện thương mại (đơn hàng, giỏ hàng, thanh toán, bán hàng) vào hệ thống.

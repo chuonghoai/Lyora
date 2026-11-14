@@ -10,11 +10,18 @@ export const GuestRoute: React.FC = () => {
 
   if (isAuthenticated) {
     const from = (location.state as { from?: { pathname?: string } })?.from?.pathname;
-    if (from && from !== ROUTES.AUTH.LOGIN) {
-      return <Navigate to={from} replace />;
+    if (user?.role === 'ADMIN') {
+      const target =
+        from && from.startsWith(ROUTES.ADMIN.ROOT) ? from : ROUTES.ADMIN.DASHBOARD;
+      return <Navigate to={target} replace />;
     }
-    const defaultTarget = user?.role === 'ADMIN' ? ROUTES.ADMIN.DASHBOARD : ROUTES.CLIENT.ROOT;
-    return <Navigate to={defaultTarget} replace />;
+
+    const defaultTarget = ROUTES.CLIENT.ROOT;
+    const target =
+      from && !from.startsWith(ROUTES.ADMIN.ROOT) && from !== ROUTES.AUTH.LOGIN
+        ? from
+        : defaultTarget;
+    return <Navigate to={target} replace />;
   }
 
   return <Outlet />;

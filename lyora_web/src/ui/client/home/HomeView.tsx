@@ -17,10 +17,10 @@ export default function HomeView(): React.ReactElement {
     <div className="space-y-6">
       <section className="bg-white rounded-2xl p-6 sm:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
         <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight mb-2">
-          {controller.appTitle} — Cổng Khách Hàng (Client Portal)
+          {controller.appTitle} — Cổng Cộng Đồng (Client Portal)
         </h1>
         <p className="text-[#475569] text-base">
-          Hệ sinh thái thương mại điện tử giải pháp phần mềm bản quyền & Cyber Keys.
+          Nền tảng cộng đồng số — Đăng bài viết, tương tác cảm xúc, nhắn tin và chia sẻ thời gian thực.
         </p>
       </section>
 
@@ -69,7 +69,7 @@ export default function HomeView(): React.ReactElement {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-[#0f172a]">
-                Tìm kiếm Phần mềm & License Key
+                Tìm kiếm Bài viết & Bạn bè Cộng đồng
               </h3>
               <p className="text-sm text-[#64748b]">
                 Kiểm tra <code>Input</code>, <code>Button</code> và{' '}
@@ -79,8 +79,8 @@ export default function HomeView(): React.ReactElement {
           </div>
 
           <Input
-            label="Từ khóa sản phẩm (useDebounce):"
-            placeholder="Nhập tên phần mềm hoặc mã key..."
+            label="Từ khóa tìm kiếm (useDebounce):"
+            placeholder="Nhập tên người dùng, chủ đề hoặc bài viết..."
             value={controller.searchTerm}
             onChange={controller.handleSearchChange}
             helperText={`Giá trị debounce: "${controller.debouncedSearch}"`}

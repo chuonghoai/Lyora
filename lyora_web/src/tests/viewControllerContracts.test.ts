@@ -102,10 +102,29 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'menuRef'
       | 'systemHealth'
       | 'isHealthLoading'
+      | 'userStats'
+      | 'isStatsLoading'
       | 'appTitle'
       | 'handleSimulateSync'
       | 'handleToggleMenu'
-      | 'handleFilterChange';
+      | 'handleFilterChange'
+      | 'handleRefreshStats'
+      | 'handleCreateUser'
+      | 'handleExportUsers'
+      | 'handleManageRoles'
+      | 'handleBatchLockUsers'
+      | 'handleCreateAnnouncement'
+      | 'handleModeratePosts'
+      | 'handleReviewReports'
+      | 'handleHideViolatingContent'
+      | 'handleManageFeatureFlags'
+      | 'handleMonitorRealtimeSockets'
+      | 'handleManageCommunityGroups'
+      | 'handleBroadcastNotification'
+      | 'handlePurgeCache'
+      | 'handleBackupDatabase'
+      | 'handleViewAuditLogs'
+      | 'handleConfigureSecurity';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<DashboardController, ExpectedKeys>;

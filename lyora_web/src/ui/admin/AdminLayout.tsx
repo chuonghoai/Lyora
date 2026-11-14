@@ -35,18 +35,15 @@ export const AdminLayout: React.FC = () => {
                   : 'text-[#334155] hover:bg-[#f8fafc]'
               }`}
             >
-              Bảng điều khiển
-            </Link>
-            <Link
-              to={ROUTES.CLIENT.ROOT}
-              className="px-3.5 py-2 rounded-lg text-sm font-medium border border-[#cbd5e1] text-[#334155] bg-white hover:bg-[#f8fafc] transition-colors duration-150"
-            >
-              ← Về Cổng Khách Hàng
+              Bảng điều khiển & Vận hành
             </Link>
 
             <div className="flex items-center gap-3 pl-2 border-l border-[#e2e8f0]">
               <div className="text-right text-xs">
-                <p className="font-semibold text-[#0f172a]">{controller.user?.fullName || 'Quản trị viên'}</p>
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                  <p className="font-semibold text-[#0f172a]">{controller.user?.fullName || 'Quản trị viên'}</p>
+                </div>
                 <p className="text-[#64748b]">{controller.user?.email}</p>
               </div>
               <button

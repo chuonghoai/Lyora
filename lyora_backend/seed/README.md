@@ -21,14 +21,14 @@ Hệ thống được thiết lập sẵn hai tài khoản đăng nhập bắt b
 
 | Vai trò (Role) | Email | Mật khẩu mẫu | Phân quyền Backend thực tế | Trạng thái | Mục đích sử dụng |
 | :--- | :--- | :--- | :--- | :---: | :--- |
-| **Admin** | `admin@gmail.com` | `123456` | `UserRole.ADMIN` (`ADMIN`) | Hoạt động (`isActive: true`) | Đăng nhập Trung Tâm Quản Trị (`/admin`), quản lý hệ thống |
-| **User** | `user@gmail.com` | `123456` | `UserRole.CLIENT` (`CLIENT`) | Hoạt động (`isActive: true`) | Đăng nhập Cổng Khách Hàng (`/`), trải nghiệm mua sắm giấy phép |
+| **Admin** | `admin@gmail.com` | `123456` | `UserRole.ADMIN` (`ADMIN`) | Hoạt động (`isActive: true`) | Đăng nhập Trung Tâm Quản Trị (`/admin`), quản trị và kiểm duyệt cộng đồng |
+| **User** | `user@gmail.com` | `123456` | `UserRole.CLIENT` (`CLIENT`) | Hoạt động (`isActive: true`) | Đăng nhập Cổng Người Dùng (`/`), tương tác bài viết, nhắn tin và chia sẻ |
 
 ### Các tài khoản bổ sung (Supplementary Test Accounts):
 
 | Vai trò (Role) | Email | Mật khẩu mẫu | Phân quyền Backend thực tế | Trạng thái | Mục đích sử dụng |
 | :--- | :--- | :--- | :--- | :---: | :--- |
-| **Staff** | `staff@lyora.com` | `Staff@123456` | `UserRole.STAFF` (`STAFF`) | Hoạt động (`isActive: true`) | Kiểm thử phân quyền nhân viên vận hành và xử lý đơn |
+| **Staff** | `staff@lyora.com` | `Staff@123456` | `UserRole.STAFF` (`STAFF`) | Hoạt động (`isActive: true`) | Kiểm thử phân quyền nhân viên vận hành và hỗ trợ kiểm duyệt nội dung |
 | **Inactive Client** | `inactive@lyora.com` | `Client@123456` | `UserRole.CLIENT` (`CLIENT`) | Tạm khóa (`isActive: false`) | Kiểm thử xử lý lỗi đăng nhập tài khoản bị vô hiệu hóa |
 
 > [!IMPORTANT]
@@ -49,7 +49,7 @@ Danh mục toàn bộ các file seed dữ liệu hiện có trong thư mục `ly
 | 1 | `users.seed.ts` | `users` | Tài khoản người dùng hệ thống (`ADMIN`, `CLIENT`, `STAFF`, `INACTIVE`) | 4 | Complete |
 
 - **Cấu hình & Tiện ích hỗ trợ**:
-  - `seed.config.ts`: Khởi tạo TypeORM DataSource độc lập cho runner, tích hợp hàm chặn an toàn `assertSafeEnvironment()`.
+  - `seed.config.ts`: Khởi tạo TypeORM DataSource độc lập cho runner (hỗ trợ chuẩn hóa URL và SSL cho cả local lẫn DB cloud dev/staging qua `parsePostgresConnectionConfig`), tích hợp hàm chặn an toàn `assertSafeEnvironment()`.
   - `createSeedDB.ts`: Điều phối thực thi tuần tự các hàm seed, thống kê và đối chiếu bản ghi.
 
 ---
@@ -61,22 +61,22 @@ Danh mục toàn bộ các file seed dữ liệu hiện có trong thư mục `ly
 ```text
 1. users (Bảng độc lập — Khởi tạo đầu tiên)
    │
-   ├── (Tương lai: user_profiles)
-   ├── (Tương lai: orders / order_items)
-   └── (Tương lai: audit_logs)
+   ├── (Tương lai: posts / comments)
+   ├── (Tương lai: conversations / messages)
+   └── (Tương lai: reports / audit_logs)
 ```
 
 1. **Bảng cấp 1 (Root / Independent Tables)**: `users` — Chứa định danh người dùng (`id: UUID`), không phụ thuộc bảng nào khác.
-2. **Bảng cấp 2 (Dependent Tables)**: Khi phát triển thêm các module mới (ví dụ: `licenses`, `orders`, `products`), các bảng này sẽ được insert sau bảng `users` và liên kết thông qua `userId`.
+2. **Bảng cấp 2 (Dependent Tables)**: Khi phát triển thêm các module cộng đồng mới (ví dụ: `posts`, `comments`, `messages`, `reports`), các bảng này sẽ được insert sau bảng `users` và liên kết thông qua `userId` / `authorId`.
 
 ---
 
 ## E. Hướng dẫn thực thi (Execution)
 
 ### 1. Điều kiện tiên quyết (Prerequisites)
-- Dịch vụ **PostgreSQL** đang chạy trên cổng `5432`.
+- Dịch vụ **PostgreSQL** đang chạy (local cổng `5432` hoặc PostgreSQL Cloud dành cho môi trường `dev`/`development` có hỗ trợ SSL).
 - Cơ sở dữ liệu `lyora_db` đã được tạo.
-- Cấu hình file `.env` tại `lyora_backend/.env` hoặc biến môi trường `DATABASE_URL` hợp lệ (mặc định: `postgresql://postgres:postgres@localhost:5432/lyora_db`).
+- Cấu hình file `.env` tại `lyora_backend/.env` hoặc biến môi trường `DATABASE_URL` hợp lệ (mặc định fallback: `postgresql://postgres:postgres@localhost:5432/lyora_db`; tự động bật SSL nếu URL có `sslmode=require` hoặc `aivencloud.com`).
 
 ### 2. Lệnh thực thi nạp Seed Data
 Từ thư mục gốc của Monorepo:

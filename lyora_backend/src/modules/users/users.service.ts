@@ -10,6 +10,7 @@ import { PaginationMetaDto } from '../../common/dto/api-response.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UserStatisticsDto } from './dto/user-statistics.dto';
 import { User } from './entities/user.entity';
 
 const BCRYPT_SALT_ROUNDS = 10;
@@ -96,5 +97,57 @@ export class UsersService {
     const [items, totalItems] = await qb.getManyAndCount();
     const meta = new PaginationMetaDto(page, limit, totalItems);
     return { items, meta };
+  }
+
+  async getStatistics(): Promise<UserStatisticsDto> {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const [
+      totalUsers,
+      clientCount,
+      adminCount,
+      staffCount,
+      activeCount,
+      inactiveCount,
+      newUsersToday,
+      newUsersThisMonth,
+      recentUsers,
+    ] = await Promise.all([
+      this.userRepository.count(),
+      this.userRepository.count({ where: { role: UserRole.CLIENT } }),
+      this.userRepository.count({ where: { role: UserRole.ADMIN } }),
+      this.userRepository.count({ where: { role: UserRole.STAFF } }),
+      this.userRepository.count({ where: { isActive: true } }),
+      this.userRepository.count({ where: { isActive: false } }),
+      this.userRepository
+        .createQueryBuilder('user')
+        .where('user.createdAt >= :todayStart', { todayStart })
+        .getCount(),
+      this.userRepository
+        .createQueryBuilder('user')
+        .where('user.createdAt >= :monthStart', { monthStart })
+        .getCount(),
+      this.userRepository.find({
+        order: { createdAt: 'DESC' },
+        take: 5,
+      }),
+    ]);
+
+    return {
+      totalUsers,
+      clientCount,
+      adminCount,
+      staffCount,
+      activeCount,
+      inactiveCount,
+      newUsersToday,
+      newUsersThisMonth,
+      recentUsers,
+    };
   }
 }

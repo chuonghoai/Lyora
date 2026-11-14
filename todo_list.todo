@@ -1,0 +1,262 @@
+{
+  "todotree": {
+    "tree": [
+      {
+        "key": 100,
+        "children": [
+          {
+            "key": 101,
+            "children": [],
+            "todo": {
+              "id": 101,
+              "content": "Thêm thành viên mới (Modal form tạo tài khoản POST /api/v1/users)",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 102,
+            "children": [],
+            "todo": {
+              "id": 102,
+              "content": "Xuất danh sách thành viên cộng đồng ra file CSV",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 103,
+            "children": [],
+            "todo": {
+              "id": 103,
+              "content": "Cấu hình ma trận phân quyền vai trò (ADMIN, STAFF, CLIENT)",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 104,
+            "children": [],
+            "todo": {
+              "id": 104,
+              "content": "Khóa / Tạm ngưng hàng loạt tài khoản vi phạm tiêu chuẩn cộng đồng",
+              "done": false,
+              "level": "warning"
+            }
+          }
+        ],
+        "todo": {
+          "id": 100,
+          "content": "Quản trị Thành Viên & Phân Quyền (User & RBAC Operations)",
+          "done": false,
+          "level": "default"
+        }
+      },
+      {
+        "key": 200,
+        "children": [
+          {
+            "key": 201,
+            "children": [],
+            "todo": {
+              "id": 201,
+              "content": "Đăng bài viết & phát hành thông báo chính thức từ Ban Quản Trị",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 202,
+            "children": [],
+            "todo": {
+              "id": 202,
+              "content": "Kiểm duyệt luồng bài viết và bình luận cộng đồng (Newsfeed Moderation)",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 203,
+            "children": [],
+            "todo": {
+              "id": 203,
+              "content": "Tiếp nhận và xử lý báo cáo vi phạm tiêu chuẩn cộng đồng",
+              "done": false,
+              "level": "warning"
+            }
+          },
+          {
+            "key": 204,
+            "children": [],
+            "todo": {
+              "id": 204,
+              "content": "Ẩn hoặc gỡ bỏ bài viết/chia sẻ vi phạm chính sách",
+              "done": false,
+              "level": "danger"
+            }
+          }
+        ],
+        "todo": {
+          "id": 200,
+          "content": "Quản lý Bài Viết & Kiểm Duyệt Nội Dung (Content & Moderation)",
+          "done": false,
+          "level": "default"
+        }
+      },
+      {
+        "key": 300,
+        "children": [
+          {
+            "key": 301,
+            "children": [],
+            "todo": {
+              "id": 301,
+              "content": "Cấu hình bật/tắt tính năng nền tảng (Đăng bài, Nhắn tin, Gọi thoại/Video)",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 302,
+            "children": [],
+            "todo": {
+              "id": 302,
+              "content": "Giám sát trạng thái WebSocket, luồng nhắn tin 1-1/nhóm & cuộc gọi thời gian thực",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 303,
+            "children": [],
+            "todo": {
+              "id": 303,
+              "content": "Quản lý nhóm cộng đồng & chủ đề thảo luận nổi bật",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 304,
+            "children": [],
+            "todo": {
+              "id": 304,
+              "content": "Phát thông báo đẩy (Push Notification) toàn hệ thống",
+              "done": false,
+              "level": "default"
+            }
+          }
+        ],
+        "todo": {
+          "id": 300,
+          "content": "Tương Tác, Nhắn Tin & Điều Phối Tính Năng (Communication & Features)",
+          "done": false,
+          "level": "default"
+        }
+      },
+      {
+        "key": 400,
+        "children": [
+          {
+            "key": 401,
+            "children": [],
+            "todo": {
+              "id": 401,
+              "content": "Làm mới bộ nhớ đệm Redis cache (Purge Cache API)",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 402,
+            "children": [],
+            "todo": {
+              "id": 402,
+              "content": "Sao lưu cơ sở dữ liệu snapshot tức thì",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 403,
+            "children": [],
+            "todo": {
+              "id": 403,
+              "content": "Nhật ký truy vết an ninh và audit logs hệ thống",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 404,
+            "children": [],
+            "todo": {
+              "id": 404,
+              "content": "Cấu hình chính sách bảo mật, chống brute-force và xác thực OTP",
+              "done": false,
+              "level": "default"
+            }
+          }
+        ],
+        "todo": {
+          "id": 400,
+          "content": "Hạ Tầng Hệ Thống & An Ninh Mạng (Infrastructure & Security)",
+          "done": false,
+          "level": "default"
+        }
+      },
+      {
+        "key": 500,
+        "children": [
+          {
+            "key": 501,
+            "children": [],
+            "todo": {
+              "id": 501,
+              "content": "Triển khai Dashboard Thống Kê Bài Viết & Tương Tác (Bảng posts, comments, reactions)",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 502,
+            "children": [],
+            "todo": {
+              "id": 502,
+              "content": "Triển khai Dashboard Kiểm Duyệt Nội Dung & Báo Cáo Vi Phạm (Bảng reports, moderation_logs)",
+              "done": false,
+              "level": "default"
+            }
+          },
+          {
+            "key": 503,
+            "children": [],
+            "todo": {
+              "id": 503,
+              "content": "Triển khai Dashboard Nhắn Tin Realtime, Cuộc Gọi & An Ninh WebSocket (Bảng messages, calls, audit_logs)",
+              "done": false,
+              "level": "default"
+            }
+          }
+        ],
+        "todo": {
+          "id": 500,
+          "content": "Dashboard Thống Kê Cộng Đồng Trong Tương Lai (Roadmap Dashboards)",
+          "done": false,
+          "level": "default"
+        }
+      }
+    ],
+    "expandKeys": [100, 200, 300, 400, 500],
+    "add_mode": "bottom",
+    "virtual": false,
+    "showLine": false,
+    "playFontSize": 24,
+    "title": "todo_list",
+    "autoSort": false,
+    "showEndTime": false,
+    "simpleMode": false,
+    "lang": "en",
+    "version": "1794619469580"
+  }
+}
