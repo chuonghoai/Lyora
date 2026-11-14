@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { parsePostgresConnectionConfig } from './postgres-connection.util';
 
 @Module({
   imports: [
@@ -8,19 +9,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const dbUrl = configService.get<string>('database.url');
-        const isSsl =
-          dbUrl?.includes('sslmode=require') ||
-          dbUrl?.includes('aivencloud.com');
-
-        const cleanUrl = dbUrl
-          ?.replace(/([?&])sslmode=[^&]+(&|$)/, '$1')
-          .replace(/[?&]$/, '');
+        const dbUrl =
+          configService.get<string>('database.url') ??
+          'postgresql://postgres:postgres@localhost:5432/lyora_db';
+        const { url: cleanUrl, ssl } = parsePostgresConnectionConfig(dbUrl);
 
         return {
           type: 'postgres',
           url: cleanUrl,
-          ssl: isSsl ? { rejectUnauthorized: false } : false,
+          ssl,
           autoLoadEntities: true,
           synchronize: configService.get<boolean>(
             'database.synchronize',
