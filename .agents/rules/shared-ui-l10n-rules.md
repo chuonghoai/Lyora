@@ -29,5 +29,14 @@ Dự án sử dụng **một ngôn ngữ thống nhất (Tiếng Việt)** cho t
 
 - **KHÔNG** sử dụng các thư viện đa ngôn ngữ (i18n / `react-i18next` / `nestjs-i18n`) hoặc các file từ điển JSON phức tạp (`en.json`, `vi.json`).
 - Mọi văn bản hiển thị cho người dùng (Button label, Tiêu đề trang, Modal, Thông báo lỗi, Validation message, Placeholder) phải được viết trực tiếp bằng **Tiếng Việt chuẩn mực, rõ ràng, gãy gọn**.
-- Đảm bảo tính nhất quán của thuật ngữ giữa Cổng Khách Hàng (`src/ui/client`) và Trung Tâm Quản Trị (`src/ui/admin`) (ví dụ: dùng thống nhất "Phản ánh", "Tiếp nhận", "Đang xử lý", "Hoàn thành").
+- Đảm bảo tính nhất quán của thuật ngữ giữa Cổng Người Dùng (`src/ui/client`) và Trung Tâm Quản Trị (`src/ui/admin`) (ví dụ: dùng thống nhất "Bài viết", "Bình luận", "Tin nhắn", "Chia sẻ", "Báo cáo vi phạm", "Kiểm duyệt").
 - **Khi code review / PR review**: Agent MUST kiểm tra và phát hiện các chuỗi văn bản sai chính tả, ngôn ngữ lộn xộn hoặc các placeholder i18n cũ còn sót lại.
+
+---
+
+## 3. PHẠM VI NGHIỆP VỤ & ĐỊNH HƯỚNG PHI THƯƠNG MẠI (SOCIAL COMMUNITY DOMAIN)
+
+- **Bản chất dự án:** Lyora là nền tảng **Cộng đồng số — Tương tác bài viết — Nhắn tin — Chia sẻ thời gian thực** (Social Networking & Real-Time Communication Platform).
+- **Theme Design vs Domain:** Bảng màu và phong cách "Cyber Precision" trong `DESIGN.md` chỉ đóng vai trò là **chủ đề thiết kế thị giác (Theme Design)**.
+- **TUYỆT ĐỐI KHÔNG** đưa các nội dung hoặc chức năng thương mại, kinh doanh (như bán hàng, Cyber Key, license key, đơn hàng, doanh thu, giỏ hàng, thanh toán) vào UI, API, Dashboard hay tài liệu của dự án.
+

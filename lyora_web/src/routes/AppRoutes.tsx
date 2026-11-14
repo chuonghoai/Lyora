@@ -86,7 +86,7 @@ export const router = createBrowserRouter([
   },
   {
     path: ROUTES.ADMIN.ROOT,
-    element: <RoleRoute allowedRoles={['ADMIN', 'STAFF']} requireAuth={true} />,
+    element: <RoleRoute allowedRoles={['ADMIN']} requireAuth={true} />,
     children: [
       {
         element: <AdminLayout />,

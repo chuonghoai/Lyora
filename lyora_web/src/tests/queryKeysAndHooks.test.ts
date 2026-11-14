@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authKeys, systemKeys, userKeys } from '@/features';
 import { AuthService } from '@/features/auth/services/auth.service';
 import type { IAuthRepository } from '@/features/auth/repositories/auth.repository';
+import { UserService } from '@/features/user/services/user.service';
+import type { IUserRepository } from '@/features/user/repositories/user.repository';
 
 describe('Query Key Factories & Data Layer Hooks', () => {
   it('authKeys factory produces deterministic hierarchical query keys', () => {
@@ -18,6 +20,7 @@ describe('Query Key Factories & Data Layer Hooks', () => {
   it('userKeys factory produces deterministic hierarchical query keys', () => {
     expect(userKeys.all).toEqual(['users']);
     expect(userKeys.profile()).toEqual(['users', 'profile']);
+    expect(userKeys.statistics()).toEqual(['users', 'statistics']);
     expect(userKeys.detail('user-123')).toEqual(['users', 'detail', 'user-123']);
   });
 
@@ -68,6 +71,35 @@ describe('Query Key Factories & Data Layer Hooks', () => {
     it('handles logout gracefully through repository', async () => {
       await authService.logout();
       expect(authService.hasActiveSession()).toBe(false);
+    });
+  });
+
+  describe('UserService & Statistics Data Layer', () => {
+    it('successfully calls repository getStatistics and extracts payload', async () => {
+      const mockUserRepo: IUserRepository = {
+        getProfile: vi.fn(),
+        getStatistics: vi.fn().mockResolvedValue({
+          data: {
+            totalUsers: 10,
+            clientCount: 8,
+            adminCount: 1,
+            staffCount: 1,
+            activeCount: 9,
+            inactiveCount: 1,
+            newUsersToday: 2,
+            newUsersThisMonth: 5,
+            recentUsers: [],
+          },
+        }),
+      };
+
+      const userService = new UserService(mockUserRepo);
+      const stats = await userService.getStatistics();
+
+      expect(mockUserRepo.getStatistics).toHaveBeenCalledTimes(1);
+      expect(stats.totalUsers).toBe(10);
+      expect(stats.clientCount).toBe(8);
+      expect(stats.adminCount).toBe(1);
     });
   });
 });
