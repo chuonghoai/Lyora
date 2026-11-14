@@ -25,10 +25,6 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  // Global Prefix (/api)
-  const apiPrefix = configService.get<string>('app.apiPrefix', 'api');
-  app.setGlobalPrefix(apiPrefix);
-
   // Global Validation Pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -47,9 +43,7 @@ async function bootstrap(): Promise<void> {
 
   const port = configService.get<number>('app.port', 3000);
   await app.listen(port);
-  logger.log(
-    `Lyora Backend đang chạy tại: http://localhost:${port}/${apiPrefix}`,
-  );
+  logger.log(`Lyora Backend đang chạy tại: http://localhost:${port}`);
 }
 
 void bootstrap();

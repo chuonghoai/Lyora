@@ -21,7 +21,7 @@ export interface UserProfile {
   id: string;
   email: string;
   fullName: string;
-  role: 'ADMIN' | 'STAFF' | 'CLIENT';
+  role: 'ADMIN' | 'CLIENT';
   avatarUrl?: string;
   isActive?: boolean;
 }

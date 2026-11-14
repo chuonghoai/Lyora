@@ -14,7 +14,7 @@
   - Khi người dùng đăng xuất, AccessToken hiện tại phải được đưa vào Redis Blacklist với thời gian sống (TTL) bằng chính thời gian còn lại trước khi token hết hạn.
   - `JwtAuthGuard` kiểm tra Redis blacklist trước khi cho phép request đi qua.
 - **Role-based Access Control (RBAC):**
-  - Sử dụng decorator `@Roles('ADMIN', 'STAFF')` và `RolesGuard` để kiểm soát phân quyền trên từng endpoint.
+  - Sử dụng decorator `@Roles('ADMIN')` và `RolesGuard` để kiểm soát phân quyền trên từng endpoint.
 
 ---
 

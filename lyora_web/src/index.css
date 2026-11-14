@@ -1,48 +1,139 @@
 @import "tailwindcss";
 
-/* Ẩn icon xem và xóa mật khẩu mặc định của trình duyệt Edge/IE để tránh trùng lặp */
-input::-ms-reveal,
-input::-ms-clear {
-  display: none;
-}
-
 :root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --accent: #aa3bff;
-  --background: #ffffff;
-  --background-subtle: #f8fafc;
-  --surface: #ffffff;
-  --text-primary: #0f172a;
-  --text-body: #334155;
-  --text-muted: #64748b;
-  --border: #cbd5e1;
-  --border-subtle: #e5e4e7;
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Token gốc - Clean & Trustworthy */
+  --pri: #2563EB;
+  --onpri: #FFFFFF;
+  --sec: #DBEAFE;
+  --sec2: #93C5FD;
+  --bg: #F3F4F6;
+  --card: #FFFFFF;
+  --txt: #111827;
+  --mut: #6B7280;
+  --acc: #F43F5E;
+  --bd: #E5E7EB;
 
-  font-family: var(--sans);
-  color: var(--text-body);
-  background-color: var(--background-subtle);
+  /* Token dẫn xuất */
+  --pri-hover: #1D4ED8;
+  --pri-active: #1E40AF;
+
+  /* Màu trạng thái hệ thống */
+  --status-success: #16A34A;
+  --status-warning: #D97706;
+  --status-error: #DC2626;
+  --status-info: #0284C7;
+
+  color-scheme: light;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  color: var(--txt);
+  background-color: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Vô hiệu hóa bảng màu mặc định của Tailwind để chỉ dùng token ngữ nghĩa */
+@theme {
+  --color-*: initial;
+}
+
+@theme inline {
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Token gốc */
+  --color-primary: var(--pri);
+  --color-on-primary: var(--onpri);
+  --color-secondary: var(--sec);
+  --color-secondary-strong: var(--sec2);
+  --color-background: var(--bg);
+  --color-card: var(--card);
+  --color-foreground: var(--txt);
+  --color-muted: var(--mut);
+  --color-accent: var(--acc);
+  --color-border: var(--bd);
+
+  /* Token dẫn xuất */
+  --color-primary-hover: var(--pri-hover);
+  --color-primary-active: var(--pri-active);
+
+  /* Màu trạng thái hệ thống */
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-error: var(--status-error);
+  --color-info: var(--status-info);
+
+  /* Typography */
+  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+}
+
+/* Ẩn icon xem và xóa mật khẩu mặc định của trình duyệt Edge/IE */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
-  background-color: var(--background-subtle);
-  color: var(--text-body);
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  background-color: var(--bg);
+  color: var(--txt);
+}
+
+::selection {
+  background-color: var(--sec);
+  color: var(--pri-active);
+}
+
+input,
+textarea {
+  caret-color: var(--pri);
 }
 
 code {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 0.875em;
-  background-color: #f1f5f9;
+  background-color: var(--bg);
+  border: 1px solid var(--bd);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #0f172a;
+  color: var(--txt);
+}
+
+/* Thanh cuộn đồng bộ bảng màu trung tính Clean & Trustworthy */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--bd);
+  border-radius: 9999px;
+}
+
+/* Hiệu ứng dropdown mở trượt từ dưới lên (Sidebar account menu) */
+@keyframes lyora-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-slide-up {
+  animation: lyora-slide-up 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--mut);
 }

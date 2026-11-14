@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="32 31 192 192" width="256" height="256" role="img" aria-labelledby="title-a">
-  <title id="title-a">LYORA Concept A - The Harmonic L</title>
-  <!-- Main Monogram 'L' & Acoustic Lyre Soundbox in Primary Blue -->
-  <path fill="#2563eb" fill-rule="evenodd" d="
+  <title id="title-a">LYORA - The Harmonic L</title>
+  <!-- Main Monogram 'L' & Acoustic Lyre Soundbox in Primary Blue (#2563EB) -->
+  <path fill="#2563EB" fill-rule="evenodd" d="
     M 34 48
     C 34 40 40 36 48 36
     H 68
@@ -20,7 +20,7 @@
     Z
   "/>
   <!-- Upper Classical Yoke / Tuning Crossbar -->
-  <path fill="#2563eb" d="
+  <path fill="#2563EB" d="
     M 74 52
     H 168
     C 174 52 178 56 178 62
@@ -28,12 +28,12 @@
     H 74
     Z
   "/>
-  <!-- 3 Harmonic Strings (Rhythm, Data, Creativity) -->
-  <rect x="96" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
-  <rect x="121" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
-  <rect x="146" y="78" width="13" height="92" rx="6.5" fill="#2563eb"/>
-  <!-- Apollo's Star of Light & Intelligence in Accent Purple -->
-  <path fill="#aa3bff" d="
+  <!-- 3 Harmonic Strings (Community, Messaging, Sharing) -->
+  <rect x="96" y="78" width="13" height="92" rx="6.5" fill="#2563EB"/>
+  <rect x="121" y="78" width="13" height="92" rx="6.5" fill="#2563EB"/>
+  <rect x="146" y="78" width="13" height="92" rx="6.5" fill="#2563EB"/>
+  <!-- Apollo's Star of Light & Connection in Secondary Strong Blue (#93C5FD) -->
+  <path fill="#93C5FD" d="
     M 204 42
     Q 204 60 186 60
     Q 204 60 204 78
@@ -42,4 +42,3 @@
     Z
   "/>
 </svg>
-

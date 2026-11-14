@@ -19,7 +19,7 @@ Mục đích: Quy định chuẩn hóa quy trình tạo file `*.integration.spec
 1. Xác định Controller, API Endpoint và phương thức cần mô phỏng (ví dụ: `AuthController.login`, `UsersController.getProfile`).
 2. Xác định Actor thực hiện hành động:
    - **Client** (User thông thường trên Cổng Client): Cần JWT Token chứa claim `userId` và role `CLIENT`.
-   - **Staff / Admin** (Quản trị viên trên Cổng Admin): Cần JWT Token với role tương ứng (`STAFF`, `ADMIN`).
+   - **Admin** (Quản trị viên trên Cổng Admin): Cần JWT Token với role `ADMIN`.
    - **Anonymous / Guest**: Không kèm Authorization header.
 3. Thu thập định dạng Payload thực tế:
    - Đọc Request DTO hoặc types từ `lyora_web/src/features/<feature>/types` để đảm bảo payload gửi trong test **100% giống với client thực tế**.
@@ -30,7 +30,7 @@ Mục đích: Quy định chuẩn hóa quy trình tạo file `*.integration.spec
 
 1. **Vị trí file**: Đặt trong thư mục `lyora_backend/test/integration/` hoặc `lyora_backend/src/modules/<feature>/test/<feature>.integration.spec.ts`.
 2. **Quy tắc Kiểm tra Backend Đang Chạy (Health Check)**:
-   - Bắt buộc kiểm tra server backend (`http://localhost:3000/api` hoặc port cấu hình) đang hoạt động trước khi gửi request.
+   - Bắt buộc kiểm tra server backend (`http://localhost:3000` hoặc port cấu hình) đang hoạt động trước khi gửi request.
    - Nếu backend chưa chạy, in thông báo hướng dẫn developer khởi động backend bằng `npm run backend:dev` và dừng test ngay.
 3. **Quy tắc Thực thi Test**:
    - Chỉ tạo **1 test block duy nhất** cho 1 nghiệp vụ mô phỏng, gọi API đúng **1 lần duy nhất**.
@@ -44,7 +44,7 @@ import axios from 'axios';
 import * as jwt from 'jsonwebtoken';
 
 describe('Simulate Action Test (Integration)', () => {
-  const BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000/api';
+  const BASE_URL = process.env.BACKEND_URL || 'http://localhost:3000';
   const JWT_SECRET = process.env.JWT_SECRET || 'your-test-jwt-secret';
 
   beforeAll(async () => {
