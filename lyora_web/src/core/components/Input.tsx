@@ -40,7 +40,7 @@ export const Input: React.FC<InputProps> = ({
           id={inputId}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={describedBy}
-          className={`w-full px-3 py-2 border rounded-lg text-sm text-[#0f172a] bg-white placeholder-[#94a3b8] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-colors duration-150 ${
+          className={`w-full px-3 py-2 border rounded-lg text-sm text-[#0f172a] bg-white placeholder-[#94a3b8] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-colors duration-150 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden ${
             error ? 'border-red-500' : 'border-[#cbd5e1]'
           } ${endAdornment ? 'pr-12' : ''} ${className}`}
           {...props}
