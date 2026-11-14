@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Ẩn icon xem và xóa mật khẩu mặc định của trình duyệt Edge/IE để tránh trùng lặp */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 :root {
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
