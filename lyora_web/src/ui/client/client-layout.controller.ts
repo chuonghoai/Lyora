@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useAuthStore, toast } from '@/core';
+import { useLogoutMutation } from '@/features/auth';
 
 export function useClientLayoutController() {
   const location = useLocation();
@@ -7,10 +8,11 @@ export function useClientLayoutController() {
 
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const logout = useAuthStore((s) => s.logout);
+  const logoutMutation = useLogoutMutation();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    if (logoutMutation.isPending) return;
+    await logoutMutation.mutateAsync();
     toast.info('Bạn đã đăng xuất khỏi hệ thống.');
   };
 
@@ -19,6 +21,7 @@ export function useClientLayoutController() {
     appTitle,
     user,
     isAuthenticated,
+    isLoggingOut: logoutMutation.isPending,
     handleLogout,
   };
 }

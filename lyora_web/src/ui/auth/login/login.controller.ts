@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useLoginMutation, loginSchema } from '@/features/auth';
+import { useLoginMutation, loginSchema, mapZodFieldErrors } from '@/features/auth';
 import { useAuthStore, toast, isApiError, type ApiError } from '@/core';
 import { ROUTES } from '@/routes/paths';
 
@@ -18,7 +18,6 @@ export function useLoginController() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
 
-  // Uses Data Layer TanStack Query hook, NOT defining useMutation in UI
   const loginMutation = useLoginMutation({
     onSuccess: (session) => {
       const { accessToken, refreshToken, user } = session;
@@ -76,14 +75,7 @@ export function useLoginController() {
 
     const result = loginSchema.safeParse(formData);
     if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const fieldName = String(issue.path[0]);
-        if (!fieldErrors[fieldName]) {
-          fieldErrors[fieldName] = issue.message;
-        }
-      }
-      setValidationErrors(fieldErrors);
+      setValidationErrors(mapZodFieldErrors(result.error));
       return;
     }
 
@@ -94,19 +86,16 @@ export function useLoginController() {
         password: formData.password,
       });
     } catch {
-      // Handled in mutation onError
+      return;
     }
   };
 
   return {
-    // States
     formData,
     validationErrors,
     showPassword,
     isLoading: loginMutation.isPending,
     apiError: loginMutation.error as ApiError | null,
-
-    // Handlers
     handleFieldChange,
     handleTogglePassword,
     handleSubmit,
