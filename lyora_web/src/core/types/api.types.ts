@@ -32,7 +32,7 @@ export interface ApiError {
   isNetworkError?: boolean;
 }
 
-export type UserRole = 'CLIENT' | 'ADMIN' | 'STAFF';
+export type UserRole = 'CLIENT' | 'ADMIN';
 
 export interface UserProfile {
   id: string;

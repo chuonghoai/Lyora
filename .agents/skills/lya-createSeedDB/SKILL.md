@@ -70,7 +70,7 @@ File `seed/README.md` phải phản ánh chính xác trạng thái thực tế s
 2. Xác định cấu trúc bảng, khóa chính, các cột bắt buộc (`nullable: false`), trường Unique, Enums, Indexes.
 3. Xác định cơ chế Authentication (`src/modules/auth/`, `src/common/enums/role.enum.ts`):
    - Thuật toán hash mật khẩu: `bcrypt`.
-   - Phân quyền thực tế: `ADMIN`, `CLIENT`, `STAFF`.
+   - Phân quyền thực tế: `ADMIN`, `CLIENT`.
    - Table chứa tài khoản người dùng: `users` (Entity `User`).
 
 ### Step 2 — Audit Existing Seed Files
@@ -88,7 +88,7 @@ File `seed/README.md` phải phản ánh chính xác trạng thái thực tế s
      - `admin@gmail.com` / `123456` với `UserRole.ADMIN`.
      - `user@gmail.com` / `123456` với `UserRole.CLIENT`.
    - Băm mật khẩu bằng `bcrypt.hash(password, 10)`.
-   - Giữ lại hoặc bổ sung các tài khoản kiểm thử bổ sung (ví dụ: `STAFF`, tài khoản bị khóa).
+   - Giữ lại hoặc bổ sung các tài khoản kiểm thử bổ sung (ví dụ: tài khoản bị khóa).
 
 ### Step 4 — Synchronize `lyora_backend/seed/README.md`
 1. Tạo hoặc cập nhật `lyora_backend/seed/README.md` theo đầy đủ 6 phần (A đến F) nêu tại Mục 2.
@@ -130,7 +130,7 @@ Báo cáo kết quả của `/lya-createSeedDB` bắt buộc phải bao gồm c�
 - **Bảng chi tiết**:
 | STT | Seed File | Tên Bảng (Table) | Mô tả dữ liệu | Số bản ghi | Trạng thái |
 | :---: | :--- | :--- | :--- | :---: | :---: |
-| 1 | `users.seed.ts` | `users` | Tài khoản người dùng (Admin, User, Staff, Inactive) | 4 | Complete |
+| 1 | `users.seed.ts` | `users` | Tài khoản người dùng (Admin, User, Inactive) | 3 | Complete |
 
 - **Phân loại thay đổi**:
   - File mới tạo: ...

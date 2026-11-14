@@ -19,47 +19,64 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   footer,
 }) => {
   return (
-    <main className="min-h-screen bg-[#f8fafc] px-4 py-6 sm:px-6 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(30rem,1.1fr)] lg:p-0">
-      <section className="relative hidden overflow-hidden bg-[#0f172a] px-12 py-16 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute -left-24 top-24 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl" />
-        <div className="absolute -bottom-32 right-0 h-96 w-96 rounded-full border border-white/15" />
-        <Link to={ROUTES.CLIENT.ROOT} className="relative inline-flex w-fit items-center gap-3 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white" aria-label="Về cổng khách hàng Lyora">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-white p-1.5 shadow-sm">
+    <main className="min-h-dvh bg-background px-4 py-6 sm:px-6 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(30rem,1.1fr)] lg:p-0">
+      <section className="relative hidden overflow-hidden border-r border-border bg-secondary px-12 py-16 text-foreground lg:flex lg:flex-col lg:justify-between">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full border border-secondary-strong" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-secondary-strong/25" />
+        <Link
+          to={ROUTES.CLIENT.ROOT}
+          className="relative inline-flex w-fit items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+          aria-label="Về cổng người dùng Lyora"
+        >
+          <span className="grid h-12 w-12 place-items-center rounded-xl border border-border bg-card p-1.5 shadow-sm">
             <img src={webIconSymbol} alt="" className="h-full w-full" />
           </span>
-          <span className="text-xl font-bold tracking-tight">Lyora</span>
+          <span className="text-xl font-bold tracking-tight text-foreground">Lyora</span>
         </Link>
 
         <div className="relative max-w-md">
-          <p className="text-4xl font-semibold leading-tight tracking-tight">Kết nối, chia sẻ và phát triển cùng cộng đồng.</p>
-          <p className="mt-6 max-w-sm text-base leading-7 text-slate-300">Một không gian an toàn để quản lý tài khoản và tiếp tục trải nghiệm Lyora.</p>
+          <p className="text-4xl font-semibold leading-tight tracking-tight text-foreground">
+            Kết nối, chia sẻ và đồng hành cùng cộng đồng.
+          </p>
+          <p className="mt-6 max-w-sm text-base leading-7 text-muted">
+            Không gian cộng đồng số để đăng bài viết, trò chuyện trực tiếp và giữ nhịp kết nối mỗi ngày.
+          </p>
         </div>
 
-        <p className="relative text-sm text-slate-400">Lyora Platform · Cộng đồng số dành cho bạn</p>
+        <p className="relative text-sm text-muted">Lyora Platform · Cộng đồng số dành cho bạn</p>
       </section>
 
       <section className="flex min-h-full items-center justify-center lg:px-12 xl:px-20">
         <div className="w-full max-w-[30rem]">
-          <Link to={ROUTES.CLIENT.ROOT} className="mb-10 inline-flex items-center gap-3 rounded-2xl lg:hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563eb]" aria-label="Về cổng khách hàng Lyora">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-white p-1.5 shadow-sm border border-[#e5e4e7]">
+          <Link
+            to={ROUTES.CLIENT.ROOT}
+            className="mb-10 inline-flex items-center gap-3 rounded-xl lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+            aria-label="Về cổng người dùng Lyora"
+          >
+            <span className="grid h-11 w-11 place-items-center rounded-xl border border-border bg-card p-1.5 shadow-sm">
               <img src={webIconSymbol} alt="" className="h-full w-full" />
             </span>
-            <span className="text-lg font-bold tracking-tight text-[#0f172a]">Lyora</span>
+            <span className="text-lg font-bold tracking-tight text-foreground">Lyora</span>
           </Link>
 
           <header>
-            <h1 className="text-3xl font-bold tracking-tight text-[#0f172a]">{title}</h1>
-            <p className="mt-2 text-base leading-6 text-[#475569]">{description}</p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+            <p className="mt-2 text-base leading-6 text-muted">{description}</p>
             {progress && <div className="mt-8">{progress}</div>}
           </header>
 
-          <div className="mt-8 rounded-2xl border border-[#e5e4e7] bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.08)] sm:p-8">
+          <div className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
             {children}
           </div>
 
-          <div className="mt-6 text-center text-sm text-[#475569]">{footer}</div>
+          <div className="mt-6 text-center text-sm text-muted">{footer}</div>
           <div className="mt-7 text-center">
-            <Link to={ROUTES.CLIENT.ROOT} className="text-sm font-medium text-[#64748b] underline-offset-4 hover:text-[#2563eb] hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563eb]">← Về Cổng Khách Hàng</Link>
+            <Link
+              to={ROUTES.CLIENT.ROOT}
+              className="rounded-lg px-2 py-1 text-sm font-medium text-muted underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              ← Về Cổng Người Dùng
+            </Link>
           </div>
         </div>
       </section>

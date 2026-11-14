@@ -21,6 +21,7 @@ describe('Query Key Factories & Data Layer Hooks', () => {
     expect(userKeys.all).toEqual(['users']);
     expect(userKeys.profile()).toEqual(['users', 'profile']);
     expect(userKeys.statistics()).toEqual(['users', 'statistics']);
+    expect(userKeys.statistics('ADMIN')).toEqual(['users', 'statistics', 'ADMIN']);
     expect(userKeys.detail('user-123')).toEqual(['users', 'detail', 'user-123']);
   });
 
@@ -81,9 +82,8 @@ describe('Query Key Factories & Data Layer Hooks', () => {
         getStatistics: vi.fn().mockResolvedValue({
           data: {
             totalUsers: 10,
-            clientCount: 8,
+            clientCount: 9,
             adminCount: 1,
-            staffCount: 1,
             activeCount: 9,
             inactiveCount: 1,
             newUsersToday: 2,
@@ -98,7 +98,7 @@ describe('Query Key Factories & Data Layer Hooks', () => {
 
       expect(mockUserRepo.getStatistics).toHaveBeenCalledTimes(1);
       expect(stats.totalUsers).toBe(10);
-      expect(stats.clientCount).toBe(8);
+      expect(stats.clientCount).toBe(9);
       expect(stats.adminCount).toBe(1);
     });
   });

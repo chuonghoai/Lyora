@@ -4,7 +4,6 @@ export class UserStatisticsDto {
   totalUsers: number;
   clientCount: number;
   adminCount: number;
-  staffCount: number;
   activeCount: number;
   inactiveCount: number;
   newUsersToday: number;

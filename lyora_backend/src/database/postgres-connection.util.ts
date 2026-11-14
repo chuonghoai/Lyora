@@ -26,4 +26,3 @@ export function parsePostgresConnectionConfig(
     ssl: isSsl ? { rejectUnauthorized: false } : false,
   };
 }
-

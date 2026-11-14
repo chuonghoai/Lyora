@@ -15,7 +15,10 @@ export default function LoginView(): React.ReactElement {
       footer={
         <>
           Chưa có tài khoản?{' '}
-          <Link to={ROUTES.AUTH.REGISTER} className="font-semibold text-[#2563eb] underline-offset-4 hover:underline">
+          <Link
+            to={ROUTES.AUTH.REGISTER}
+            className="rounded font-semibold text-primary underline-offset-4 hover:text-primary-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
             Đăng ký ngay
           </Link>
         </>

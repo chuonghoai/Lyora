@@ -26,10 +26,11 @@ import { parsePostgresConnectionConfig } from './postgres-connection.util';
           retryAttempts: 2,
           retryDelay: 1500,
           extra: {
+            max: 5,
             keepAlive: true,
             keepAliveInitialDelayMillis: 10000,
             connectionTimeoutMillis: 20000,
-            idleTimeoutMillis: 300000,
+            idleTimeoutMillis: 30000,
           },
         };
       },
