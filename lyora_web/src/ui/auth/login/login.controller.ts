@@ -27,15 +27,20 @@ export function useLoginController() {
       const locationState = location.state as { from?: { pathname?: string } } | null;
       const targetFrom = locationState?.from?.pathname;
 
-      if (targetFrom && targetFrom !== ROUTES.AUTH.LOGIN) {
-        navigate(targetFrom, { replace: true });
-        return;
-      }
-
       if (user.role === 'ADMIN') {
-        navigate(ROUTES.ADMIN.DASHBOARD, { replace: true });
+        const adminTarget =
+          targetFrom && targetFrom.startsWith(ROUTES.ADMIN.ROOT)
+            ? targetFrom
+            : ROUTES.ADMIN.DASHBOARD;
+        navigate(adminTarget, { replace: true });
       } else {
-        navigate(ROUTES.CLIENT.ROOT, { replace: true });
+        const clientTarget =
+          targetFrom &&
+          !targetFrom.startsWith(ROUTES.ADMIN.ROOT) &&
+          targetFrom !== ROUTES.AUTH.LOGIN
+            ? targetFrom
+            : ROUTES.CLIENT.ROOT;
+        navigate(clientTarget, { replace: true });
       }
     },
     onError: (err: unknown) => {

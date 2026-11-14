@@ -26,7 +26,7 @@ export async function runDeleteAllData(): Promise<void> {
 
   // 2. Kết nối Database
   console.log('[2/4] Đang kết nối tới Database...');
-  const dataSource = createSeedDataSource();
+  const dataSource = createSeedDataSource({ synchronize: false });
   await dataSource.initialize();
   console.log('      Kết nối Database thành công!');
 

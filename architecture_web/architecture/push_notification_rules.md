@@ -21,10 +21,11 @@ Khi Backend NestJS phát sự kiện realtime tới Web Client, payload bắt bu
 
 ```json
 {
-  "type": "ORDER_COMPLETED",
+  "type": "NEW_MESSAGE",
   "payload": {
-    "orderId": "ord-12345",
-    "licenseKey": "XXXX-YYYY-ZZZZ"
+    "conversationId": "conv-12345",
+    "senderId": "usr-67890",
+    "preview": "Bạn có tin nhắn mới từ cộng đồng Lyora"
   },
   "timestamp": "2026-11-12T05:30:00.000Z"
 }
