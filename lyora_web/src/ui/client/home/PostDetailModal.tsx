@@ -8,8 +8,9 @@ import {
   PostCommentsList,
   PostInteractionsBlock,
   PostMediaGallery,
+  PostVisibilityBadge,
 } from './PostCard';
-import { CloseIcon, GlobeIcon, LockIcon } from './ClientIcons';
+import { CloseIcon } from './ClientIcons';
 
 export interface PostDetailModalProps {
   controller: HomeController;
@@ -74,19 +75,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) 
                     {formatRelativeTime(post.createdAt)}
                   </time>
                   <span aria-hidden="true">·</span>
-                  <span className="inline-flex items-center gap-1">
-                    {post.visibility === 'PUBLIC' ? (
-                      <>
-                        <GlobeIcon className="w-3.5 h-3.5" />
-                        <span>Công khai</span>
-                      </>
-                    ) : (
-                      <>
-                        <LockIcon className="w-3.5 h-3.5 text-warning" />
-                        <span>Riêng tư</span>
-                      </>
-                    )}
-                  </span>
+                  <PostVisibilityBadge visibility={post.visibility} />
                 </div>
               </div>
             </div>

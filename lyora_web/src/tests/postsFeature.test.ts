@@ -80,6 +80,13 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     });
     expect(mediaOnlyPost.success).toBe(true);
 
+    const friendsPost = createPostSchema.safeParse({
+      content: 'Chia sẻ với bạn bè thân thiết',
+      visibility: 'FRIENDS',
+      media: [],
+    });
+    expect(friendsPost.success).toBe(true);
+
     const emptyComment = createCommentSchema.safeParse({ content: '  ', media: null });
     expect(emptyComment.success).toBe(false);
 

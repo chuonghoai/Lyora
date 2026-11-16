@@ -240,7 +240,7 @@ const INITIAL_PREVIEW_POSTS: Post[] = [
     author: AUTHORS.giaHan,
     content:
       'Chiều hoàng hôn bên bến Bạch Đằng và ly trà đào mát lạnh cùng hội bạn thân sau giờ tan làm.',
-    visibility: 'PUBLIC',
+    visibility: 'FRIENDS',
     media: [
       {
         id: 'm-5a',

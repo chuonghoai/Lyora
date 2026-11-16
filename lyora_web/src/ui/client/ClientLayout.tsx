@@ -37,9 +37,9 @@ export const ClientLayout: React.FC = () => {
     <div className="min-h-dvh bg-background text-foreground flex flex-col" data-ui>
       {/* Top Social Header */}
       <header className="sticky top-0 z-30 bg-card border-b border-border shadow-sm/40">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          {/* Brand + Search */}
-          <div className="flex items-center gap-3 flex-1 min-w-0 max-w-md">
+        <div className="w-full px-3 sm:px-5 lg:px-6 h-16 flex md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center justify-between gap-3">
+          {/* Far Left: Brand Logo + Search Field */}
+          <div className="justify-self-start flex items-center gap-3 flex-1 min-w-0 md:flex-initial w-full md:max-w-md">
             <Link
               to={ROUTES.CLIENT.ROOT}
               onClick={() => controller.handleSelectTab('all')}
@@ -81,10 +81,10 @@ export const ClientLayout: React.FC = () => {
             </form>
           </div>
 
-          {/* Center Navigation Tabs (Desktop) */}
+          {/* Exact Center: Navigation Tabs (Desktop) */}
           <nav
             aria-label="Điều hướng chính cộng đồng"
-            className="hidden md:flex items-center gap-1.5"
+            className="hidden md:flex items-center justify-center gap-1.5 justify-self-center"
           >
             <button
               type="button"
@@ -126,8 +126,8 @@ export const ClientLayout: React.FC = () => {
             </button>
           </nav>
 
-          {/* Right: Notifications & User Account Dropdown */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Far Right: Notifications & User Account Dropdown */}
+          <div className="justify-self-end flex items-center gap-2 shrink-0">
             {/* Notification Bell */}
             <div ref={controller.notificationRef} className="relative">
               <button
@@ -139,38 +139,101 @@ export const ClientLayout: React.FC = () => {
                 className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-secondary/50 hover:text-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <BellIcon className="w-5 h-5" />
-                <span
-                  aria-hidden="true"
-                  className="absolute right-2 top-2 h-2 w-2 rounded-full bg-accent ring-2 ring-card"
-                />
+                {controller.unreadNotificationsCount > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-4.5 h-4.5 rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-on-primary flex items-center justify-center ring-2 ring-card tabular-nums">
+                    {controller.unreadNotificationsCount}
+                  </span>
+                )}
               </button>
 
               {controller.isNotificationOpen && (
                 <div
                   role="dialog"
                   aria-label="Thông báo cộng đồng"
-                  className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-card shadow-md overflow-hidden z-40"
+                  className="fixed inset-x-3 top-[68px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-[420px] md:w-[460px] min-h-[420px] max-h-[78vh] flex flex-col rounded-2xl border border-border bg-card shadow-md overflow-hidden z-40"
                 >
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                    <h2 className="text-sm font-semibold text-foreground">Thông báo</h2>
-                    <button
-                      type="button"
-                      onClick={controller.handleCloseNotifications}
-                      aria-label="Đóng thông báo"
-                      className="text-muted hover:text-foreground p-1 rounded-lg hover:bg-background cursor-pointer"
-                    >
-                      <CloseIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="p-4 space-y-2.5 text-sm">
-                    <div className="rounded-xl bg-secondary/40 border border-border px-3 py-2.5">
-                      <p className="font-medium text-foreground text-xs">
-                        Chào mừng bạn đến với bảng tin Lyora
-                      </p>
-                      <p className="text-xs text-muted mt-0.5">
-                        Đăng bài viết, thả cảm xúc, bình luận và lưu những khoảnh khắc yêu thích.
-                      </p>
+                  <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-3.5 border-b border-border bg-card">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-bold text-foreground">Thông báo</h2>
+                      {controller.unreadNotificationsCount > 0 && (
+                        <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[11px] font-semibold text-accent tabular-nums">
+                          {controller.unreadNotificationsCount} chưa đọc
+                        </span>
+                      )}
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      {controller.unreadNotificationsCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={controller.handleMarkAllNotificationsRead}
+                          className="rounded-lg px-2.5 py-1 text-xs font-medium text-primary hover:bg-secondary/50 transition-colors cursor-pointer"
+                        >
+                          Đánh dấu đã đọc
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={controller.handleCloseNotifications}
+                        aria-label="Đóng thông báo"
+                        className="text-muted hover:text-foreground p-1.5 rounded-full hover:bg-background cursor-pointer"
+                      >
+                        <CloseIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
+                    {controller.notifications.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          controller.handleMarkNotificationRead(item.id);
+                          controller.handleCloseNotifications();
+                          if (item.targetTab) {
+                            controller.handleSelectTab(item.targetTab);
+                          }
+                        }}
+                        className={`w-full text-left flex items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors cursor-pointer ${
+                          item.isRead
+                            ? 'border-border bg-card hover:bg-background'
+                            : 'border-secondary-strong/70 bg-secondary/35 hover:bg-secondary/55'
+                        }`}
+                      >
+                        <span
+                          className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                            item.isRead
+                              ? 'border-border bg-background text-muted'
+                              : 'border-secondary-strong bg-card text-primary'
+                          }`}
+                        >
+                          <BellIcon className="w-4 h-4" />
+                        </span>
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <p className="text-xs sm:text-sm font-semibold text-foreground leading-snug">
+                            {item.title}
+                          </p>
+                          <p className="text-xs text-muted leading-relaxed line-clamp-2">
+                            {item.description}
+                          </p>
+                          <p className="text-[11px] font-medium text-primary pt-0.5">
+                            {item.timeLabel}
+                          </p>
+                        </div>
+                        {!item.isRead && (
+                          <span
+                            aria-label="Chưa đọc"
+                            className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-accent"
+                          />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="shrink-0 border-t border-border bg-background/40 px-4 py-2.5 text-center">
+                    <p className="text-xs text-muted">
+                      Cập nhật hoạt động tương tác và cộng đồng Lyora theo thời gian thực
+                    </p>
                   </div>
                 </div>
               )}
@@ -511,7 +574,7 @@ export const ClientLayout: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-4 py-5 pb-24 md:pb-10">
+      <main className="flex-1 w-full px-3 sm:px-5 lg:px-6 py-5 pb-24 md:pb-10">
         <Outlet />
       </main>
 

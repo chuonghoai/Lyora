@@ -1,11 +1,13 @@
 import React from 'react';
-import { AppImage, Button, Input } from '@/core';
+import { AppImage, Button } from '@/core';
 import type { HomeController } from './home.controller';
 import {
   CloseIcon,
   GlobeIcon,
   ImageIcon,
   LockIcon,
+  UploadCloudIcon,
+  UsersIcon,
   VideoIcon,
 } from './ClientIcons';
 
@@ -14,19 +16,27 @@ export interface PostComposerProps {
 }
 
 export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
-  const displayName = controller.currentUser?.fullName?.trim() || 'Bạn';
+  const displayName = controller.profileUser?.fullName?.trim() || 'Bạn';
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
     <section
       aria-label="Tạo bài viết mới"
-      className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-3"
+      onDragEnter={controller.handleDragEnterComposer}
+      onDragOver={controller.handleDragOverComposer}
+      onDragLeave={controller.handleDragLeaveComposer}
+      onDrop={controller.handleDropComposerMedia}
+      className={`rounded-2xl border bg-card p-4 sm:p-5 shadow-sm space-y-3 transition-colors ${
+        controller.isDraggingComposerMedia
+          ? 'border-primary ring-2 ring-primary/30 bg-secondary/15'
+          : 'border-border'
+      }`}
     >
       {/* Top Row: Avatar + Prompt Trigger */}
       <div className="flex items-center gap-3">
-        {controller.currentUser?.avatarUrl ? (
+        {controller.profileUser?.avatarUrl ? (
           <AppImage
-            src={controller.currentUser.avatarUrl}
+            src={controller.profileUser.avatarUrl}
             alt={displayName}
             rounded
             className="h-10 w-10 shrink-0 border border-border"
@@ -41,7 +51,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
           <button
             id="lyora-post-composer-trigger"
             type="button"
-            onClick={() => controller.handleExpandComposer()}
+            onClick={controller.handleExpandComposer}
             className="w-full rounded-full border border-border bg-background px-4 py-2.5 text-left text-sm text-muted hover:bg-secondary/40 hover:text-foreground transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {displayName} ơi, bạn đang nghĩ gì thế?
@@ -62,6 +72,18 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
                 >
                   <GlobeIcon className="w-3.5 h-3.5" />
                   <span>Công khai</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => controller.handleComposerVisibilityChange('FRIENDS')}
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                    controller.composerVisibility === 'FRIENDS'
+                      ? 'bg-card text-primary shadow-sm'
+                      : 'text-muted hover:text-foreground'
+                  }`}
+                >
+                  <UsersIcon className="w-3.5 h-3.5" />
+                  <span>Bạn bè</span>
                 </button>
                 <button
                   type="button"
@@ -114,80 +136,34 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
             )}
           </div>
 
-          {/* Media URL & Local File Picker Panel */}
-          {controller.showMediaAdder && (
-            <div className="rounded-xl border border-border bg-background/60 p-3 space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => controller.handleMediaTypeInputChange('IMAGE')}
-                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium cursor-pointer ${
-                      controller.mediaTypeInput === 'IMAGE'
-                        ? 'bg-secondary text-primary-active'
-                        : 'text-muted hover:text-foreground'
-                    }`}
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Ảnh</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => controller.handleMediaTypeInputChange('VIDEO')}
-                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium cursor-pointer ${
-                      controller.mediaTypeInput === 'VIDEO'
-                        ? 'bg-secondary text-primary-active'
-                        : 'text-muted hover:text-foreground'
-                    }`}
-                  >
-                    <VideoIcon className="w-3.5 h-3.5" />
-                    <span>Video</span>
-                  </button>
-                </div>
-
-                <label className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background cursor-pointer transition-colors">
-                  <ImageIcon className="w-3.5 h-3.5 text-primary" />
-                  <span>Chọn tệp từ máy</span>
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    onChange={controller.handlePickLocalMedia}
-                    className="sr-only"
-                  />
-                </label>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <div className="flex-1">
-                  <Input
-                    value={controller.mediaUrlInput}
-                    onChange={controller.handleMediaUrlInputChange}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        controller.handleAddMediaUrl();
-                      }
-                    }}
-                    placeholder={
-                      controller.mediaTypeInput === 'IMAGE'
-                        ? 'Dán đường dẫn ảnh (https://...)'
-                        : 'Dán đường dẫn video (https://...)'
-                    }
-                    error={controller.mediaUrlError ?? undefined}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={controller.handleAddMediaUrl}
-                  className="shrink-0"
-                >
-                  Thêm
-                </Button>
-              </div>
+          {/* Drag & Drop Local Media Zone */}
+          <div
+            className={`rounded-xl border-2 border-dashed px-4 py-4 text-center transition-colors ${
+              controller.isDraggingComposerMedia
+                ? 'border-primary bg-secondary/40 text-primary-active'
+                : 'border-border bg-background/60 text-muted hover:border-secondary-strong'
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center gap-1.5">
+              <span
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-full border ${
+                  controller.isDraggingComposerMedia
+                    ? 'border-primary bg-card text-primary'
+                    : 'border-border bg-card text-muted'
+                }`}
+              >
+                <UploadCloudIcon className="w-5 h-5" />
+              </span>
+              <p className="text-xs sm:text-sm font-semibold text-foreground">
+                {controller.isDraggingComposerMedia
+                  ? 'Thả ảnh hoặc video tại đây để đính kèm'
+                  : 'Kéo thả ảnh hoặc video từ máy tính vào đây'}
+              </p>
+              <p className="text-[11px] text-muted">
+                Lưu tạm thời trên trình duyệt (tối đa 8 ảnh/video) hoặc chọn nhanh nút Ảnh / Video bên dưới
+              </p>
             </div>
-          )}
+          </div>
 
           {/* Media Preview Strip */}
           {controller.composerMedia.length > 0 && (
@@ -229,23 +205,26 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
           {/* Action Footer */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
             <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => controller.handleToggleMediaAdder('IMAGE')}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
-              >
+              <label className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:bg-background transition-colors cursor-pointer">
                 <ImageIcon className="w-4 h-4 text-success" />
-                <span>Ảnh / Video</span>
-              </button>
+                <span>Ảnh</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => controller.handlePickLocalMedia(e, 'IMAGE')}
+                  className="sr-only"
+                />
+              </label>
 
               <label className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:bg-background transition-colors cursor-pointer">
                 <VideoIcon className="w-4 h-4 text-accent" />
-                <span>Tải từ máy</span>
+                <span>Video</span>
                 <input
                   type="file"
-                  accept="image/*,video/*"
+                  accept="video/*"
                   multiple
-                  onChange={controller.handlePickLocalMedia}
+                  onChange={(e) => controller.handlePickLocalMedia(e, 'VIDEO')}
                   className="sr-only"
                 />
               </label>
@@ -272,30 +251,34 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
       ) : (
         /* Compact Shortcut Row */
         <div className="grid grid-cols-3 gap-1 pt-2 border-t border-border">
-          <button
-            type="button"
-            onClick={() => controller.handleExpandComposer('IMAGE')}
-            className="inline-flex items-center justify-center gap-2 rounded-xl py-2 text-xs sm:text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors cursor-pointer"
-          >
+          <label className="inline-flex items-center justify-center gap-2 rounded-xl py-2 text-xs sm:text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors cursor-pointer">
             <ImageIcon className="w-4 h-4 text-success" />
-            <span>Thêm ảnh</span>
-          </button>
+            <span>Ảnh</span>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => controller.handlePickLocalMedia(e, 'IMAGE')}
+              className="sr-only"
+            />
+          </label>
 
-          <button
-            type="button"
-            onClick={() => controller.handleExpandComposer('VIDEO')}
-            className="inline-flex items-center justify-center gap-2 rounded-xl py-2 text-xs sm:text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors cursor-pointer"
-          >
+          <label className="inline-flex items-center justify-center gap-2 rounded-xl py-2 text-xs sm:text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors cursor-pointer">
             <VideoIcon className="w-4 h-4 text-accent" />
-            <span>Thêm video</span>
-          </button>
+            <span>Video</span>
+            <input
+              type="file"
+              accept="video/*"
+              multiple
+              onChange={(e) => controller.handlePickLocalMedia(e, 'VIDEO')}
+              className="sr-only"
+            />
+          </label>
 
           <button
             type="button"
             onClick={() => {
-              controller.handleComposerVisibilityChange(
-                controller.composerVisibility === 'PUBLIC' ? 'PRIVATE' : 'PUBLIC',
-              );
+              controller.handleCycleComposerVisibility();
               controller.handleExpandComposer();
             }}
             className="inline-flex items-center justify-center gap-2 rounded-xl py-2 text-xs sm:text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors cursor-pointer"
@@ -304,6 +287,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
               <>
                 <GlobeIcon className="w-4 h-4 text-primary" />
                 <span>Công khai</span>
+              </>
+            ) : controller.composerVisibility === 'FRIENDS' ? (
+              <>
+                <UsersIcon className="w-4 h-4 text-info" />
+                <span>Bạn bè</span>
               </>
             ) : (
               <>

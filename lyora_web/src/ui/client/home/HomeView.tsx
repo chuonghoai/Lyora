@@ -1,21 +1,26 @@
 import React from 'react';
-import { AppImage, Button, LoadingSpinner } from '@/core';
+import { AppImage, Button, Input, LoadingSpinner, formatDate } from '@/core';
 import { useHomeController } from './home.controller';
 import { PostComposer } from './PostComposer';
 import { PostCard } from './PostCard';
 import { PostDetailModal } from './PostDetailModal';
+import { PostReactionsModal } from './PostReactionsModal';
+import { AllFriendsModal } from './AllFriendsModal';
 import { FriendChatWidget } from './FriendChatWidget';
 import {
   BookmarkIcon,
+  CalendarIcon,
   ChatBubbleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
+  EditIcon,
   GlobeIcon,
-  HomeFeedIcon,
   LockIcon,
-  RefreshIcon,
-  UserCircleIcon,
+  MailIcon,
+  MapPinIcon,
+  PhoneIcon,
+  UsersIcon,
 } from './ClientIcons';
 
 const PostSkeletonCard: React.FC = () => (
@@ -37,30 +42,32 @@ const PostSkeletonCard: React.FC = () => (
 
 export default function HomeView(): React.ReactElement {
   const controller = useHomeController();
-  const displayName = controller.currentUser?.fullName?.trim() || 'Thành viên Lyora';
+  const profileUser = controller.profileUser;
+  const displayName = profileUser?.fullName?.trim() || 'Thành viên Lyora';
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)_280px] lg:gap-6 items-start">
-      {/* CỘT TRÁI: Thông tin cá nhân & Bộ lọc điều hướng */}
+    <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px] lg:gap-6 items-start">
+      {/* CỘT TRÁI NGOÀI CÙNG: Hồ sơ & Thông tin cá nhân người dùng */}
       <aside className="hidden lg:block sticky top-20 space-y-4">
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
+        {/* Card 1: Ảnh đại diện, giới thiệu & Thông số hồ sơ */}
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3.5">
           <div className="flex items-center gap-3">
-            {controller.currentUser?.avatarUrl ? (
+            {profileUser?.avatarUrl ? (
               <AppImage
-                src={controller.currentUser.avatarUrl}
+                src={profileUser.avatarUrl}
                 alt={displayName}
                 rounded
-                className="h-12 w-12 shrink-0 border border-border"
+                className="h-14 w-14 shrink-0 border border-border"
               />
             ) : (
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-secondary text-base font-bold text-primary-active border border-border">
+              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-secondary text-lg font-bold text-primary-active border border-border">
                 {initials}
               </span>
             )}
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
-              <p className="text-xs text-muted truncate">{controller.currentUser?.email}</p>
+              <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
+              <p className="text-xs text-muted truncate">{profileUser?.email}</p>
               <span className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-medium text-success">
                 <span className="h-1.5 w-1.5 rounded-full bg-success" />
                 Đang hoạt động
@@ -68,272 +75,357 @@ export default function HomeView(): React.ReactElement {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border text-center">
-            <div className="rounded-xl bg-background px-2 py-2">
+          {profileUser?.bio && (
+            <p className="text-xs text-muted leading-relaxed border-t border-border pt-2.5">
+              {profileUser.bio}
+            </p>
+          )}
+
+          <div className="grid grid-cols-3 gap-1.5 pt-2.5 border-t border-border text-center">
+            <div className="rounded-xl bg-background px-1.5 py-2">
               <p className="text-sm font-bold text-foreground tabular-nums">
-                {controller.totalItems}
+                {controller.myPostsCount}
               </p>
-              <p className="text-[11px] text-muted">Bài hiển thị</p>
+              <p className="text-[11px] text-muted">Bài của tôi</p>
             </div>
-            <div className="rounded-xl bg-background px-2 py-2">
+            <div className="rounded-xl bg-background px-1.5 py-2">
               <p className="text-sm font-bold text-primary tabular-nums">
                 {controller.savedPostsCount}
               </p>
               <p className="text-[11px] text-muted">Đã lưu</p>
             </div>
+            <div className="rounded-xl bg-background px-1.5 py-2">
+              <p className="text-sm font-bold text-foreground tabular-nums">
+                {controller.friends.length}
+              </p>
+              <p className="text-[11px] text-muted">Bạn bè</p>
+            </div>
           </div>
         </div>
 
-        <nav
-          aria-label="Phân loại bảng tin"
-          className="rounded-2xl border border-border bg-card p-2.5 shadow-sm space-y-1"
-        >
-          <button
-            type="button"
-            onClick={() => controller.handleSelectTab('all')}
-            className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
-              controller.activeTab === 'all'
-                ? 'bg-secondary text-primary font-semibold'
-                : 'text-muted hover:bg-background hover:text-foreground font-medium'
-            }`}
-          >
-            <HomeFeedIcon className="w-5 h-5" />
-            <span>Bảng tin cộng đồng</span>
-          </button>
+        {/* Card 2: Thông tin cá nhân chi tiết (Email, SĐT, Khu vực, Ngày tham gia...) */}
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-foreground">
+              Thông tin cá nhân
+            </h2>
+            {!controller.isEditingProfile && (
+              <button
+                type="button"
+                onClick={controller.handleStartEditProfile}
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-primary hover:bg-secondary/60 transition-colors cursor-pointer"
+              >
+                <EditIcon className="w-3.5 h-3.5" />
+                <span>Chỉnh sửa</span>
+              </button>
+            )}
+          </div>
 
-          <button
-            type="button"
-            onClick={() => controller.handleSelectTab('mine')}
-            className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
-              controller.activeTab === 'mine'
-                ? 'bg-secondary text-primary font-semibold'
-                : 'text-muted hover:bg-background hover:text-foreground font-medium'
-            }`}
-          >
-            <UserCircleIcon className="w-5 h-5" />
-            <span>Bài viết của tôi</span>
-          </button>
+          {!controller.isEditingProfile ? (
+            <ul className="space-y-2.5 text-xs">
+              <li className="flex items-start gap-2.5">
+                <MailIcon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted">Email</p>
+                  <p className="font-medium text-foreground break-all">
+                    {profileUser?.email || 'Chưa cập nhật'}
+                  </p>
+                </div>
+              </li>
 
-          <button
-            type="button"
-            onClick={() => controller.handleSelectTab('saved')}
-            className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors cursor-pointer ${
-              controller.activeTab === 'saved'
-                ? 'bg-secondary text-primary font-semibold'
-                : 'text-muted hover:bg-background hover:text-foreground font-medium'
-            }`}
-          >
-            <BookmarkIcon className="w-5 h-5" filled={controller.activeTab === 'saved'} />
-            <span>Bài viết đã lưu</span>
-          </button>
-        </nav>
+              <li className="flex items-start gap-2.5">
+                <PhoneIcon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted">Số điện thoại</p>
+                  <p className="font-medium text-foreground tabular-nums">
+                    {profileUser?.phoneNumber || 'Chưa cập nhật'}
+                  </p>
+                </div>
+              </li>
 
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-2.5">
-          <p className="text-xs font-semibold text-foreground">Chế độ hiển thị</p>
-          <div className="flex flex-col gap-1">
-            <button
-              type="button"
-              onClick={() => controller.handleSelectVisibilityFilter('ALL')}
-              className={`text-left rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                controller.visibilityFilter === 'ALL'
-                  ? 'bg-secondary text-primary-active font-semibold'
-                  : 'text-muted hover:bg-background hover:text-foreground'
-              }`}
-            >
-              Tất cả bài viết
-            </button>
-            <button
-              type="button"
-              onClick={() => controller.handleSelectVisibilityFilter('PUBLIC')}
-              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                controller.visibilityFilter === 'PUBLIC'
-                  ? 'bg-secondary text-primary-active font-semibold'
-                  : 'text-muted hover:bg-background hover:text-foreground'
-              }`}
-            >
-              <GlobeIcon className="w-3.5 h-3.5" />
-              <span>Chỉ bài công khai</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => controller.handleSelectVisibilityFilter('PRIVATE')}
-              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                controller.visibilityFilter === 'PRIVATE'
-                  ? 'bg-secondary text-primary-active font-semibold'
-                  : 'text-muted hover:bg-background hover:text-foreground'
-              }`}
-            >
-              <LockIcon className="w-3.5 h-3.5" />
-              <span>Chỉ bài riêng tư</span>
-            </button>
+              <li className="flex items-start gap-2.5">
+                <MapPinIcon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted">Khu vực</p>
+                  <p className="font-medium text-foreground">
+                    {profileUser?.location || 'Chưa cập nhật'}
+                  </p>
+                </div>
+              </li>
+
+              <li className="flex items-start gap-2.5">
+                <CalendarIcon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted">Tham gia Lyora</p>
+                  <p className="font-medium text-foreground">
+                    {profileUser?.createdAt
+                      ? formatDate(profileUser.createdAt)
+                      : 'Thành viên cộng đồng'}
+                  </p>
+                </div>
+              </li>
+
+              <li className="pt-2 border-t border-border flex items-center justify-between text-[11px]">
+                <span className="text-muted">Trạng thái tài khoản</span>
+                <span className="rounded-full bg-success/10 px-2 py-0.5 font-semibold text-success">
+                  {profileUser?.isActive === false ? 'Tạm khóa' : 'Đã xác thực'}
+                </span>
+              </li>
+            </ul>
+          ) : (
+            <form onSubmit={(e) => void controller.handleSaveProfile(e)} className="space-y-2.5">
+              {controller.profileFormError && (
+                <p role="alert" className="rounded-lg bg-error/10 px-2.5 py-1.5 text-xs text-error">
+                  {controller.profileFormError}
+                </p>
+              )}
+
+              <Input
+                label="Họ và tên"
+                name="fullName"
+                value={controller.profileForm.fullName}
+                onChange={controller.handleProfileFormChange}
+                placeholder="Nhập họ và tên"
+              />
+
+              <Input
+                label="Số điện thoại"
+                name="phoneNumber"
+                value={controller.profileForm.phoneNumber}
+                onChange={controller.handleProfileFormChange}
+                placeholder="Ví dụ: 0908123456"
+              />
+
+              <Input
+                label="Khu vực"
+                name="location"
+                value={controller.profileForm.location}
+                onChange={controller.handleProfileFormChange}
+                placeholder="Ví dụ: TP. Hồ Chí Minh"
+              />
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="profile-bio-input" className="text-sm font-medium text-foreground">
+                  Giới thiệu
+                </label>
+                <textarea
+                  id="profile-bio-input"
+                  name="bio"
+                  rows={2}
+                  value={controller.profileForm.bio}
+                  onChange={controller.handleProfileFormChange}
+                  placeholder="Mô tả ngắn về bạn..."
+                  className="w-full resize-y rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={controller.handleCancelEditProfile}
+                  className="h-8 px-3 py-1 text-xs"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  isLoading={controller.isUpdatingProfile}
+                  className="h-8 px-3 py-1 text-xs"
+                >
+                  Lưu
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Card 3: Thông số bảng tin cộng đồng */}
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-foreground">
+            Hoạt động cộng đồng
+          </p>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted">Bài viết hiển thị</span>
+            <span className="font-semibold text-foreground tabular-nums">
+              {controller.totalItems}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted">Tổng lượt cảm xúc</span>
+            <span className="font-semibold text-primary tabular-nums">
+              {controller.totalReactionsOnFeed}
+            </span>
           </div>
         </div>
       </aside>
 
-      {/* CỘT GIỮA: Thanh làm mới + Khung đăng bài + Newsfeed */}
-      <div className="mx-auto w-full max-w-2xl space-y-4">
-        {/* Thanh trạng thái bảng tin & nút Làm mới */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-              {controller.activeTab === 'mine'
-                ? 'Bài viết của tôi'
-                : controller.activeTab === 'saved'
-                  ? 'Bài viết đã lưu'
-                  : 'Bảng tin cộng đồng'}
-            </h1>
-            {controller.isPreviewFallback && (
-              <span className="inline-flex items-center rounded-full border border-secondary-strong bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
-                Giao diện xem trước
-              </span>
-            )}
+      {/* CỘT GIỮA: Kéo dài chiều rộng nhưng luôn giữ khoảng padding ở giữa 2 side */}
+      <div className="w-full lg:px-4 xl:px-8 2xl:px-12">
+        <div className="mx-auto w-full max-w-5xl space-y-4">
+          {/* Tiêu đề bảng tin */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+                {controller.activeTab === 'mine'
+                  ? 'Bài viết của tôi'
+                  : controller.activeTab === 'saved'
+                    ? 'Bài viết đã lưu'
+                    : 'Bảng tin cộng đồng'}
+              </h1>
+              {controller.isPreviewFallback && (
+                <span className="inline-flex items-center rounded-full border border-secondary-strong bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
+                  Giao diện xem trước
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {(controller.debouncedSearch ||
-              controller.visibilityFilter !== 'ALL' ||
-              controller.activeTab !== 'all') && (
-              <Button
-                variant="ghost"
-                onClick={controller.handleClearFilters}
-                className="h-8 px-2.5 py-1 text-xs"
-              >
-                Xóa lọc
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              onClick={() => void controller.handleRefreshFeed()}
-              isLoading={controller.isFeedRefetching}
-              className="h-8 px-3 py-1 text-xs gap-1.5"
+          {/* Filter Visibility trên Mobile/Tablet */}
+          <div className="flex lg:hidden items-center gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => controller.handleSelectVisibilityFilter('ALL')}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors cursor-pointer ${
+                controller.visibilityFilter === 'ALL'
+                  ? 'border-primary bg-secondary text-primary-active font-semibold'
+                  : 'border-border bg-card text-muted'
+              }`}
             >
-              {!controller.isFeedRefetching && <RefreshIcon className="w-3.5 h-3.5 text-muted" />}
-              <span>Làm mới</span>
-            </Button>
+              Tất cả
+            </button>
+            <button
+              type="button"
+              onClick={() => controller.handleSelectVisibilityFilter('PUBLIC')}
+              className={`shrink-0 inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors cursor-pointer ${
+                controller.visibilityFilter === 'PUBLIC'
+                  ? 'border-primary bg-secondary text-primary-active font-semibold'
+                  : 'border-border bg-card text-muted'
+              }`}
+            >
+              <GlobeIcon className="w-3.5 h-3.5" />
+              <span>Công khai</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => controller.handleSelectVisibilityFilter('FRIENDS')}
+              className={`shrink-0 inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors cursor-pointer ${
+                controller.visibilityFilter === 'FRIENDS'
+                  ? 'border-primary bg-secondary text-primary-active font-semibold'
+                  : 'border-border bg-card text-muted'
+              }`}
+            >
+              <UsersIcon className="w-3.5 h-3.5" />
+              <span>Bạn bè</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => controller.handleSelectVisibilityFilter('PRIVATE')}
+              className={`shrink-0 inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors cursor-pointer ${
+                controller.visibilityFilter === 'PRIVATE'
+                  ? 'border-primary bg-secondary text-primary-active font-semibold'
+                  : 'border-border bg-card text-muted'
+              }`}
+            >
+              <LockIcon className="w-3.5 h-3.5" />
+              <span>Riêng tư</span>
+            </button>
           </div>
-        </div>
 
-        {/* Filter Visibility trên Mobile/Tablet */}
-        <div className="flex lg:hidden items-center gap-2 overflow-x-auto pb-1">
-          <button
-            type="button"
-            onClick={() => controller.handleSelectVisibilityFilter('ALL')}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors cursor-pointer ${
-              controller.visibilityFilter === 'ALL'
-                ? 'border-primary bg-secondary text-primary-active font-semibold'
-                : 'border-border bg-card text-muted'
-            }`}
-          >
-            Tất cả
-          </button>
-          <button
-            type="button"
-            onClick={() => controller.handleSelectVisibilityFilter('PUBLIC')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors cursor-pointer ${
-              controller.visibilityFilter === 'PUBLIC'
-                ? 'border-primary bg-secondary text-primary-active font-semibold'
-                : 'border-border bg-card text-muted'
-            }`}
-          >
-            <GlobeIcon className="w-3.5 h-3.5" />
-            <span>Công khai</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => controller.handleSelectVisibilityFilter('PRIVATE')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium border transition-colors cursor-pointer ${
-              controller.visibilityFilter === 'PRIVATE'
-                ? 'border-primary bg-secondary text-primary-active font-semibold'
-                : 'border-border bg-card text-muted'
-            }`}
-          >
-            <LockIcon className="w-3.5 h-3.5" />
-            <span>Riêng tư</span>
-          </button>
-        </div>
+          {/* Khung tạo bài viết */}
+          <PostComposer controller={controller} />
 
-        {/* Khung tạo bài viết */}
-        <PostComposer controller={controller} />
-
-        {/* Danh sách bài viết (Feed) */}
-        {controller.isFeedLoading ? (
-          <div className="space-y-4" aria-label="Đang tải bảng tin">
-            <PostSkeletonCard />
-            <PostSkeletonCard />
-            <PostSkeletonCard />
-          </div>
-        ) : controller.isFeedError ? (
-          <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
-            <p className="text-base font-semibold text-foreground">
-              Không thể tải danh sách bài viết
-            </p>
-            <p className="text-sm text-muted">
-              Vui lòng kiểm tra kết nối máy chủ hoặc thử tải lại bảng tin.
-            </p>
-            <Button variant="primary" onClick={() => void controller.handleRefreshFeed()}>
-              Thử lại
-            </Button>
-          </div>
-        ) : controller.posts.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
-            <p className="text-base font-semibold text-foreground">
-              {controller.activeTab === 'saved'
-                ? 'Bạn chưa lưu bài viết nào'
-                : controller.debouncedSearch
-                  ? `Không tìm thấy bài viết khớp với "${controller.debouncedSearch}"`
-                  : 'Chưa có bài viết nào hiển thị'}
-            </p>
-            <p className="text-sm text-muted">
-              {controller.activeTab === 'saved'
-                ? 'Nhấn nút Lưu trên các bài viết yêu thích để xem lại nhanh tại đây.'
-                : 'Hãy là người đầu tiên chia sẻ một khoảnh khắc mới lên cộng đồng Lyora.'}
-            </p>
-            <div className="pt-1 flex items-center justify-center gap-2">
-              {controller.activeTab !== 'all' || controller.debouncedSearch || controller.visibilityFilter !== 'ALL' ? (
-                <Button variant="secondary" onClick={controller.handleClearFilters}>
-                  Về bảng tin chính
-                </Button>
-              ) : (
-                <Button variant="primary" onClick={() => controller.handleExpandComposer()}>
-                  Viết bài đầu tiên
-                </Button>
-              )}
+          {/* Danh sách bài viết (Feed) */}
+          {controller.isFeedLoading ? (
+            <div className="space-y-4" aria-label="Đang tải bảng tin">
+              <PostSkeletonCard />
+              <PostSkeletonCard />
+              <PostSkeletonCard />
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {controller.posts.map((post) => (
-              <PostCard key={post.id} post={post} controller={controller} />
-            ))}
-
-            {/* Điểm neo Infinite Scroll tự động tải thêm khi kéo xuống cuối trang */}
-            <div ref={controller.loadMoreSentinelRef} className="py-4 text-center">
-              {controller.isFetchingNextPage ? (
-                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted shadow-sm">
-                  <LoadingSpinner size="sm" />
-                  <span>Đang tải thêm bài viết...</span>
-                </div>
-              ) : controller.hasNextPage ? (
-                <Button variant="outline" onClick={controller.handleLoadMore} className="text-xs">
-                  Tải thêm bài viết
-                </Button>
-              ) : (
-                <p className="text-xs text-muted">
-                  Bạn đã xem hết tất cả bài viết hiện có.
-                </p>
-              )}
+          ) : controller.isFeedError ? (
+            <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
+              <p className="text-base font-semibold text-foreground">
+                Không thể tải danh sách bài viết
+              </p>
+              <p className="text-sm text-muted">
+                Vui lòng kiểm tra kết nối máy chủ hoặc thử tải lại bảng tin.
+              </p>
+              <Button variant="primary" onClick={() => void controller.handleRefreshFeed()}>
+                Thử lại
+              </Button>
             </div>
-          </div>
-        )}
+          ) : controller.posts.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
+              <p className="text-base font-semibold text-foreground">
+                {controller.activeTab === 'saved'
+                  ? 'Bạn chưa lưu bài viết nào'
+                  : controller.debouncedSearch
+                    ? `Không tìm thấy bài viết khớp với "${controller.debouncedSearch}"`
+                    : 'Chưa có bài viết nào hiển thị'}
+              </p>
+              <p className="text-sm text-muted">
+                {controller.activeTab === 'saved'
+                  ? 'Nhấn nút Lưu trên các bài viết yêu thích để xem lại nhanh tại đây.'
+                  : 'Hãy là người đầu tiên chia sẻ một khoảnh khắc mới lên cộng đồng Lyora.'}
+              </p>
+              <div className="pt-1 flex items-center justify-center gap-2">
+                {controller.activeTab !== 'all' ||
+                controller.debouncedSearch ||
+                controller.visibilityFilter !== 'ALL' ? (
+                  <Button variant="secondary" onClick={controller.handleClearFilters}>
+                    Về bảng tin chính
+                  </Button>
+                ) : (
+                  <Button variant="primary" onClick={controller.handleExpandComposer}>
+                    Viết bài đầu tiên
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {controller.posts.map((post) => (
+                <PostCard key={post.id} post={post} controller={controller} />
+              ))}
+
+              {/* Điểm neo Infinite Scroll tự động tải thêm khi kéo xuống cuối trang */}
+              <div ref={controller.loadMoreSentinelRef} className="py-4 text-center">
+                {controller.isFetchingNextPage ? (
+                  <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted shadow-sm">
+                    <LoadingSpinner size="sm" />
+                    <span>Đang tải thêm bài viết...</span>
+                  </div>
+                ) : controller.hasNextPage ? (
+                  <Button variant="outline" onClick={controller.handleLoadMore} className="text-xs">
+                    Tải thêm bài viết
+                  </Button>
+                ) : (
+                  <p className="text-xs text-muted">
+                    Bạn đã xem hết tất cả bài viết hiện có.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* CỘT PHẢI: Danh sách bạn bè & Lưu trữ nhanh */}
+      {/* CỘT PHẢI NGOÀI CÙNG: Danh sách bạn bè & Lưu trữ nhanh */}
       <aside className="hidden xl:block sticky top-20 space-y-4">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground">Danh sách bạn bè</h2>
-            <span className="text-xs text-muted">{controller.friends.length} người</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h2 className="text-sm font-semibold text-foreground truncate">Danh sách bạn bè</h2>
+              <span className="text-xs text-muted tabular-nums">({controller.friends.length})</span>
+            </div>
+            <button
+              type="button"
+              onClick={controller.handleOpenAllFriendsModal}
+              className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-secondary/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              Tất cả
+            </button>
           </div>
 
           {controller.friends.length === 0 ? (
@@ -418,6 +510,12 @@ export default function HomeView(): React.ReactElement {
       {/* Modal chi tiết 1 bài viết nổi bật kèm danh sách bình luận mở rộng */}
       <PostDetailModal controller={controller} />
 
+      {/* Modal thông số lượt thích & cảm xúc kiểu Facebook */}
+      <PostReactionsModal controller={controller} />
+
+      {/* Modal danh sách tất cả bạn bè */}
+      <AllFriendsModal controller={controller} />
+
       {/* Hộp nhắn tin bạn bè góc phải dưới */}
       <FriendChatWidget controller={controller} />
 
@@ -428,7 +526,7 @@ export default function HomeView(): React.ReactElement {
           aria-modal="true"
           aria-label="Xem ảnh phóng to"
           onClick={controller.handleCloseLightbox}
-          className="fixed inset-0 z-50 bg-foreground/85 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[65] bg-foreground/85 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <button
             type="button"

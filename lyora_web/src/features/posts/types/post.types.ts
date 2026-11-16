@@ -1,6 +1,6 @@
 import type { PaginationMeta } from '@/core';
 
-export type PostVisibility = 'PUBLIC' | 'PRIVATE';
+export type PostVisibility = 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
 
 export type ReactionType = 'LIKE' | 'LOVE' | 'HAHA' | 'WOW' | 'SAD' | 'ANGRY';
 
