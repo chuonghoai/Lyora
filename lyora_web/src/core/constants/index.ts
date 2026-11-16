@@ -22,6 +22,7 @@ export const CORE_CONSTANTS = {
     AUTH_ME: '/auth/me',
     USERS: '/users',
     USERS_STATISTICS: '/users/statistics',
+    POSTS: '/posts',
   },
 } as const;
 
