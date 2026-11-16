@@ -17,12 +17,39 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
 
   // Cấu hình CORS
+  const nodeEnv = configService.get<string>('app.nodeEnv', 'dev');
+  const isDev = nodeEnv === 'dev' || nodeEnv === 'development';
   const corsOrigins = configService.get<string[]>('app.corsOrigins') ?? [
     'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
   ];
+  const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
   app.enableCors({
-    origin: corsOrigins,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (
+        corsOrigins.includes(origin) ||
+        (isDev && localDevOriginPattern.test(origin))
+      ) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin không được phép bởi CORS: ${origin}`), false);
+    },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // Global Validation Pipe

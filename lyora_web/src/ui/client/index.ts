@@ -2,3 +2,7 @@ export * from './ClientLayout';
 export * from './client-layout.controller';
 export * from './home/home.controller';
 export * from './home/HomeView';
+export * from './home/PostComposer';
+export * from './home/PostCard';
+export * from './home/PostDetailModal';
+export * from './home/FriendChatWidget';
