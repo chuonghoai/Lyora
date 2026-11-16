@@ -22,6 +22,13 @@ export interface UserStatistics {
   recentUsers: RecentUserSummary[];
 }
 
+export interface UpdateUserProfilePayload {
+  fullName?: string;
+  phoneNumber?: string | null;
+  bio?: string | null;
+  location?: string | null;
+}
+
 export type { UserProfile, UserRole };
 
 

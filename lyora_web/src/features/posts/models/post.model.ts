@@ -11,7 +11,7 @@ export const postMediaItemSchema = z.object({
 export const createPostSchema = z
   .object({
     content: z.string().trim().max(5000, 'Nội dung bài viết tối đa 5.000 ký tự'),
-    visibility: z.enum(['PUBLIC', 'PRIVATE']),
+    visibility: z.enum(['PUBLIC', 'FRIENDS', 'PRIVATE']),
     media: z.array(postMediaItemSchema).max(8, 'Tối đa 8 ảnh hoặc video cho mỗi bài viết').optional().default([]),
   })
   .refine((data) => data.content.length > 0 || (data.media && data.media.length > 0), {
@@ -32,20 +32,6 @@ export const createCommentSchema = z
   });
 
 export type CreateCommentFormValues = z.infer<typeof createCommentSchema>;
-
-export const mediaUrlInputSchema = z
-  .string()
-  .trim()
-  .min(1, 'Vui lòng nhập đường dẫn ảnh hoặc video')
-  .refine(
-    (val) =>
-      val.startsWith('http://') ||
-      val.startsWith('https://') ||
-      val.startsWith('data:') ||
-      val.startsWith('blob:') ||
-      val.startsWith('/'),
-    'Đường dẫn phải bắt đầu bằng http://, https:// hoặc là tệp hợp lệ',
-  );
 
 export interface ReactionMeta {
   type: ReactionType;

@@ -9,7 +9,6 @@ import {
 import {
   createCommentSchema,
   createPostSchema,
-  mediaUrlInputSchema,
   useBookmarkPostMutation,
   useCreateCommentMutation,
   useCreatePostMutation,
@@ -27,6 +26,10 @@ import {
   type PostVisibility,
   type ReactionType,
 } from '@/features/posts';
+import {
+  useUpdateUserProfileMutation,
+  useUserProfileQuery,
+} from '@/features/user';
 
 export type VisibilityFilterOption = 'ALL' | PostVisibility;
 
@@ -77,6 +80,13 @@ export interface ReactionsPopoverState {
   postId: string;
   page: number;
   reactionType?: ReactionType;
+}
+
+export interface ProfileEditFormState {
+  fullName: string;
+  phoneNumber: string;
+  bio: string;
+  location: string;
 }
 
 export const MAX_EXPANDED_CHAT_WINDOWS = 3;
@@ -141,6 +151,11 @@ export function useHomeController() {
     visibility: visibilityFilter === 'ALL' ? undefined : visibilityFilter,
   });
   const friendsQuery = useFriendsQuery();
+  const userProfileQuery = useUserProfileQuery({
+    enabled: Boolean(currentUser),
+    retry: false,
+  });
+  const updateProfileMutation = useUpdateUserProfileMutation();
 
   const createPostMutation = useCreatePostMutation();
   const reactPostMutation = useReactPostMutation();
@@ -150,18 +165,26 @@ export function useHomeController() {
   const unhidePostMutation = useUnhidePostMutation();
   const createCommentMutation = useCreateCommentMutation();
 
-  // Composer State
+  // Personal Profile Inline Edit State
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState<ProfileEditFormState>({
+    fullName: currentUser?.fullName ?? '',
+    phoneNumber: currentUser?.phoneNumber ?? '',
+    bio: currentUser?.bio ?? '',
+    location: currentUser?.location ?? '',
+  });
+  const [profileFormError, setProfileFormError] = useState<string | null>(null);
+
+  // Composer State (Drag & Drop local media upload)
   const [isComposerExpanded, setIsComposerExpanded] = useState(false);
   const [composerContent, setComposerContent] = useState('');
   const [composerVisibility, setComposerVisibility] = useState<PostVisibility>('PUBLIC');
   const [composerMedia, setComposerMedia] = useState<PostMediaItem[]>([]);
-  const [mediaUrlInput, setMediaUrlInput] = useState('');
-  const [mediaTypeInput, setMediaTypeInput] = useState<PostMediaType>('IMAGE');
   const [composerError, setComposerError] = useState<string | null>(null);
-  const [mediaUrlError, setMediaUrlError] = useState<string | null>(null);
-  const [showMediaAdder, setShowMediaAdder] = useState(false);
+  const [isDraggingComposerMedia, setIsDraggingComposerMedia] = useState(false);
+  const composerDragDepthRef = useRef(0);
 
-  // Comment, Hide, Detail Modal, Reactors Popover & Lightbox State
+  // Comment, Hide, Detail Modal, Reactions Modal, All Friends Modal & Lightbox State
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [commentMediaDrafts, setCommentMediaDrafts] = useState<
     Record<string, PostMediaItem | null>
@@ -171,6 +194,8 @@ export function useHomeController() {
   const [temporarilyHiddenIds, setTemporarilyHiddenIds] = useState<Record<string, boolean>>({});
   const [detailPostId, setDetailPostId] = useState<string | null>(null);
   const [reactionsPopover, setReactionsPopover] = useState<ReactionsPopoverState | null>(null);
+  const [isAllFriendsModalOpen, setIsAllFriendsModalOpen] = useState(false);
+  const [friendSearchQuery, setFriendSearchQuery] = useState('');
   const [lightbox, setLightbox] = useState<MediaLightboxState | null>(null);
 
   const reactionsQuery = usePostReactionsQuery(reactionsPopover?.postId ?? null, {
@@ -204,6 +229,13 @@ export function useHomeController() {
     return posts.find((p) => p.id === detailPostId) ?? null;
   }, [detailPostId, posts]);
 
+  const reactionsModalPost = useMemo<Post | null>(() => {
+    if (!reactionsPopover) return null;
+    return posts.find((p) => p.id === reactionsPopover.postId) ?? null;
+  }, [reactionsPopover, posts]);
+
+  const profileUser = userProfileQuery.data ?? currentUser;
+
   const totalItems = postsQuery.data?.pages[0]?.meta.totalItems ?? posts.length;
   const isPreviewFallback = Boolean(
     postsQuery.data?.pages.some((page) => page.isPreviewFallback),
@@ -219,6 +251,14 @@ export function useHomeController() {
       isOnline: true,
     }));
   }, [friendsQuery.data]);
+
+  const filteredFriends = useMemo<FriendContactItem[]>(() => {
+    const normalized = friendSearchQuery.trim().toLowerCase();
+    if (!normalized) return friends;
+    return friends.filter((friend) =>
+      friend.fullName.toLowerCase().includes(normalized),
+    );
+  }, [friends, friendSearchQuery]);
 
   const getDefaultMessagesForFriend = useCallback(
     (friend: FriendContactItem): ChatMessageItem[] => {
@@ -303,6 +343,21 @@ export function useHomeController() {
     [posts],
   );
 
+  const myPostsCount = useMemo(
+    () =>
+      posts.filter(
+        (post) =>
+          post.author.id === profileUser?.id ||
+          (profileUser?.email && post.author.email === profileUser.email),
+      ).length,
+    [posts, profileUser],
+  );
+
+  const totalReactionsOnFeed = useMemo(
+    () => posts.reduce((sum, post) => sum + post.reactionCount, 0),
+    [posts],
+  );
+
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = postsQuery;
 
   // Infinite Scroll tự động tải trang kế tiếp khi cuộn đến cuối danh sách
@@ -326,13 +381,17 @@ export function useHomeController() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Đóng Lightbox / PostDetailModal bằng phím Escape
+  // Đóng Lightbox / Reactions Modal / All Friends Modal / PostDetailModal bằng phím Escape
   useEffect(() => {
-    if (!lightbox && !detailPostId) return;
+    if (!lightbox && !reactionsPopover && !isAllFriendsModalOpen && !detailPostId) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         if (lightbox) {
           setLightbox(null);
+        } else if (reactionsPopover) {
+          setReactionsPopover(null);
+        } else if (isAllFriendsModalOpen) {
+          setIsAllFriendsModalOpen(false);
         } else if (detailPostId) {
           setDetailPostId(null);
         }
@@ -348,7 +407,7 @@ export function useHomeController() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightbox, detailPostId]);
+  }, [lightbox, reactionsPopover, isAllFriendsModalOpen, detailPostId]);
 
   const handleSelectTab = (tab: PostsFeedFilter) => {
     setSearchParams(
@@ -386,20 +445,90 @@ export function useHomeController() {
     }
   };
 
-  // Composer Handlers
-  const handleExpandComposer = (mediaType?: PostMediaType) => {
-    setIsComposerExpanded(true);
-    if (mediaType) {
-      setShowMediaAdder(true);
-      setMediaTypeInput(mediaType);
+  // Personal Profile Inline Edit Handlers
+  const handleStartEditProfile = () => {
+    setProfileForm({
+      fullName: profileUser?.fullName ?? '',
+      phoneNumber: profileUser?.phoneNumber ?? '',
+      bio: profileUser?.bio ?? '',
+      location: profileUser?.location ?? '',
+    });
+    setProfileFormError(null);
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEditProfile = () => {
+    setIsEditingProfile(false);
+    setProfileFormError(null);
+  };
+
+  const handleProfileFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target;
+    setProfileForm((prev) => ({ ...prev, [name]: value }));
+    if (profileFormError) setProfileFormError(null);
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = profileForm.fullName.trim();
+    const trimmedPhone = profileForm.phoneNumber.trim();
+    const trimmedBio = profileForm.bio.trim();
+    const trimmedLocation = profileForm.location.trim();
+
+    if (trimmedName.length < 2) {
+      setProfileFormError('Họ và tên phải có ít nhất 2 ký tự.');
+      return;
+    }
+
+    if (trimmedPhone && !/^[0-9+\-\s().]{8,20}$/.test(trimmedPhone)) {
+      setProfileFormError('Số điện thoại không đúng định dạng (8–20 ký tự).');
+      return;
+    }
+
+    try {
+      await updateProfileMutation.mutateAsync({
+        fullName: trimmedName,
+        phoneNumber: trimmedPhone || null,
+        bio: trimmedBio || null,
+        location: trimmedLocation || null,
+      });
+      setIsEditingProfile(false);
+      setProfileFormError(null);
+      toast.success('Đã cập nhật thông tin cá nhân.');
+    } catch (err) {
+      const message = isApiError(err)
+        ? err.message
+        : 'Không thể cập nhật thông tin cá nhân lúc này.';
+      setProfileFormError(message);
     }
   };
 
+  // All Friends Modal Handlers
+  const handleOpenAllFriendsModal = () => {
+    setFriendSearchQuery('');
+    setIsAllFriendsModalOpen(true);
+  };
+
+  const handleCloseAllFriendsModal = () => {
+    setIsAllFriendsModalOpen(false);
+  };
+
+  const handleFriendSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFriendSearchQuery(e.target.value);
+  };
+
+  // Composer Handlers (Local File Picker + Drag & Drop without Cloudinary)
+  const handleExpandComposer = () => {
+    setIsComposerExpanded(true);
+  };
+
   const handleCollapseComposer = () => {
+    composerDragDepthRef.current = 0;
+    setIsDraggingComposerMedia(false);
     setIsComposerExpanded(false);
-    setShowMediaAdder(false);
     setComposerError(null);
-    setMediaUrlError(null);
   };
 
   const handleComposerContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -411,90 +540,112 @@ export function useHomeController() {
     setComposerVisibility(visibility);
   };
 
-  const handleToggleMediaAdder = (preferredType?: PostMediaType) => {
-    setIsComposerExpanded(true);
-    if (preferredType) {
-      setMediaTypeInput(preferredType);
-      setShowMediaAdder(true);
-      return;
-    }
-    setShowMediaAdder((prev) => !prev);
+  const handleCycleComposerVisibility = () => {
+    setComposerVisibility((prev) =>
+      prev === 'PUBLIC' ? 'FRIENDS' : prev === 'FRIENDS' ? 'PRIVATE' : 'PUBLIC',
+    );
   };
 
-  const handleMediaUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMediaUrlInput(e.target.value);
-    if (mediaUrlError) setMediaUrlError(null);
-  };
+  const addLocalMediaFiles = useCallback(
+    (files: File[], preferredType?: PostMediaType) => {
+      if (files.length === 0) return;
 
-  const handleMediaTypeInputChange = (type: PostMediaType) => {
-    setMediaTypeInput(type);
-  };
-
-  const handleAddMediaUrl = () => {
-    if (composerMedia.length >= 8) {
-      setMediaUrlError('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh hoặc video.');
-      return;
-    }
-
-    const parsed = mediaUrlInputSchema.safeParse(mediaUrlInput);
-    if (!parsed.success) {
-      setMediaUrlError(parsed.error.issues[0]?.message ?? 'Đường dẫn không hợp lệ');
-      return;
-    }
-
-    setComposerMedia((prev) => [
-      ...prev,
-      {
-        id: `media-${Date.now()}-${prev.length}`,
-        url: parsed.data,
-        type: mediaTypeInput,
-        alt: mediaTypeInput === 'IMAGE' ? 'Ảnh đính kèm bài viết' : 'Video đính kèm bài viết',
-      },
-    ]);
-    setMediaUrlInput('');
-    setMediaUrlError(null);
-    setComposerError(null);
-  };
-
-  const handlePickLocalMedia = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-
-    const remainingSlots = Math.max(0, 8 - composerMedia.length);
-    if (remainingSlots === 0) {
-      toast.warning('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh hoặc video.');
-      e.target.value = '';
-      return;
-    }
-
-    const selected = files.slice(0, remainingSlots);
-    const addedItems: PostMediaItem[] = [];
-
-    for (const file of selected) {
-      const isVideo = file.type.startsWith('video/');
-      const isImage = file.type.startsWith('image/');
-      if (!isImage && !isVideo) continue;
-
-      const objectUrl = URL.createObjectURL(file);
-      addedItems.push({
-        id: `local-${Date.now()}-${addedItems.length}`,
-        url: objectUrl,
-        type: isVideo ? 'VIDEO' : 'IMAGE',
-        alt: file.name,
+      const validFiles = files.filter((file) => {
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        if (preferredType === 'IMAGE') return isImage;
+        if (preferredType === 'VIDEO') return isVideo;
+        return isImage || isVideo;
       });
-    }
 
-    if (addedItems.length > 0) {
+      if (validFiles.length === 0) {
+        toast.warning(
+          preferredType === 'IMAGE'
+            ? 'Vui lòng chọn tệp hình ảnh hợp lệ.'
+            : preferredType === 'VIDEO'
+              ? 'Vui lòng chọn tệp video hợp lệ.'
+              : 'Chỉ hỗ trợ kéo thả tệp hình ảnh hoặc video.',
+        );
+        return;
+      }
+
+      const remainingSlots = Math.max(0, 8 - composerMedia.length);
+      if (remainingSlots === 0) {
+        toast.warning('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh hoặc video.');
+        return;
+      }
+
+      if (validFiles.length > remainingSlots) {
+        toast.warning('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh hoặc video.');
+      }
+
+      const selected = validFiles.slice(0, remainingSlots);
+      const addedItems: PostMediaItem[] = selected.map((file, idx) => ({
+        id: `local-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+        url: URL.createObjectURL(file),
+        type: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+        alt: file.name,
+      }));
+
       setIsComposerExpanded(true);
       setComposerMedia((prev) => [...prev, ...addedItems]);
       setComposerError(null);
-    }
+    },
+    [composerMedia.length],
+  );
 
+  const handlePickLocalMedia = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    preferredType?: PostMediaType,
+  ) => {
+    const files = Array.from(e.target.files ?? []);
+    addLocalMediaFiles(files, preferredType);
     e.target.value = '';
   };
 
+  const handleDragEnterComposer = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    composerDragDepthRef.current += 1;
+    if (e.dataTransfer?.types?.includes('Files')) {
+      setIsDraggingComposerMedia(true);
+    }
+  };
+
+  const handleDragOverComposer = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleDragLeaveComposer = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    composerDragDepthRef.current = Math.max(0, composerDragDepthRef.current - 1);
+    if (composerDragDepthRef.current === 0) {
+      setIsDraggingComposerMedia(false);
+    }
+  };
+
+  const handleDropComposerMedia = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    composerDragDepthRef.current = 0;
+    setIsDraggingComposerMedia(false);
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    addLocalMediaFiles(files);
+  };
+
   const handleRemoveMedia = (index: number) => {
-    setComposerMedia((prev) => prev.filter((_, idx) => idx !== index));
+    setComposerMedia((prev) => {
+      const target = prev[index];
+      if (target?.url.startsWith('blob:')) {
+        URL.revokeObjectURL(target.url);
+      }
+      return prev.filter((_, idx) => idx !== index);
+    });
   };
 
   const handleSubmitPost = async (e: React.FormEvent) => {
@@ -519,12 +670,11 @@ export function useHomeController() {
         media: validation.data.media,
       });
 
+      composerDragDepthRef.current = 0;
+      setIsDraggingComposerMedia(false);
       setComposerContent('');
       setComposerMedia([]);
-      setMediaUrlInput('');
       setComposerError(null);
-      setMediaUrlError(null);
-      setShowMediaAdder(false);
       setIsComposerExpanded(false);
 
       toast.success('Đăng bài viết thành công!');
@@ -544,14 +694,20 @@ export function useHomeController() {
     }
   };
 
-  // Reactors Popover (Hover số lượt thả Emotes + Pagination)
+  // Post Reactions Modal (Facebook-style modal on clicking reaction stats)
   const handleOpenReactionsPopover = (postId: string) => {
-    setReactionsPopover((prev) =>
-      prev?.postId === postId ? prev : { postId, page: 1, reactionType: undefined },
-    );
+    setReactionsPopover({ postId, page: 1, reactionType: undefined });
+  };
+
+  const handleOpenReactionsModal = (postId: string) => {
+    setReactionsPopover({ postId, page: 1, reactionType: undefined });
   };
 
   const handleCloseReactionsPopover = () => {
+    setReactionsPopover(null);
+  };
+
+  const handleCloseReactionsModal = () => {
     setReactionsPopover(null);
   };
 
@@ -1064,9 +1220,19 @@ export function useHomeController() {
     // General & Query States
     appTitle,
     currentUser,
+    profileUser,
+    isEditingProfile,
+    profileForm,
+    profileFormError,
+    isUpdatingProfile: updateProfileMutation.isPending,
     posts,
     totalItems,
+    myPostsCount,
+    totalReactionsOnFeed,
     friends,
+    filteredFriends,
+    friendSearchQuery,
+    isAllFriendsModalOpen,
     savedPostsCount,
     activeTab,
     visibilityFilter,
@@ -1085,14 +1251,11 @@ export function useHomeController() {
     composerContent,
     composerVisibility,
     composerMedia,
-    mediaUrlInput,
-    mediaTypeInput,
     composerError,
-    mediaUrlError,
-    showMediaAdder,
+    isDraggingComposerMedia,
     isCreatingPost: createPostMutation.isPending,
 
-    // Interaction, Comment Media, Detail Modal & Reactors Popover States
+    // Interaction, Comment Media, Detail Modal & Reactions Modal States
     commentDrafts,
     commentMediaDrafts,
     commentErrors,
@@ -1101,6 +1264,7 @@ export function useHomeController() {
     detailPostId,
     detailPost,
     reactionsPopover,
+    reactionsModalPost,
     reactionsData: reactionsQuery.data ?? null,
     isReactionsLoading: reactionsQuery.isLoading || reactionsQuery.isFetching,
     isSubmittingComment: createCommentMutation.isPending,
@@ -1123,20 +1287,30 @@ export function useHomeController() {
     handleClearFilters,
     handleRefreshFeed,
     handleLoadMore,
+    handleStartEditProfile,
+    handleCancelEditProfile,
+    handleProfileFormChange,
+    handleSaveProfile,
+    handleOpenAllFriendsModal,
+    handleCloseAllFriendsModal,
+    handleFriendSearchChange,
     handleExpandComposer,
     handleCollapseComposer,
     handleComposerContentChange,
     handleComposerVisibilityChange,
-    handleToggleMediaAdder,
-    handleMediaUrlInputChange,
-    handleMediaTypeInputChange,
-    handleAddMediaUrl,
+    handleCycleComposerVisibility,
     handlePickLocalMedia,
+    handleDragEnterComposer,
+    handleDragOverComposer,
+    handleDragLeaveComposer,
+    handleDropComposerMedia,
     handleRemoveMedia,
     handleSubmitPost,
     handleReactPost,
     handleOpenReactionsPopover,
     handleCloseReactionsPopover,
+    handleOpenReactionsModal,
+    handleCloseReactionsModal,
     handleChangeReactionsPage,
     handleChangeReactionsFilter,
     handleToggleBookmark,

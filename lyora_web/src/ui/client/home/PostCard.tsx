@@ -13,6 +13,7 @@ import {
   REACTION_OPTIONS,
   type Post,
   type PostMediaItem,
+  type PostVisibility,
 } from '@/features/posts';
 import type { HomeController } from './home.controller';
 import {
@@ -27,8 +28,34 @@ import {
   SendIcon,
   ShareIcon,
   ThumbUpIcon,
+  UsersIcon,
   VideoIcon,
 } from './ClientIcons';
+
+export const PostVisibilityBadge: React.FC<{ visibility: PostVisibility }> = ({ visibility }) => {
+  if (visibility === 'PUBLIC') {
+    return (
+      <span className="inline-flex items-center gap-1">
+        <GlobeIcon className="w-3.5 h-3.5" />
+        <span>Công khai</span>
+      </span>
+    );
+  }
+  if (visibility === 'FRIENDS') {
+    return (
+      <span className="inline-flex items-center gap-1 text-info">
+        <UsersIcon className="w-3.5 h-3.5" />
+        <span>Bạn bè</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1">
+      <LockIcon className="w-3.5 h-3.5 text-warning" />
+      <span>Riêng tư</span>
+    </span>
+  );
+};
 
 export interface PostCardProps {
   post: Post;
@@ -240,30 +267,21 @@ export const PostInteractionsBlock: React.FC<{
   const [dockPos, setDockPos] = useState<{ left: number; bottom?: number; top?: number } | null>(
     null,
   );
-  const [reactorsPos, setReactorsPos] = useState<{
-    left: number;
-    bottom?: number;
-    top?: number;
-  } | null>(null);
 
   const likeTriggerRef = useRef<HTMLDivElement>(null);
   const dockPortalRef = useRef<HTMLDivElement>(null);
-  const reactorsTriggerRef = useRef<HTMLButtonElement>(null);
-  const reactorsPortalRef = useRef<HTMLDivElement>(null);
 
   const dockOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dockCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reactorsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeReaction = post.userReaction ? getReactionMeta(post.userReaction) : null;
   const topReactions = getTopReactions(post.reactionBreakdown, 3);
-  const isReactorsOpenForThisPost = controller.reactionsPopover?.postId === post.id;
+  const isReactionsModalOpenForThisPost = controller.reactionsPopover?.postId === post.id;
 
   useEffect(() => {
     return () => {
       if (dockOpenTimerRef.current) clearTimeout(dockOpenTimerRef.current);
       if (dockCloseTimerRef.current) clearTimeout(dockCloseTimerRef.current);
-      if (reactorsCloseTimerRef.current) clearTimeout(reactorsCloseTimerRef.current);
     };
   }, []);
 
@@ -293,32 +311,6 @@ export const PostInteractionsBlock: React.FC<{
     };
   }, [isReactionDockOpen]);
 
-  useLayoutEffect(() => {
-    if (!isReactorsOpenForThisPost || !reactorsTriggerRef.current) {
-      setReactorsPos(null);
-      return;
-    }
-    const updateReactorsPosition = () => {
-      if (!reactorsTriggerRef.current) return;
-      const rect = reactorsTriggerRef.current.getBoundingClientRect();
-      const popupWidth = 320;
-      const left = Math.max(8, Math.min(rect.left, window.innerWidth - popupWidth - 8));
-      const openUpward = rect.top >= 320;
-      setReactorsPos(
-        openUpward
-          ? { left, bottom: window.innerHeight - rect.top + 8 }
-          : { left, top: rect.bottom + 8 },
-      );
-    };
-    updateReactorsPosition();
-    window.addEventListener('scroll', updateReactorsPosition, true);
-    window.addEventListener('resize', updateReactorsPosition);
-    return () => {
-      window.removeEventListener('scroll', updateReactorsPosition, true);
-      window.removeEventListener('resize', updateReactorsPosition);
-    };
-  }, [isReactorsOpenForThisPost]);
-
   const handleEnterDockZone = () => {
     if (dockCloseTimerRef.current) {
       clearTimeout(dockCloseTimerRef.current);
@@ -345,47 +337,19 @@ export const PostInteractionsBlock: React.FC<{
     }, 180);
   };
 
-  const handleEnterReactorsZone = () => {
-    if (post.reactionCount <= 0) return;
-    if (reactorsCloseTimerRef.current) {
-      clearTimeout(reactorsCloseTimerRef.current);
-      reactorsCloseTimerRef.current = null;
-    }
-    controller.handleOpenReactionsPopover(post.id);
-  };
-
-  const handleLeaveReactorsZone = () => {
-    if (reactorsCloseTimerRef.current) {
-      clearTimeout(reactorsCloseTimerRef.current);
-    }
-    reactorsCloseTimerRef.current = setTimeout(() => {
-      controller.handleCloseReactionsPopover();
-    }, 220);
-  };
-
-  const reactorsData = isReactorsOpenForThisPost ? controller.reactionsData : null;
-  const activeFilterType = isReactorsOpenForThisPost
-    ? controller.reactionsPopover?.reactionType
-    : undefined;
-
   return (
     <>
-      {/* Thống kê tương tác (Hover số lượt Emotes -> Danh sách có Pagination) */}
+      {/* Thống kê tương tác (Bấm vào số lượt thích để mở Modal chi tiết giống Facebook) */}
       <div className="px-4 py-2.5 sm:px-5 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
         <div className="flex items-center gap-1.5 min-h-5">
           {post.reactionCount > 0 ? (
             <button
-              ref={reactorsTriggerRef}
               type="button"
-              onMouseEnter={handleEnterReactorsZone}
-              onMouseLeave={handleLeaveReactorsZone}
-              onClick={() =>
-                isReactorsOpenForThisPost
-                  ? controller.handleCloseReactionsPopover()
-                  : controller.handleOpenReactionsPopover(post.id)
-              }
-              aria-expanded={isReactorsOpenForThisPost}
-              className="inline-flex items-center gap-1.5 rounded-full py-0.5 pr-1.5 hover:bg-background transition-colors cursor-pointer"
+              onClick={() => controller.handleOpenReactionsModal(post.id)}
+              aria-expanded={isReactionsModalOpenForThisPost}
+              aria-haspopup="dialog"
+              title="Xem danh sách người đã bày tỏ cảm xúc"
+              className="inline-flex items-center gap-1.5 rounded-full py-0.5 pr-1.5 hover:bg-background transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span className="inline-flex items-center -space-x-1">
                 {topReactions.map((item) => (
@@ -524,112 +488,6 @@ export const PostInteractionsBlock: React.FC<{
                 </span>
               </button>
             ))}
-          </div>,
-          document.body,
-        )}
-
-      {/* Portal Danh sách người đã thả Emotes + Pagination khi Hover vào số lượt thả */}
-      {isReactorsOpenForThisPost &&
-        reactorsPos &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div
-            ref={reactorsPortalRef}
-            role="dialog"
-            aria-label="Danh sách người đã bày tỏ cảm xúc"
-            onMouseEnter={handleEnterReactorsZone}
-            onMouseLeave={handleLeaveReactorsZone}
-            style={{
-              left: `${reactorsPos.left}px`,
-              ...(reactorsPos.top !== undefined ? { top: `${reactorsPos.top}px` } : {}),
-              ...(reactorsPos.bottom !== undefined ? { bottom: `${reactorsPos.bottom}px` } : {}),
-            }}
-            className="fixed z-[60] w-80 max-w-[calc(100vw-1rem)] rounded-2xl border border-border bg-card shadow-md overflow-hidden"
-          >
-            {/* Filter Tabs theo loại cảm xúc */}
-            <div className="flex items-center gap-1 overflow-x-auto border-b border-border bg-background/60 px-2.5 py-2">
-              <button
-                type="button"
-                onClick={() => controller.handleChangeReactionsFilter(undefined)}
-                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
-                  !activeFilterType
-                    ? 'bg-secondary text-primary-active'
-                    : 'text-muted hover:bg-card hover:text-foreground'
-                }`}
-              >
-                Tất cả ({post.reactionCount})
-              </button>
-
-              {REACTION_OPTIONS.filter((opt) => (post.reactionBreakdown[opt.type] ?? 0) > 0).map(
-                (opt) => (
-                  <button
-                    key={opt.type}
-                    type="button"
-                    onClick={() => controller.handleChangeReactionsFilter(opt.type)}
-                    className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                      activeFilterType === opt.type
-                        ? 'bg-secondary text-primary-active font-semibold'
-                        : 'text-muted hover:bg-card hover:text-foreground'
-                    }`}
-                  >
-                    <span>{opt.emoji}</span>
-                    <span className="tabular-nums">{post.reactionBreakdown[opt.type]}</span>
-                  </button>
-                ),
-              )}
-            </div>
-
-            {/* Danh sách rút gọn người thả + "và xx người khác..." */}
-            <div className="max-h-64 overflow-y-auto p-2.5 space-y-1">
-              {controller.isReactionsLoading && !reactorsData ? (
-                <p className="py-4 text-center text-xs text-muted">
-                  Đang tải danh sách cảm xúc...
-                </p>
-              ) : !reactorsData || reactorsData.items.length === 0 ? (
-                <p className="py-4 text-center text-xs text-muted">
-                  Chưa có lượt cảm xúc nào trong mục này.
-                </p>
-              ) : (
-                <>
-                  {reactorsData.items.map((item) => {
-                    const meta = getReactionMeta(item.reactionType);
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between gap-2 rounded-xl px-2 py-1 hover:bg-background"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="relative shrink-0">
-                            <PostAvatarChip
-                              name={item.user.fullName}
-                              avatarUrl={item.user.avatarUrl}
-                              sizeClass="h-7 w-7 text-[11px]"
-                            />
-                            <span className="absolute -bottom-0.5 -right-0.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-card ring-1 ring-border text-[9px]">
-                              {meta.emoji}
-                            </span>
-                          </div>
-                          <span className="text-xs font-medium text-foreground truncate">
-                            {item.user.fullName}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-muted shrink-0">{meta.label}</span>
-                      </div>
-                    );
-                  })}
-
-                  {reactorsData.meta.totalItems > reactorsData.items.length && (
-                    <p className="px-2 pt-1.5 pb-0.5 text-xs font-medium text-muted">
-                      và{' '}
-                      <span className="tabular-nums">
-                        {reactorsData.meta.totalItems - reactorsData.items.length}
-                      </span>{' '}
-                      người khác...
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
           </div>,
           document.body,
         )}
@@ -909,19 +767,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
                 </time>
               </button>
               <span aria-hidden="true">·</span>
-              <span className="inline-flex items-center gap-1">
-                {post.visibility === 'PUBLIC' ? (
-                  <>
-                    <GlobeIcon className="w-3.5 h-3.5" />
-                    <span>Công khai</span>
-                  </>
-                ) : (
-                  <>
-                    <LockIcon className="w-3.5 h-3.5 text-warning" />
-                    <span>Riêng tư</span>
-                  </>
-                )}
-              </span>
+              <PostVisibilityBadge visibility={post.visibility} />
             </div>
           </div>
         </div>

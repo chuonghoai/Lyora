@@ -1,6 +1,7 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
+import { useAuthStore } from '@/core';
 import { userService } from '../services/user.service';
-import type { UserProfile } from '../types/user.types';
+import type { UpdateUserProfilePayload, UserProfile } from '../types/user.types';
 import { userKeys } from './user.keys';
 
 export type UseUserProfileOptions = Omit<
@@ -17,6 +18,18 @@ export function useUserProfileQuery(options?: UseUserProfileOptions) {
     queryFn: () => userService.getProfile(),
     staleTime: 10 * 60 * 1000,
     ...options,
+  });
+}
+
+export function useUpdateUserProfileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdateUserProfilePayload) => userService.updateProfile(payload),
+    onSuccess: (updatedProfile) => {
+      queryClient.setQueryData(userKeys.profile(), updatedProfile);
+      useAuthStore.getState().updateUser(updatedProfile);
+    },
   });
 }
 

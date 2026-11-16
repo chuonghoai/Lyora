@@ -77,6 +77,37 @@ export class UsersService {
     await this.userRepository.update(userId, { passwordHash });
   }
 
+  async updateProfile(
+    userId: string,
+    payload: {
+      fullName?: string;
+      phoneNumber?: string | null;
+      bio?: string | null;
+      location?: string | null;
+    },
+  ): Promise<User> {
+    const user = await this.findById(userId);
+
+    if (payload.fullName !== undefined) {
+      const trimmedName = payload.fullName.trim();
+      if (trimmedName) {
+        user.fullName = trimmedName;
+      }
+    }
+    if (payload.phoneNumber !== undefined) {
+      user.phoneNumber = payload.phoneNumber?.trim() || null;
+    }
+    if (payload.bio !== undefined) {
+      user.bio = payload.bio?.trim() || null;
+    }
+    if (payload.location !== undefined) {
+      user.location = payload.location?.trim() || null;
+    }
+
+    await this.userRepository.save(user);
+    return this.findById(userId);
+  }
+
   async findAllPaginated(query: PaginationQueryDto): Promise<{
     items: User[];
     meta: PaginationMetaDto;

@@ -293,3 +293,45 @@ export const CheckIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
   </svg>
 );
+
+export const UsersIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+export const MailIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} className={className} aria-hidden="true">
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="m4 7 8 6 8-6" />
+  </svg>
+);
+
+export const MapPinIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11Z" />
+    <circle cx="12" cy="10" r="2.5" />
+  </svg>
+);
+
+export const CalendarIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} className={className} aria-hidden="true">
+    <rect x="3" y="5" width="18" height="16" rx="2.5" />
+    <path strokeLinecap="round" d="M8 3v4M16 3v4M3 10h18" />
+  </svg>
+);
+
+export const EditIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 20h9M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" />
+  </svg>
+);
+
+export const UploadCloudIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V7m0 0-3.5 3.5M12 7l3.5 3.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M20 16.5A4.5 4.5 0 0 0 17.5 8h-1.2A7 7 0 1 0 4 14.9" />
+  </svg>
+);

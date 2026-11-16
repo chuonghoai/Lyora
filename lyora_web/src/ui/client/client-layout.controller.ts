@@ -8,6 +8,60 @@ import { ROUTES } from '@/routes/paths';
 export type AccountMenuPanel = 'main' | 'accessibility' | 'settings' | 'help';
 export type FontScalePreference = 'normal' | 'large';
 
+export interface ClientNotificationItem {
+  id: string;
+  title: string;
+  description: string;
+  timeLabel: string;
+  isRead: boolean;
+  targetTab?: PostsFeedFilter;
+}
+
+const INITIAL_NOTIFICATIONS: ClientNotificationItem[] = [
+  {
+    id: 'notif-1',
+    title: 'Chào mừng bạn đến với bảng tin Lyora',
+    description:
+      'Đăng bài viết, bày tỏ cảm xúc, bình luận và lưu lại những khoảnh khắc đáng nhớ cùng bạn bè.',
+    timeLabel: 'Vừa xong',
+    isRead: false,
+    targetTab: 'all',
+  },
+  {
+    id: 'notif-2',
+    title: 'Nguyễn Minh Anh đã bày tỏ cảm xúc về bài viết gần đây',
+    description: '“Buổi sáng cuối tuần ở Đà Lạt sương còn giăng nhẹ trên đồi thông...”',
+    timeLabel: '12 phút trước',
+    isRead: false,
+    targetTab: 'all',
+  },
+  {
+    id: 'notif-3',
+    title: 'Trần Hoàng Nam đã bình luận trong cộng đồng',
+    description: '“Hẹn mọi người ở buổi meetup tháng sau nha!”',
+    timeLabel: '45 phút trước',
+    isRead: false,
+    targetTab: 'all',
+  },
+  {
+    id: 'notif-4',
+    title: 'Mẹo bảo vệ tài khoản Lyora của bạn',
+    description:
+      'Kiểm tra và cập nhật số điện thoại cá nhân trong hồ sơ để đồng bộ thông tin liên hệ nhanh chóng.',
+    timeLabel: '2 giờ trước',
+    isRead: true,
+    targetTab: 'mine',
+  },
+  {
+    id: 'notif-5',
+    title: 'Kho bài viết đã lưu của bạn đã sẵn sàng',
+    description: 'Bạn có thể truy cập nhanh các bài viết yêu thích từ thanh điều hướng ở chính giữa.',
+    timeLabel: 'Hôm nay',
+    isRead: true,
+    targetTab: 'saved',
+  },
+];
+
 const ACCESSIBILITY_STORAGE_KEY = 'lyora_ui_preferences';
 
 interface UiAccessibilityPrefs {
@@ -48,6 +102,7 @@ export function useClientLayoutController() {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [accountMenuPanel, setAccountMenuPanel] = useState<AccountMenuPanel>('main');
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<ClientNotificationItem[]>(INITIAL_NOTIFICATIONS);
 
   const [fontScale, setFontScale] = useState<FontScalePreference>(
     () => loadAccessibilityPrefs().fontScale,
@@ -251,6 +306,19 @@ export function useClientLayoutController() {
     setIsNotificationOpen(false);
   };
 
+  const handleMarkNotificationRead = (notificationId: string) => {
+    setNotifications((prev) =>
+      prev.map((item) => (item.id === notificationId ? { ...item, isRead: true } : item)),
+    );
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+    toast.info('Đã đánh dấu tất cả thông báo là đã đọc.');
+  };
+
+  const unreadNotificationsCount = notifications.filter((item) => !item.isRead).length;
+
   return {
     location,
     appTitle,
@@ -265,6 +333,8 @@ export function useClientLayoutController() {
     fontScale,
     reduceMotion,
     isNotificationOpen,
+    notifications,
+    unreadNotificationsCount,
     accountMenuRef,
     notificationRef,
     handleLogout,
@@ -282,6 +352,8 @@ export function useClientLayoutController() {
     handleSendFeedback,
     handleToggleNotifications,
     handleCloseNotifications,
+    handleMarkNotificationRead,
+    handleMarkAllNotificationsRead,
   };
 }
 

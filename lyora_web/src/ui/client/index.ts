@@ -5,4 +5,6 @@ export * from './home/HomeView';
 export * from './home/PostComposer';
 export * from './home/PostCard';
 export * from './home/PostDetailModal';
+export * from './home/PostReactionsModal';
+export * from './home/AllFriendsModal';
 export * from './home/FriendChatWidget';
