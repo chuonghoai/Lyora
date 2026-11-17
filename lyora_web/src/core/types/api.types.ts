@@ -39,6 +39,10 @@ export interface UserProfile {
   email: string;
   fullName: string;
   role: UserRole;
+  phoneNumber?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  avatarUrl?: string | null;
   isActive?: boolean;
   createdAt?: string;
 }

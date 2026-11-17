@@ -13,7 +13,11 @@ describe('AuthService Security & OTP Guards', () => {
   let usersService: jest.Mocked<
     Pick<
       UsersService,
-      'findByEmail' | 'createUser' | 'updatePassword' | 'findById'
+      | 'findByEmail'
+      | 'createUser'
+      | 'updatePassword'
+      | 'findById'
+      | 'updateProfile'
     >
   >;
   let redisService: jest.Mocked<
@@ -36,6 +40,7 @@ describe('AuthService Security & OTP Guards', () => {
       createUser: jest.fn(),
       updatePassword: jest.fn(),
       findById: jest.fn(),
+      updateProfile: jest.fn(),
     };
 
     const jwtService = {
@@ -135,5 +140,37 @@ describe('AuthService Security & OTP Guards', () => {
     );
     expect(redisService.delResetToken).toHaveBeenCalledWith('user@lyora.com');
     expect(redisService.revokeAllUserSessions).toHaveBeenCalledWith('user-1');
+  });
+
+  it('delegates profile update with phoneNumber, bio and location to UsersService', async () => {
+    const updatedUser = {
+      id: 'user-1',
+      email: 'user@lyora.com',
+      fullName: 'Người Dùng Mới',
+      role: UserRole.CLIENT,
+      isActive: true,
+      phoneNumber: '0908123456',
+      bio: 'Giới thiệu cá nhân',
+      location: 'TP. Hồ Chí Minh',
+      passwordHash: 'hash',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    usersService.updateProfile.mockResolvedValue(updatedUser);
+
+    const res = await authService.updateProfile('user-1', {
+      fullName: 'Người Dùng Mới',
+      phoneNumber: '0908123456',
+      bio: 'Giới thiệu cá nhân',
+      location: 'TP. Hồ Chí Minh',
+    });
+
+    expect(usersService.updateProfile).toHaveBeenCalledWith('user-1', {
+      fullName: 'Người Dùng Mới',
+      phoneNumber: '0908123456',
+      bio: 'Giới thiệu cá nhân',
+      location: 'TP. Hồ Chí Minh',
+    });
+    expect(res.phoneNumber).toBe('0908123456');
   });
 });

@@ -1,8 +1,14 @@
 import { userRepository, type IUserRepository } from '../repositories/user.repository';
-import type { UserProfile, UserRole, UserStatistics } from '../types/user.types';
+import type {
+  UpdateUserProfilePayload,
+  UserProfile,
+  UserRole,
+  UserStatistics,
+} from '../types/user.types';
 
 export interface IUserService {
   getProfile(): Promise<UserProfile>;
+  updateProfile(payload: UpdateUserProfilePayload): Promise<UserProfile>;
   getStatistics(role?: UserRole): Promise<UserStatistics>;
 }
 
@@ -15,6 +21,11 @@ export class UserService implements IUserService {
 
   async getProfile(): Promise<UserProfile> {
     const response = await this.repository.getProfile();
+    return response.data;
+  }
+
+  async updateProfile(payload: UpdateUserProfilePayload): Promise<UserProfile> {
+    const response = await this.repository.updateProfile(payload);
     return response.data;
   }
 

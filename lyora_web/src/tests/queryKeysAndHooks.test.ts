@@ -79,6 +79,15 @@ describe('Query Key Factories & Data Layer Hooks', () => {
     it('successfully calls repository getStatistics and extracts payload', async () => {
       const mockUserRepo: IUserRepository = {
         getProfile: vi.fn(),
+        updateProfile: vi.fn().mockResolvedValue({
+          data: {
+            id: 'u-1',
+            email: 'test@lyora.com',
+            fullName: 'Updated Name',
+            role: 'CLIENT',
+            phoneNumber: '0908123456',
+          },
+        }),
         getStatistics: vi.fn().mockResolvedValue({
           data: {
             totalUsers: 10,
@@ -100,6 +109,16 @@ describe('Query Key Factories & Data Layer Hooks', () => {
       expect(stats.totalUsers).toBe(10);
       expect(stats.clientCount).toBe(9);
       expect(stats.adminCount).toBe(1);
+
+      const updatedProfile = await userService.updateProfile({
+        fullName: 'Updated Name',
+        phoneNumber: '0908123456',
+      });
+      expect(mockUserRepo.updateProfile).toHaveBeenCalledWith({
+        fullName: 'Updated Name',
+        phoneNumber: '0908123456',
+      });
+      expect(updatedProfile.phoneNumber).toBe('0908123456');
     });
   });
 });

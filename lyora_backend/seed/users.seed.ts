@@ -9,6 +9,9 @@ export interface SeedUserItem {
   fullName: string;
   role: UserRole;
   isActive: boolean;
+  phoneNumber?: string | null;
+  bio?: string | null;
+  location?: string | null;
 }
 
 export const SEED_USERS_DATA: SeedUserItem[] = [
@@ -18,6 +21,9 @@ export const SEED_USERS_DATA: SeedUserItem[] = [
     fullName: 'Quản Trị Viên Hệ Thống',
     role: UserRole.ADMIN,
     isActive: true,
+    phoneNumber: '0901000111',
+    bio: 'Quản trị viên nền tảng cộng đồng Lyora.',
+    location: 'TP. Hồ Chí Minh',
   },
   {
     email: 'user@gmail.com',
@@ -25,6 +31,9 @@ export const SEED_USERS_DATA: SeedUserItem[] = [
     fullName: 'Người Dùng Tiêu Chuẩn',
     role: UserRole.CLIENT,
     isActive: true,
+    phoneNumber: '0908123456',
+    bio: 'Yêu thích nhiếp ảnh, công nghệ và chia sẻ những khoảnh khắc thường ngày trên Lyora.',
+    location: 'TP. Hồ Chí Minh',
   },
   {
     email: 'inactive@lyora.com',
@@ -32,6 +41,9 @@ export const SEED_USERS_DATA: SeedUserItem[] = [
     fullName: 'Khách Hàng Tạm Khóa',
     role: UserRole.CLIENT,
     isActive: false,
+    phoneNumber: '0909999888',
+    bio: null,
+    location: 'Hà Nội',
   },
 ];
 
@@ -61,6 +73,9 @@ export async function seedUsers(dataSource: DataSource): Promise<{
       user.fullName = item.fullName;
       user.role = item.role;
       user.isActive = item.isActive;
+      user.phoneNumber = item.phoneNumber ?? null;
+      user.bio = item.bio ?? null;
+      user.location = item.location ?? null;
     } else {
       user = userRepository.create({
         email: item.email,
@@ -68,6 +83,9 @@ export async function seedUsers(dataSource: DataSource): Promise<{
         fullName: item.fullName,
         role: item.role,
         isActive: item.isActive,
+        phoneNumber: item.phoneNumber ?? null,
+        bio: item.bio ?? null,
+        location: item.location ?? null,
       });
     }
 
