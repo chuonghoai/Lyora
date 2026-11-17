@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { ClientLayout } from '@/ui/client/ClientLayout';
 import { AdminLayout } from '@/ui/admin/AdminLayout';
 import { RoleRoute, GuestRoute, LoadingSpinner } from '@/core';
@@ -72,15 +72,20 @@ export const router = createBrowserRouter([
   },
   {
     path: ROUTES.CLIENT.ROOT,
-    element: <ClientLayout />,
+    element: <RoleRoute allowedRoles={['CLIENT']} requireAuth={true} />,
     children: [
       {
-        index: true,
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ClientHomeView />
-          </Suspense>
-        ),
+        element: <ClientLayout />,
+        children: [
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ClientHomeView />
+              </Suspense>
+            ),
+          },
+        ],
       },
     ],
   },
@@ -99,9 +104,17 @@ export const router = createBrowserRouter([
               </Suspense>
             ),
           },
+          {
+            path: '*',
+            element: <Navigate to={ROUTES.ADMIN.DASHBOARD} replace />,
+          },
         ],
       },
     ],
+  },
+  {
+    path: '*',
+    element: <Navigate to={ROUTES.CLIENT.ROOT} replace />,
   },
 ]);
 

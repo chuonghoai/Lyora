@@ -27,6 +27,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 export interface AuthTokenResponse {
   accessToken: string;
@@ -36,6 +37,12 @@ export interface AuthTokenResponse {
     email: string;
     fullName: string;
     role: UserRole;
+    phoneNumber?: string | null;
+    bio?: string | null;
+    location?: string | null;
+    avatarUrl?: string | null;
+    isActive?: boolean;
+    createdAt?: Date;
   };
 }
 
@@ -301,6 +308,10 @@ export class AuthService {
     return this.usersService.findById(userId);
   }
 
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
+    return this.usersService.updateProfile(userId, dto);
+  }
+
   private async issueTokens(user: User): Promise<AuthTokenResponse> {
     const sessionId = randomUUID();
     const payload: JwtPayload = {
@@ -339,6 +350,12 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        phoneNumber: user.phoneNumber ?? null,
+        bio: user.bio ?? null,
+        location: user.location ?? null,
+        avatarUrl: user.avatarUrl ?? null,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
       },
     };
   }

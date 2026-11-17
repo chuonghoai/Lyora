@@ -151,4 +151,39 @@ describe('AuthService (Data Layer)', () => {
     expect(authService.hasActiveSession()).toBe(false);
     expect(TokenStorage.getAccessToken()).toBeNull();
   });
+
+  it('should silently refresh session and deduplicate concurrent refreshSession() calls', async () => {
+    TokenStorage.saveAuthSession('old_access', 'old_refresh', {
+      id: 'u-1',
+      email: 'test@lyora.com',
+      fullName: 'Test User',
+      role: 'CLIENT',
+    });
+
+    vi.mocked(mockRepository.refreshToken).mockResolvedValue({
+      success: true,
+      data: {
+        accessToken: 'new_access_jwt',
+        refreshToken: 'new_refresh_jwt',
+        user: {
+          id: 'u-1',
+          email: 'test@lyora.com',
+          fullName: 'Test User Updated',
+          role: 'CLIENT',
+          avatarUrl: 'https://example.com/avatar.png',
+        },
+      },
+    });
+
+    const [s1, s2] = await Promise.all([
+      authService.refreshSession(),
+      authService.refreshSession(),
+    ]);
+
+    expect(mockRepository.refreshToken).toHaveBeenCalledTimes(1);
+    expect(s1?.accessToken).toBe('new_access_jwt');
+    expect(s2?.accessToken).toBe('new_access_jwt');
+    expect(TokenStorage.getRefreshToken()).toBe('new_refresh_jwt');
+    expect(TokenStorage.getUser()?.avatarUrl).toBe('https://example.com/avatar.png');
+  });
 });
