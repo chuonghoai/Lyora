@@ -14,6 +14,7 @@ import type {
 export interface IPostRepository {
   getPosts(params: PostsQueryParams): Promise<ApiResponse<Post[]>>;
   getFriends(): Promise<ApiResponse<PostAuthor[]>>;
+  uploadMedia(files: File[]): Promise<ApiResponse<PostMediaItem[]>>;
   createPost(payload: CreatePostPayload): Promise<ApiResponse<Post>>;
   reactPost(postId: string, reactionType: ReactionType): Promise<ApiResponse<Post>>;
   getPostReactions(
@@ -42,6 +43,17 @@ export class PostRepository implements IPostRepository {
   async getFriends(): Promise<ApiResponse<PostAuthor[]>> {
     return apiClient.get<ApiResponse<PostAuthor[]>, ApiResponse<PostAuthor[]>>(
       `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/friends`,
+    );
+  }
+
+  async uploadMedia(files: File[]): Promise<ApiResponse<PostMediaItem[]>> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+
+    return apiClient.post<ApiResponse<PostMediaItem[]>, ApiResponse<PostMediaItem[]>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/upload`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 180000 },
     );
   }
 

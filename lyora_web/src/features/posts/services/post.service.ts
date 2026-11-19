@@ -17,6 +17,7 @@ import { postPreviewStore } from './postPreviewStore';
 export interface IPostService {
   getPosts(params: PostsQueryParams): Promise<PaginatedPostsResult>;
   getFriends(): Promise<PostAuthor[]>;
+  uploadMedia(files: File[]): Promise<PostMediaItem[]>;
   createPost(payload: CreatePostPayload): Promise<Post>;
   reactPost(postId: string, reactionType: ReactionType): Promise<Post>;
   getPostReactions(
@@ -92,6 +93,20 @@ export class PostService implements IPostService {
     } catch (error) {
       if (this.enablePreviewFallback && shouldUsePreviewFallback(error)) {
         return postPreviewStore.getFriends();
+      }
+      throw error;
+    }
+  }
+
+  async uploadMedia(files: File[]): Promise<PostMediaItem[]> {
+    if (files.length === 0) return [];
+
+    try {
+      const response = await this.repository.uploadMedia(files);
+      return response.data ?? [];
+    } catch (error) {
+      if (this.enablePreviewFallback && shouldUsePreviewFallback(error)) {
+        return postPreviewStore.createLocalMedia(files);
       }
       throw error;
     }

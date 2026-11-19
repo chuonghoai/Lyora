@@ -1,6 +1,7 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AppImage, formatRelativeTime } from '@/core';
+import { AppImage, formatRelativeTime, LoadingSpinner } from '@/core';
+import { getReactionMeta, REACTION_OPTIONS } from '@/features/posts';
 import type {
   ChatMessageItem,
   ChatWindowSession,
@@ -18,6 +19,7 @@ import {
   PhoneIcon,
   PinIcon,
   PlusCircleIcon,
+  ReactionIcon,
   ReplyIcon,
   SendIcon,
   SmileIcon,
@@ -31,10 +33,10 @@ export interface FriendChatWidgetProps {
   controller: HomeController;
 }
 
-const CHAT_EMOTES = ['👍', '❤️', '😂', '😮', '😢', '😡'] as const;
-const QUICK_EMOJIS = ['😊', '😂', '❤️', '🔥', '👏', '🎉', '🙌', '🥳', '🤔', '😅'] as const;
-const QUICK_STICKERS = ['👋 Xin chào!', '☕ Cà phê nhé!', '🚀 Tuyệt vời!', '🫶 Cảm ơn bạn!'] as const;
-const QUICK_GIFS = ['[GIF] Vỗ tay nhiệt liệt 👏', '[GIF] Hào hứng quá đi 🎉', '[GIF] Gửi ngàn trái tim ❤️', '[GIF] OK luôn bạn ơi 👍'] as const;
+const ChatEmojiPicker = lazy(() => import('./ChatEmojiPicker'));
+
+const QUICK_STICKERS = ['Xin chào!', 'Cà phê nhé!', 'Tuyệt vời!', 'Cảm ơn bạn!'] as const;
+const QUICK_GIFS = ['[GIF] Vỗ tay nhiệt liệt', '[GIF] Hào hứng quá đi', '[GIF] Gửi ngàn trái tim', '[GIF] OK luôn bạn ơi'] as const;
 
 interface FloatingPosition {
   left: number;
@@ -349,36 +351,48 @@ const ChatMessageRow: React.FC<{
           </span>
         )}
 
-        <div
-          title={formatRelativeTime(msg.createdAt)}
-          className={
-            msg.isRecalled
-              ? 'rounded-2xl border border-dashed border-border bg-background/50 px-3 py-1.5 text-xs italic text-muted'
-              : msg.isMine
-                ? 'rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm text-on-primary shadow-sm break-words'
-                : 'rounded-2xl rounded-bl-sm bg-background px-3.5 py-2 text-sm text-foreground break-words'
-          }
-        >
-          {msg.mediaUrl && !msg.isRecalled && (
-            <AppImage
-              src={msg.mediaUrl}
-              alt={msg.text}
-              className="mb-1.5 max-h-36 w-full rounded-lg object-cover"
-            />
-          )}
-          <span>{msg.text}</span>
-        </div>
+        {msg.kind === 'LIKE' && !msg.isRecalled ? (
+          <span
+            title={formatRelativeTime(msg.createdAt)}
+            role="img"
+            aria-label={msg.text}
+            className="px-1 text-primary"
+          >
+            <ThumbUpIcon className="w-8 h-8" filled />
+          </span>
+        ) : (
+          <div
+            title={formatRelativeTime(msg.createdAt)}
+            className={
+              msg.isRecalled
+                ? 'rounded-2xl border border-dashed border-border bg-background/50 px-3 py-1.5 text-xs italic text-muted'
+                : msg.isMine
+                  ? 'rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm text-on-primary shadow-sm break-words'
+                  : 'rounded-2xl rounded-bl-sm bg-background px-3.5 py-2 text-sm text-foreground break-words'
+            }
+          >
+            {msg.mediaUrl && !msg.isRecalled && (
+              <AppImage
+                src={msg.mediaUrl}
+                alt={msg.text}
+                className="mb-1.5 max-h-36 w-full rounded-lg object-cover"
+              />
+            )}
+            <span>{msg.text}</span>
+          </div>
+        )}
 
         {msg.reaction && !msg.isRecalled && (
           <button
             type="button"
             onClick={() => controller.handleReactChatMessage(friendId, msg.id, msg.reaction!)}
             title="Nhấn để gỡ cảm xúc"
-            className={`-mt-2 relative z-10 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-card px-1 text-xs shadow-sm cursor-pointer ${
+            aria-label={`Gỡ cảm xúc ${getReactionMeta(msg.reaction).label}`}
+            className={`-mt-2 relative z-10 inline-flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card shadow-sm cursor-pointer ${
               msg.isMine ? 'mr-1' : 'ml-1'
             }`}
           >
-            {msg.reaction}
+            <ReactionIcon type={msg.reaction} className="w-4 h-4" />
           </button>
         )}
       </div>
@@ -481,19 +495,21 @@ const ChatMessageRow: React.FC<{
             }}
             className="fixed z-50 flex items-center gap-0.5 rounded-full border border-border bg-card px-2 py-1 shadow-md"
           >
-            {CHAT_EMOTES.map((emoji) => (
+            {REACTION_OPTIONS.map((option) => (
               <button
-                key={emoji}
+                key={option.type}
                 type="button"
+                title={option.label}
+                aria-label={option.label}
                 onClick={() => {
                   setIsEmoteOpen(false);
-                  controller.handleReactChatMessage(friendId, msg.id, emoji);
+                  controller.handleReactChatMessage(friendId, msg.id, option.type);
                 }}
-                className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-base hover:scale-125 transition-transform cursor-pointer ${
-                  msg.reaction === emoji ? 'bg-secondary' : ''
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-full hover:scale-125 transition-transform cursor-pointer ${
+                  msg.reaction === option.type ? 'bg-secondary' : ''
                 }`}
               >
-                {emoji}
+                <ReactionIcon type={option.type} className="w-6 h-6" />
               </button>
             ))}
           </div>,
@@ -709,18 +725,15 @@ const SingleChatWindow: React.FC<{
           className="shrink-0 border-t border-border bg-background/60 px-3 py-2 space-y-1.5"
         >
           {win.pickerTab === 'emoji' && (
-            <div className="flex flex-wrap gap-1.5">
-              {QUICK_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => controller.handleInsertEmoji(friend.id, emoji)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-card border border-border text-base hover:bg-secondary/60 cursor-pointer"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
+            <Suspense
+              fallback={
+                <div className="flex h-[300px] items-center justify-center">
+                  <LoadingSpinner />
+                </div>
+              }
+            >
+              <ChatEmojiPicker onSelect={(emoji) => controller.handleInsertEmoji(friend.id, emoji)} />
+            </Suspense>
           )}
 
           {win.pickerTab === 'sticker' && (
@@ -899,7 +912,7 @@ const SingleChatWindow: React.FC<{
             type="button"
             onClick={() => controller.handleSendQuickLike(friend.id)}
             aria-label="Gửi lượt thích nhanh"
-            title="Gửi 👍"
+            title="Gửi lượt thích"
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-primary hover:bg-secondary/60 active:scale-95 transition-all cursor-pointer"
           >
             <ThumbUpIcon className="w-4 h-4" filled />

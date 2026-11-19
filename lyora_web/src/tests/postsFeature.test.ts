@@ -113,6 +113,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       }),
       getFriends: vi.fn().mockResolvedValue({ success: true, data: [] }),
       createPost: vi.fn().mockResolvedValue({ success: true, data: MOCK_POST }),
+      uploadMedia: vi.fn(),
       reactPost: vi.fn(),
       getPostReactions: vi.fn(),
       toggleBookmark: vi.fn(),
@@ -142,6 +143,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       getPosts: vi.fn().mockRejectedValue(notFoundError),
       getFriends: vi.fn().mockRejectedValue(notFoundError),
       createPost: vi.fn().mockRejectedValue(notFoundError),
+      uploadMedia: vi.fn(),
       reactPost: vi.fn().mockRejectedValue(notFoundError),
       getPostReactions: vi.fn().mockRejectedValue(notFoundError),
       toggleBookmark: vi.fn().mockRejectedValue(notFoundError),
@@ -219,6 +221,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       getPosts: vi.fn().mockRejectedValue(serverError),
       getFriends: vi.fn().mockRejectedValue(serverError),
       createPost: vi.fn(),
+      uploadMedia: vi.fn(),
       reactPost: vi.fn(),
       getPostReactions: vi.fn(),
       toggleBookmark: vi.fn(),
@@ -278,6 +281,35 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       requireAuth: true,
     });
     expect(clientToClient.allowed).toBe(true);
+  });
+
+  it('validates AUDIO media and uploads files through the repository', async () => {
+    const audioPost = createPostSchema.safeParse({
+      content: '',
+      visibility: 'PUBLIC',
+      media: [
+        {
+          id: 'audio-1',
+          url: 'https://res.cloudinary.com/demo/video/upload/voice.webm',
+          type: 'AUDIO',
+          duration: 12,
+        },
+      ],
+    });
+    expect(audioPost.success).toBe(true);
+
+    const uploaded = [
+      { id: 'cld-1', url: 'https://res.cloudinary.com/demo/image/upload/a.jpg', type: 'IMAGE' as const },
+    ];
+    const mockRepo = {
+      uploadMedia: vi.fn().mockResolvedValue({ success: true, data: uploaded }),
+    } as unknown as IPostRepository;
+
+    const service = new PostService(mockRepo);
+    const file = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
+    expect(await service.uploadMedia([file])).toEqual(uploaded);
+    expect(mockRepo.uploadMedia).toHaveBeenCalledWith([file]);
+    expect(await service.uploadMedia([])).toEqual([]);
   });
 
   it('formats relative time and extracts top reactions accurately', () => {

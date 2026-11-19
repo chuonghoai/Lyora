@@ -67,6 +67,12 @@ export function usePostReactionsQuery(
   });
 }
 
+export function useUploadPostMediaMutation() {
+  return useMutation({
+    mutationFn: (files: File[]) => postService.uploadMedia(files),
+  });
+}
+
 export type UseCreatePostMutationOptions = Omit<
   UseMutationOptions<Post, unknown, CreatePostPayload>,
   'mutationFn'
