@@ -24,7 +24,9 @@ import {
   ImageIcon,
   LockIcon,
   MoreHorizontalIcon,
+  PauseIcon,
   PlayIcon,
+  ReactionIcon,
   SendIcon,
   ShareIcon,
   ThumbUpIcon,
@@ -94,6 +96,119 @@ export const PostAvatarChip: React.FC<{
     >
       {initials}
     </span>
+  );
+};
+
+const AUDIO_WAVEFORM_BARS = 36;
+
+function formatAudioTime(totalSeconds: number): string {
+  const safe = Number.isFinite(totalSeconds) && totalSeconds > 0 ? Math.floor(totalSeconds) : 0;
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function getWaveformBarHeight(index: number): number {
+  return 22 + Math.round(Math.abs(Math.sin(index * 1.7) + Math.cos(index * 0.8)) * 34);
+}
+
+export const PostAudioPlayer: React.FC<{
+  item: PostMediaItem;
+  className?: string;
+}> = ({ item, className = '' }) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(item.duration ?? 0);
+
+  const progress = totalDuration > 0 ? Math.min(1, currentTime / totalDuration) : 0;
+
+  const handleTogglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      void audio.play();
+    } else {
+      audio.pause();
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio || totalDuration <= 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    audio.currentTime = ratio * totalDuration;
+    setCurrentTime(audio.currentTime);
+  };
+
+  const handleSeekByKeyboard = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (e.key === 'ArrowRight') audio.currentTime = Math.min(totalDuration, audio.currentTime + 5);
+    if (e.key === 'ArrowLeft') audio.currentTime = Math.max(0, audio.currentTime - 5);
+  };
+
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-2.5 ${className}`}
+    >
+      <audio
+        ref={audioRef}
+        src={item.url}
+        preload="metadata"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        }}
+        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => {
+          const loaded = e.currentTarget.duration;
+          if (Number.isFinite(loaded) && loaded > 0) setTotalDuration(loaded);
+        }}
+      />
+
+      <button
+        type="button"
+        onClick={handleTogglePlay}
+        aria-label={isPlaying ? 'Tạm dừng bản ghi âm' : 'Phát bản ghi âm'}
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary hover:bg-primary-hover transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
+        {isPlaying ? (
+          <PauseIcon className="w-4 h-4" />
+        ) : (
+          <PlayIcon className="w-4 h-4 translate-x-0.5" />
+        )}
+      </button>
+
+      <div
+        role="slider"
+        tabIndex={0}
+        aria-label="Tiến trình bản ghi âm"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(totalDuration)}
+        aria-valuenow={Math.round(currentTime)}
+        onClick={handleSeek}
+        onKeyDown={handleSeekByKeyboard}
+        className="flex h-10 flex-1 cursor-pointer items-center gap-[3px] rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
+        {Array.from({ length: AUDIO_WAVEFORM_BARS }, (_, idx) => (
+          <span
+            key={idx}
+            style={{ height: `${getWaveformBarHeight(idx)}%` }}
+            className={`w-[3px] flex-1 rounded-full transition-colors ${
+              (idx + 1) / AUDIO_WAVEFORM_BARS <= progress ? 'bg-primary' : 'bg-border'
+            }`}
+          />
+        ))}
+      </div>
+
+      <span className="shrink-0 text-xs font-medium tabular-nums text-muted">
+        {formatAudioTime(isPlaying || currentTime > 0 ? currentTime : totalDuration)}
+      </span>
+    </div>
   );
 };
 
@@ -177,6 +292,25 @@ export const PostMediaGallery: React.FC<{
   onOpenLightbox: (items: PostMediaItem[], index: number) => void;
 }> = ({ media, onOpenLightbox }) => {
   if (!media || media.length === 0) return null;
+
+  const visualMedia = media.filter((item) => item.type !== 'AUDIO');
+  const audioItems = media.filter((item) => item.type === 'AUDIO');
+
+  return (
+    <div className="space-y-2">
+      <PostVisualGallery media={visualMedia} onOpenLightbox={onOpenLightbox} />
+      {audioItems.map((item, idx) => (
+        <PostAudioPlayer key={item.id ?? `${item.url}-${idx}`} item={item} />
+      ))}
+    </div>
+  );
+};
+
+const PostVisualGallery: React.FC<{
+  media: PostMediaItem[];
+  onOpenLightbox: (items: PostMediaItem[], index: number) => void;
+}> = ({ media, onOpenLightbox }) => {
+  if (media.length === 0) return null;
 
   if (media.length === 1) {
     return (
@@ -355,9 +489,9 @@ export const PostInteractionsBlock: React.FC<{
                 {topReactions.map((item) => (
                   <span
                     key={item.type}
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-background ring-2 ring-card text-xs"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-card ring-2 ring-card"
                   >
-                    {item.emoji}
+                    <ReactionIcon type={item.type} className="w-4 h-4" />
                   </span>
                 ))}
               </span>
@@ -405,7 +539,7 @@ export const PostInteractionsBlock: React.FC<{
           >
             {activeReaction ? (
               <>
-                <span className="text-base leading-none">{activeReaction.emoji}</span>
+                <ReactionIcon type={activeReaction.type} className="w-5 h-5" />
                 <span className="truncate">{activeReaction.label}</span>
               </>
             ) : (
@@ -478,11 +612,11 @@ export const PostInteractionsBlock: React.FC<{
                   setIsReactionDockOpen(false);
                   void controller.handleReactPost(post.id, option.type);
                 }}
-                className={`group relative inline-flex h-10 w-10 items-center justify-center rounded-full text-xl hover:scale-125 hover:-translate-y-1 hover:bg-background transition-all duration-150 cursor-pointer ${
+                className={`group relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:scale-125 hover:-translate-y-1 hover:bg-background transition-all duration-150 cursor-pointer ${
                   post.userReaction === option.type ? 'bg-secondary scale-110' : ''
                 }`}
               >
-                <span>{option.emoji}</span>
+                <ReactionIcon type={option.type} className="w-8 h-8" />
                 <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground px-2 py-0.5 text-[10px] font-medium text-card opacity-0 group-hover:opacity-100 transition-opacity">
                   {option.label}
                 </span>

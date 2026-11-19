@@ -1,4 +1,5 @@
 import React from 'react';
+import type { ReactionType } from '@/features/posts';
 
 interface IconProps {
   className?: string;
@@ -72,6 +73,74 @@ export const ThumbUpIcon: React.FC<IconProps> = ({ className = 'w-5 h-5', filled
       strokeLinejoin="round"
       d="M7 10v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3Zm0 0 4.2-6.3a1.5 1.5 0 0 1 2.7.9V9h4.6a2 2 0 0 1 2 2.4l-1.2 6.5A2 2 0 0 1 17.3 19.5H7"
     />
+  </svg>
+);
+
+const REACTION_ICON_COLOR: Record<ReactionType, string> = {
+  LIKE: 'text-primary',
+  LOVE: 'text-accent',
+  HAHA: 'text-warning',
+  WOW: 'text-warning',
+  SAD: 'text-info',
+  ANGRY: 'text-error',
+};
+
+const REACTION_FACE_STROKE = 'fill-none stroke-card';
+
+export const ReactionIcon: React.FC<{ type: ReactionType; className?: string }> = ({
+  type,
+  className = 'w-5 h-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={`${REACTION_ICON_COLOR[type]} ${className}`}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="11" fill="currentColor" />
+    {type === 'LIKE' && (
+      <path
+        className={REACTION_FACE_STROKE}
+        strokeWidth={1.8}
+        transform="translate(5 5) scale(0.58)"
+        d="M7 10v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3Zm0 0 4.2-6.3a1.5 1.5 0 0 1 2.7.9V9h4.6a2 2 0 0 1 2 2.4l-1.2 6.5A2 2 0 0 1 17.3 19.5H7"
+      />
+    )}
+    {type === 'LOVE' && (
+      <path
+        className="fill-card"
+        d="M12 17.4s-5-3.1-5-6.6a2.9 2.9 0 0 1 5-1.9 2.9 2.9 0 0 1 5 1.9c0 3.5-5 6.6-5 6.6Z"
+      />
+    )}
+    {type === 'HAHA' && (
+      <>
+        <path className={REACTION_FACE_STROKE} strokeWidth={1.5} d="M7.6 10.4q1.4-1.6 2.8 0M13.6 10.4q1.4-1.6 2.8 0" />
+        <path className="fill-card" d="M7.4 13.2h9.2a4.6 4.6 0 0 1-9.2 0Z" />
+      </>
+    )}
+    {type === 'WOW' && (
+      <>
+        <circle cx="8.6" cy="9.6" r="1.2" className="fill-card" />
+        <circle cx="15.4" cy="9.6" r="1.2" className="fill-card" />
+        <ellipse cx="12" cy="16" rx="2" ry="2.8" className="fill-card" />
+      </>
+    )}
+    {type === 'SAD' && (
+      <>
+        <circle cx="8.6" cy="10" r="1.2" className="fill-card" />
+        <circle cx="15.4" cy="10" r="1.2" className="fill-card" />
+        <path className={REACTION_FACE_STROKE} strokeWidth={1.6} d="M8.6 16.8q3.4-3.2 6.8 0" />
+      </>
+    )}
+    {type === 'ANGRY' && (
+      <>
+        <path className={REACTION_FACE_STROKE} strokeWidth={1.6} d="M7 8.2l3.6 1.8M17 8.2l-3.6 1.8" />
+        <circle cx="9" cy="12" r="1.2" className="fill-card" />
+        <circle cx="15" cy="12" r="1.2" className="fill-card" />
+        <path className={REACTION_FACE_STROKE} strokeWidth={1.6} d="M8.8 17q3.2-2.8 6.4 0" />
+      </>
+    )}
   </svg>
 );
 
@@ -190,6 +259,33 @@ export const MicIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} className={className} aria-hidden="true">
     <rect x="9" y="3" width="6" height="11" rx="3" />
     <path strokeLinecap="round" d="M5 11a7 7 0 0 0 14 0M12 18v3m-3 0h6" />
+  </svg>
+);
+
+export const PauseIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <rect x="6" y="5" width="4" height="14" rx="1" />
+    <rect x="14" y="5" width="4" height="14" rx="1" />
+  </svg>
+);
+
+export const StopIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <rect x="6" y="6" width="12" height="12" rx="2" />
+  </svg>
+);
+
+export const AtSignIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} className={className} aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
+  </svg>
+);
+
+export const EyeIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+    <circle cx="12" cy="12" r="3" />
   </svg>
 );
 

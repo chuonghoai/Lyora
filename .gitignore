@@ -79,3 +79,5 @@ Thumbs.db
 .cache/
 .temp/
 *.tmp
+# Tệp tải lên local (dự phòng Cloudinary)
+lyora_backend/uploads/
