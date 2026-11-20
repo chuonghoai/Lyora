@@ -1,6 +1,7 @@
 export const ROUTES = {
   CLIENT: {
     ROOT: '/',
+    MESSAGES: '/messages',
   },
   ADMIN: {
     ROOT: '/admin',

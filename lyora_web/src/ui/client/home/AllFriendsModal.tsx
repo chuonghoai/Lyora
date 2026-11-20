@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { AppImage, Button, Input } from '@/core';
 import type { HomeController } from './home.controller';
-import { ChatBubbleIcon, CloseIcon } from './ClientIcons';
+import { ChatBubbleOutlineIcon, CloseIcon } from './ClientIcons';
 
 export interface AllFriendsModalProps {
   controller: HomeController;
@@ -104,7 +104,7 @@ export const AllFriendsModal: React.FC<AllFriendsModalProps> = ({ controller }) 
                     }}
                     className="h-8 px-3 py-1 text-xs gap-1.5 shrink-0"
                   >
-                    <ChatBubbleIcon className="w-3.5 h-3.5" />
+                    <ChatBubbleOutlineIcon className="w-4 h-4" />
                     <span>Nhắn tin</span>
                   </Button>
                 </div>
