@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import type { ReactionBreakdown, ReactionType } from '../types/post.types';
+import type {
+  PostSuggestionTone,
+  ReactionBreakdown,
+  ReactionType,
+} from '../types/post.types';
 
 export const postMediaItemSchema = z.object({
   id: z.string().optional(),
@@ -91,3 +95,35 @@ export function getTopReactions(breakdown: ReactionBreakdown, limit: number = 3)
     .sort((a, b) => (breakdown[b.type] ?? 0) - (breakdown[a.type] ?? 0))
     .slice(0, limit);
 }
+
+export interface PostSuggestionToneOption {
+  value: PostSuggestionTone;
+  label: string;
+}
+
+export const POST_SUGGESTION_TONES: readonly PostSuggestionToneOption[] = [
+  { value: 'FRIENDLY', label: 'Thân thiện' },
+  { value: 'FUNNY', label: 'Hài hước' },
+  { value: 'PROFESSIONAL', label: 'Chuyên nghiệp' },
+  { value: 'INSPIRING', label: 'Truyền cảm hứng' },
+  { value: 'CONCISE', label: 'Ngắn gọn' },
+] as const;
+
+export const suggestPostContentSchema = z
+  .object({
+    topic: z.string().trim().max(500, 'Ý chính tối đa 500 ký tự').optional(),
+    currentContent: z
+      .string()
+      .trim()
+      .max(5000, 'Nội dung hiện tại tối đa 5.000 ký tự')
+      .optional(),
+    tone: z.enum(['FRIENDLY', 'FUNNY', 'PROFESSIONAL', 'INSPIRING', 'CONCISE'], {
+      message: 'Giọng điệu không hợp lệ',
+    }),
+  })
+  .refine((data) => Boolean(data.topic?.length || data.currentContent?.length), {
+    message: 'Vui lòng nhập ý chính hoặc viết vài dòng để AI gợi ý',
+    path: ['topic'],
+  });
+
+export type SuggestPostContentFormValues = z.infer<typeof suggestPostContentSchema>;

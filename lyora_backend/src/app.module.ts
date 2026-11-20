@@ -7,12 +7,14 @@ import { AppService } from './app.service';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import appConfig from './config/app.config';
+import aiConfig from './config/ai.config';
 import cloudinaryConfig from './config/cloudinary.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import mailConfig from './config/mail.config';
 import redisConfig from './config/redis.config';
 import { DatabaseModule } from './database/database.module';
+import { AiModule } from './modules/ai/ai.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { MailModule } from './modules/mail/mail.module';
@@ -26,6 +28,7 @@ import { RedisModule } from './redis/redis.module';
       isGlobal: true,
       load: [
         appConfig,
+        aiConfig,
         databaseConfig,
         jwtConfig,
         redisConfig,
@@ -47,6 +50,7 @@ import { RedisModule } from './redis/redis.module';
     ]),
     RedisModule,
     DatabaseModule,
+    AiModule,
     HealthModule,
     UsersModule,
     MailModule,

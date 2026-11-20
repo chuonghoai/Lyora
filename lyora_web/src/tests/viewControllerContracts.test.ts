@@ -158,7 +158,20 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleTogglePinMessage'
       | 'handleConfirmForwardToFriend'
       | 'handleReactChatMessage'
-      | 'handleOpenLightbox';
+      | 'handleOpenLightbox'
+      | 'isAiPanelOpen'
+      | 'aiTopic'
+      | 'aiTone'
+      | 'aiSuggestions'
+      | 'isGeneratingAi'
+      | 'aiError'
+      | 'canUndoAiApply'
+      | 'handleToggleAiPanel'
+      | 'handleAiTopicChange'
+      | 'handleAiToneChange'
+      | 'handleRequestAiSuggestions'
+      | 'handleApplyAiSuggestion'
+      | 'handleUndoAiApply';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<HomeController, ExpectedKeys>;
