@@ -8,7 +8,9 @@ import type {
   PostReactionUser,
   PostReactionsQueryParams,
   PostsQueryParams,
+  PostSuggestionsResult,
   ReactionType,
+  SuggestPostContentPayload,
 } from '../types/post.types';
 
 export interface IPostRepository {
@@ -16,6 +18,9 @@ export interface IPostRepository {
   getFriends(): Promise<ApiResponse<PostAuthor[]>>;
   uploadMedia(files: File[]): Promise<ApiResponse<PostMediaItem[]>>;
   createPost(payload: CreatePostPayload): Promise<ApiResponse<Post>>;
+  suggestContent(
+    payload: SuggestPostContentPayload,
+  ): Promise<ApiResponse<PostSuggestionsResult>>;
   reactPost(postId: string, reactionType: ReactionType): Promise<ApiResponse<Post>>;
   getPostReactions(
     postId: string,
@@ -62,6 +67,17 @@ export class PostRepository implements IPostRepository {
       CORE_CONSTANTS.API_ENDPOINTS.POSTS,
       payload,
     );
+  }
+
+  async suggestContent(
+    payload: SuggestPostContentPayload,
+  ): Promise<ApiResponse<PostSuggestionsResult>> {
+    return apiClient.post<
+      ApiResponse<PostSuggestionsResult>,
+      ApiResponse<PostSuggestionsResult>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/ai-suggestions`, payload, {
+      timeout: 30000,
+    });
   }
 
   async reactPost(postId: string, reactionType: ReactionType): Promise<ApiResponse<Post>> {

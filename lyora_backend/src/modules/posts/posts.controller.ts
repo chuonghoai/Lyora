@@ -20,7 +20,9 @@ import { ResponseMessage } from '../../common/decorators/response-message.decora
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostQueryDto } from './dto/post-query.dto';
+import { SuggestPostContentDto } from './dto/suggest-post-content.dto';
 import { PostsService } from './posts.service';
+import { PostAiSuggestionService } from './services/post-ai-suggestion.service';
 import {
   isAllowedMimeType,
   MAX_UPLOAD_FILE_SIZE,
@@ -33,6 +35,7 @@ export class PostsController {
   constructor(
     private readonly postsService: PostsService,
     private readonly mediaUploadService: MediaUploadService,
+    private readonly postAiSuggestionService: PostAiSuggestionService,
   ) {}
 
   @Post('upload')
@@ -78,6 +81,17 @@ export class PostsController {
     @Query() query: PostQueryDto,
   ) {
     return this.postsService.findAllPaginated(currentUser, query);
+  }
+
+  @Post('ai-suggestions')
+  @Throttle({ default: { limit: 6, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Tạo gợi ý nội dung thành công')
+  async suggestContent(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() dto: SuggestPostContentDto,
+  ) {
+    return this.postAiSuggestionService.suggest(currentUser, dto);
   }
 
   @Get(':id')

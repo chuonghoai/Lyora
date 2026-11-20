@@ -431,3 +431,14 @@ export const UploadCloudIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) 
     <path strokeLinecap="round" strokeLinejoin="round" d="M20 16.5A4.5 4.5 0 0 0 17.5 8h-1.2A7 7 0 1 0 4 14.9" />
   </svg>
 );
+
+export const SparklesIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.85} className={className} aria-hidden="true">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3Z"
+    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
+  </svg>
+);

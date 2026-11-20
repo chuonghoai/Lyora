@@ -10,6 +10,7 @@ import {
   getTopReactions,
   postKeys,
   PostService,
+  suggestPostContentSchema,
   type IPostRepository,
   type Post,
 } from '@/features/posts';
@@ -113,6 +114,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       }),
       getFriends: vi.fn().mockResolvedValue({ success: true, data: [] }),
       createPost: vi.fn().mockResolvedValue({ success: true, data: MOCK_POST }),
+      suggestContent: vi.fn(),
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
       getPostReactions: vi.fn(),
@@ -143,6 +145,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       getPosts: vi.fn().mockRejectedValue(notFoundError),
       getFriends: vi.fn().mockRejectedValue(notFoundError),
       createPost: vi.fn().mockRejectedValue(notFoundError),
+      suggestContent: vi.fn().mockRejectedValue(notFoundError),
       uploadMedia: vi.fn(),
       reactPost: vi.fn().mockRejectedValue(notFoundError),
       getPostReactions: vi.fn().mockRejectedValue(notFoundError),
@@ -221,6 +224,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       getPosts: vi.fn().mockRejectedValue(serverError),
       getFriends: vi.fn().mockRejectedValue(serverError),
       createPost: vi.fn(),
+      suggestContent: vi.fn(),
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
       getPostReactions: vi.fn(),
@@ -316,5 +320,86 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     expect(formatRelativeTime(new Date())).toBe('Vừa xong');
     const top = getTopReactions(MOCK_POST.reactionBreakdown);
     expect(top.map((r) => r.type)).toEqual(['LIKE', 'LOVE']);
+  });
+
+  it('validates suggestPostContentSchema with Vietnamese errors', () => {
+    const emptyInput = suggestPostContentSchema.safeParse({
+      topic: '   ',
+      currentContent: '',
+      tone: 'FRIENDLY',
+    });
+    expect(emptyInput.success).toBe(false);
+    if (!emptyInput.success) {
+      expect(emptyInput.error.issues[0]?.message).toBe(
+        'Vui lòng nhập ý chính hoặc viết vài dòng để AI gợi ý',
+      );
+    }
+
+    const tooLongTopic = suggestPostContentSchema.safeParse({
+      topic: 'a'.repeat(501),
+      tone: 'CONCISE',
+    });
+    expect(tooLongTopic.success).toBe(false);
+
+    const topicOnly = suggestPostContentSchema.safeParse({
+      topic: '  Đi Đà Lạt cuối tuần  ',
+      tone: 'FRIENDLY',
+    });
+    expect(topicOnly.success).toBe(true);
+
+    const contentOnly = suggestPostContentSchema.safeParse({
+      currentContent: 'Hôm nay trời xanh mây trắng',
+      tone: 'INSPIRING',
+    });
+    expect(contentOnly.success).toBe(true);
+  });
+
+  it('PostService.suggestContent validates, trims, unwraps data, and does not fallback on 404', async () => {
+    const suggestionResult = {
+      tone: 'FRIENDLY' as const,
+      suggestions: [
+        { id: 'sug-1', content: 'Cuối tuần lên Đà Lạt săn mây thôi!' },
+        { id: 'sug-2', content: 'Ai đi Đà Lạt hít thở không khí lạnh không?' },
+        { id: 'sug-3', content: 'Gói ghém chút bình yên mang về từ Đà Lạt.' },
+      ],
+    };
+
+    const mockRepo = {
+      suggestContent: vi.fn().mockResolvedValue({
+        success: true,
+        data: suggestionResult,
+      }),
+    } as unknown as IPostRepository;
+
+    const service = new PostService(mockRepo);
+    const data = await service.suggestContent({
+      topic: '  Đà Lạt cuối tuần  ',
+      currentContent: '   ',
+      tone: 'FRIENDLY',
+    });
+
+    expect(mockRepo.suggestContent).toHaveBeenCalledWith({
+      tone: 'FRIENDLY',
+      topic: 'Đà Lạt cuối tuần',
+    });
+    expect(data).toEqual(suggestionResult);
+
+    await expect(
+      service.suggestContent({ topic: '', currentContent: '', tone: 'FRIENDLY' }),
+    ).rejects.toThrow('Vui lòng nhập ý chính hoặc viết vài dòng để AI gợi ý');
+
+    const notFoundError: ApiError = {
+      statusCode: 404,
+      message: 'Cannot POST /posts/ai-suggestions',
+      error: 'NotFound',
+    };
+    const failingRepo = {
+      suggestContent: vi.fn().mockRejectedValue(notFoundError),
+    } as unknown as IPostRepository;
+    const failingService = new PostService(failingRepo);
+
+    await expect(
+      failingService.suggestContent({ topic: 'Cà phê sáng', tone: 'FUNNY' }),
+    ).rejects.toMatchObject({ statusCode: 404 });
   });
 });

@@ -104,3 +104,26 @@ export interface PaginatedPostReactionsResult {
   breakdown: ReactionBreakdown;
   isPreviewFallback?: boolean;
 }
+
+export type PostSuggestionTone =
+  | 'FRIENDLY'
+  | 'FUNNY'
+  | 'PROFESSIONAL'
+  | 'INSPIRING'
+  | 'CONCISE';
+
+export interface SuggestPostContentPayload {
+  topic?: string;
+  currentContent?: string;
+  tone: PostSuggestionTone;
+}
+
+export interface PostContentSuggestion {
+  id: string;
+  content: string;
+}
+
+export interface PostSuggestionsResult {
+  tone: PostSuggestionTone;
+  suggestions: PostContentSuggestion[];
+}

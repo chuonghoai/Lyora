@@ -10,6 +10,8 @@ export const REDIS_KEYS = {
   otpCooldown: (action: string, identifier: string): string =>
     `cooldown:otp:${action}:${identifier}`,
   resetPasswordToken: (email: string): string => `reset_token:${email}`,
+  aiDailyQuota: (userId: string, dateKey: string): string =>
+    `ai:quota:${userId}:${dateKey}`,
 } as const;
 
 export const REDIS_TTL = {
@@ -19,4 +21,5 @@ export const REDIS_TTL = {
   RESET_PASSWORD_TOKEN_SECONDS: 300,
   DEFAULT_ACCESS_TOKEN_SECONDS: 7 * 24 * 3600,
   DEFAULT_REFRESH_TOKEN_SECONDS: 30 * 24 * 3600,
+  AI_DAILY_QUOTA_SECONDS: 24 * 3600,
 } as const;

@@ -52,9 +52,11 @@ Lyora/
 │   │   ├── database/               # TypeORM PostgreSQL database module (auto-sync in dev)
 │   │   ├── redis/                  # Redis caching service with local in-memory fallback
 │   │   ├── modules/
-│   │   │   ├── auth/               # Authentication, JWT dual-token lifecycle, bcrypt hashing
-│   │   │   ├── users/              # User entity and profile management
-│   │   │   └── health/             # System health check endpoints
+│   │   │   ├── ai/               # Core AI module (Provider abstraction, Gemini SDK, timeout & error mapping)
+│   │   │   ├── auth/             # Authentication, JWT dual-token lifecycle, bcrypt hashing
+│   │   │   ├── posts/            # Posts, media upload, reactions, comments, AI content suggestions
+│   │   │   ├── users/            # User entity and profile management
+│   │   │   └── health/           # System health check endpoints
 │   │   └── main.ts                 # Application bootstrap (CORS, Helmet, ValidationPipe)
 │   ├── seed/                       # Database seed scripts & data definitions (createSeedDB.ts)
 │   ├── script/                     # Database maintenance scripts (deleteAllData.ts)
@@ -176,6 +178,12 @@ JWT_SECRET=lyora_development_jwt_secret_key_2026
 JWT_EXPIRES_IN=7d
 JWT_REFRESH_SECRET=lyora_development_refresh_secret_key_2026
 JWT_REFRESH_EXPIRES_IN=30d
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-3.5-flash-lite
+AI_REQUEST_TIMEOUT_MS=20000
+AI_MAX_OUTPUT_TOKENS=1024
+AI_DAILY_QUOTA_PER_USER=30
 ```
 
 *(Note: In `NODE_ENV=dev`, TypeORM automatically synchronizes the database schema and creates necessary tables on startup).*
@@ -239,8 +247,8 @@ npm run test
 ```
 
 Current test coverage:
-- `lyora_backend`: Jest unit and health tests pass (100%).
-- `lyora_web`: Vitest test suites (46 tests across 10 test files) pass (100%).
+- `lyora_backend`: Jest unit and health tests pass (19 tests across 6 suites, 100%).
+- `lyora_web`: Vitest test suites (78 tests across 12 test files) pass (100%).
 
 ---
 

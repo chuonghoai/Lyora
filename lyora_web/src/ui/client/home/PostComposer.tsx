@@ -9,11 +9,13 @@ import {
   ImageIcon,
   LockIcon,
   MicIcon,
+  SparklesIcon,
   StopIcon,
   UploadCloudIcon,
   UsersIcon,
   VideoIcon,
 } from './ClientIcons';
+import { PostAiSuggestionPanel } from './PostAiSuggestionPanel';
 import { PostAudioPlayer, PostMediaGallery } from './PostCard';
 
 export interface PostComposerProps {
@@ -344,6 +346,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
             </div>
           )}
 
+          <PostAiSuggestionPanel controller={controller} />
+
           {/* In-Feed Live Preview */}
           {controller.isComposerPreviewOpen && (
             <div className="rounded-xl border border-dashed border-border bg-background/60 p-3 space-y-2">
@@ -377,7 +381,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
 
           {/* Action Footer */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <label className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:bg-background transition-colors cursor-pointer">
                 <ImageIcon className="w-4 h-4 text-success" />
                 <span>Ảnh</span>
@@ -434,6 +438,18 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
               >
                 <EyeIcon className="w-4 h-4 text-muted" />
                 <span>Xem trước</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={controller.handleToggleAiPanel}
+                aria-pressed={controller.isAiPanelOpen}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors cursor-pointer hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                  controller.isAiPanelOpen ? 'bg-secondary text-primary-active' : 'text-foreground'
+                }`}
+              >
+                <SparklesIcon className="w-4 h-4 text-primary" />
+                <span>Gợi ý AI</span>
               </button>
             </div>
 

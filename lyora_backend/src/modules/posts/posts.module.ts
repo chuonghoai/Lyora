@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AiModule } from '../ai/ai.module';
 import { User } from '../users/entities/user.entity';
 import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
@@ -8,11 +9,20 @@ import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
 import { CloudinaryService } from './services/cloudinary.service';
 import { MediaUploadService } from './services/media-upload.service';
+import { PostAiSuggestionService } from './services/post-ai-suggestion.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, PostReaction, PostComment, User])],
+  imports: [
+    TypeOrmModule.forFeature([Post, PostReaction, PostComment, User]),
+    AiModule,
+  ],
   controllers: [PostsController],
-  providers: [PostsService, CloudinaryService, MediaUploadService],
+  providers: [
+    PostsService,
+    CloudinaryService,
+    MediaUploadService,
+    PostAiSuggestionService,
+  ],
   exports: [PostsService],
 })
 export class PostsModule {}

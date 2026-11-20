@@ -1,4 +1,5 @@
 import { isApiError, type PaginationMeta } from '@/core';
+import { suggestPostContentSchema } from '../models/post.model';
 import { postRepository, type IPostRepository } from '../repositories/post.repository';
 import type {
   CreatePostPayload,
@@ -10,7 +11,9 @@ import type {
   PostMediaItem,
   PostReactionsQueryParams,
   PostsQueryParams,
+  PostSuggestionsResult,
   ReactionType,
+  SuggestPostContentPayload,
 } from '../types/post.types';
 import { postPreviewStore } from './postPreviewStore';
 
@@ -19,6 +22,7 @@ export interface IPostService {
   getFriends(): Promise<PostAuthor[]>;
   uploadMedia(files: File[]): Promise<PostMediaItem[]>;
   createPost(payload: CreatePostPayload): Promise<Post>;
+  suggestContent(payload: SuggestPostContentPayload): Promise<PostSuggestionsResult>;
   reactPost(postId: string, reactionType: ReactionType): Promise<Post>;
   getPostReactions(
     postId: string,
@@ -122,6 +126,28 @@ export class PostService implements IPostService {
       }
       throw error;
     }
+  }
+
+  async suggestContent(
+    payload: SuggestPostContentPayload,
+  ): Promise<PostSuggestionsResult> {
+    const parsed = suggestPostContentSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Thông tin gợi ý chưa hợp lệ',
+      );
+    }
+
+    const cleanPayload: SuggestPostContentPayload = {
+      tone: parsed.data.tone,
+      ...(parsed.data.topic ? { topic: parsed.data.topic } : {}),
+      ...(parsed.data.currentContent
+        ? { currentContent: parsed.data.currentContent }
+        : {}),
+    };
+
+    const response = await this.repository.suggestContent(cleanPayload);
+    return response.data;
   }
 
   async reactPost(postId: string, reactionType: ReactionType): Promise<Post> {

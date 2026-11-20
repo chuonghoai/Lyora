@@ -32,6 +32,7 @@ import {
   useUpdateUserProfileMutation,
   useUserProfileQuery,
 } from '@/features/user';
+import { usePostAiAssistant } from './post-ai-assistant.controller';
 
 export type VisibilityFilterOption = 'ALL' | PostVisibility;
 
@@ -224,6 +225,12 @@ export function useHomeController() {
   const [hasSavedDraft, setHasSavedDraft] = useState(
     () => (localStorageService.getItem<ComposerDraft>(COMPOSER_DRAFT_KEY)?.content ?? '').trim().length > 0,
   );
+
+  const { clearAiUndo, resetAiAssistant, ...aiAssistant } = usePostAiAssistant({
+    composerContent,
+    setComposerContent,
+    onClearComposerError: () => setComposerError(null),
+  });
 
   // Trạng thái thu âm giọng nói
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
@@ -580,10 +587,12 @@ export function useHomeController() {
     setIsDraggingComposerMedia(false);
     setIsComposerExpanded(false);
     setComposerError(null);
+    resetAiAssistant();
   };
 
   const handleComposerContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setComposerContent(e.target.value);
+    clearAiUndo();
     if (composerError) setComposerError(null);
   };
 
@@ -951,6 +960,7 @@ export function useHomeController() {
       setIsMentionPickerOpen(false);
       setIsComposerPreviewOpen(false);
       setComposerError(null);
+      resetAiAssistant();
       setIsComposerExpanded(false);
 
       toast.success('Đăng bài viết thành công!');
@@ -1543,6 +1553,7 @@ export function useHomeController() {
     showDraftBanner: hasSavedDraft && composerContent.trim().length === 0,
     isRecordingAudio,
     audioRecordingDuration,
+    ...aiAssistant,
 
     // Interaction, Comment Media, Detail Modal & Reactions Modal States
     commentDrafts,
