@@ -2,6 +2,9 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { DataSource } from 'typeorm';
 import { parsePostgresConnectionConfig } from '../src/database/postgres-connection.util';
+import { ConversationMember } from '../src/modules/conversations/entities/conversation-member.entity';
+import { Conversation } from '../src/modules/conversations/entities/conversation.entity';
+import { Friendship } from '../src/modules/friends/entities/friendship.entity';
 import { User } from '../src/modules/users/entities/user.entity';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -9,7 +12,12 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 /**
  * Danh sách toàn bộ các Entity trong hệ sinh thái Lyora Backend
  */
-export const SEED_ENTITIES = [User];
+export const SEED_ENTITIES = [
+  User,
+  Friendship,
+  Conversation,
+  ConversationMember,
+];
 
 /**
  * Kiểm tra an toàn môi trường trước khi thực thi các thao tác can thiệp dữ liệu Database

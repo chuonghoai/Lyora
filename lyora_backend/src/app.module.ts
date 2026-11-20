@@ -13,6 +13,8 @@ import mailConfig from './config/mail.config';
 import redisConfig from './config/redis.config';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ConversationsModule } from './modules/conversations/conversations.module';
+import { FriendsModule } from './modules/friends/friends.module';
 import { HealthModule } from './modules/health/health.module';
 import { MailModule } from './modules/mail/mail.module';
 import { UsersModule } from './modules/users/users.module';
@@ -42,6 +44,8 @@ import { RedisModule } from './redis/redis.module';
     UsersModule,
     MailModule,
     AuthModule,
+    FriendsModule,
+    ConversationsModule,
   ],
   controllers: [AppController],
   providers: [
