@@ -8,6 +8,9 @@ import { ROUTES } from './paths';
 const ClientHomeView = lazy(
   () => import('@/ui/client/home/HomeView'),
 );
+const MessagesPage = lazy(
+  () => import('@/ui/client/messages/MessagesPage'),
+);
 const AdminDashboardView = lazy(
   () => import('@/ui/admin/dashboard/DashboardView'),
 );
@@ -82,6 +85,14 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ClientHomeView />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'messages',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <MessagesPage />
               </Suspense>
             ),
           },

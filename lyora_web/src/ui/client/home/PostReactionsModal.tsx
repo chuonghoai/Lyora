@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Button, LoadingSpinner } from '@/core';
 import { getReactionMeta, REACTION_OPTIONS } from '@/features/posts';
 import type { HomeController } from './home.controller';
-import { ChatBubbleIcon, CloseIcon, ReactionIcon } from './ClientIcons';
+import { ChatBubbleOutlineIcon, CloseIcon, ReactionIcon } from './ClientIcons';
 import { PostAvatarChip } from './PostCard';
 
 export interface PostReactionsModalProps {
@@ -165,7 +166,7 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controll
                         }}
                         className="h-8 px-3 py-1 text-xs gap-1.5"
                       >
-                        <ChatBubbleIcon className="w-3.5 h-3.5" />
+                        <ChatBubbleOutlineIcon className="w-4 h-4" />
                         <span>Nhắn tin</span>
                       </Button>
                     ) : (

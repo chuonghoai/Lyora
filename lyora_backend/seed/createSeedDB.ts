@@ -1,4 +1,5 @@
 import { assertSafeEnvironment, createSeedDataSource } from './seed.config';
+import { seedFriendships } from './friendships.seed';
 import { seedUsers } from './users.seed';
 
 export async function runCreateSeedDB(): Promise<void> {
@@ -30,6 +31,11 @@ export async function runCreateSeedDB(): Promise<void> {
     const userResult = await seedUsers(dataSource);
     console.log(
       `      ✓ [${userResult.tableName}] ${userResult.entity}: Đã tạo thành công ${userResult.count} bản ghi.`,
+    );
+
+    const friendshipResult = await seedFriendships(dataSource);
+    console.log(
+      `      ✓ [${friendshipResult.tableName}] ${friendshipResult.entity}: Đã tạo thành công ${friendshipResult.count} bản ghi quan hệ bạn bè.`,
     );
 
     // 4. Kiểm tra và đếm tổng số bản ghi trong các bảng thực tế

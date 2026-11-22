@@ -8,12 +8,14 @@ import {
   AccessibilityIcon,
   BellIcon,
   BookmarkIcon,
+  ChatBubbleOutlineIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
   HelpCircleIcon,
   HomeFeedIcon,
+  ICON_SCALE_ANIMATION,
   LogoutIcon,
   PlusIcon,
   RefreshIcon,
@@ -89,11 +91,10 @@ export const ClientLayout: React.FC = () => {
             <button
               type="button"
               onClick={() => controller.handleSelectTab('all')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
-                controller.activeTab === 'all'
-                  ? 'bg-secondary text-primary'
-                  : 'text-muted hover:bg-background hover:text-foreground'
-              }`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${controller.isHomeRoute && controller.activeTab === 'all'
+                ? 'bg-secondary text-primary'
+                : 'text-muted hover:bg-background hover:text-foreground'
+                }`}
             >
               <HomeFeedIcon className="w-4 h-4" />
               <span>Bảng tin</span>
@@ -102,11 +103,10 @@ export const ClientLayout: React.FC = () => {
             <button
               type="button"
               onClick={() => controller.handleSelectTab('mine')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
-                controller.activeTab === 'mine'
-                  ? 'bg-secondary text-primary'
-                  : 'text-muted hover:bg-background hover:text-foreground'
-              }`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${controller.isHomeRoute && controller.activeTab === 'mine'
+                ? 'bg-secondary text-primary'
+                : 'text-muted hover:bg-background hover:text-foreground'
+                }`}
             >
               <UserCircleIcon className="w-4 h-4" />
               <span>Của tôi</span>
@@ -115,13 +115,12 @@ export const ClientLayout: React.FC = () => {
             <button
               type="button"
               onClick={() => controller.handleSelectTab('saved')}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
-                controller.activeTab === 'saved'
-                  ? 'bg-secondary text-primary'
-                  : 'text-muted hover:bg-background hover:text-foreground'
-              }`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${controller.isHomeRoute && controller.activeTab === 'saved'
+                ? 'bg-secondary text-primary'
+                : 'text-muted hover:bg-background hover:text-foreground'
+                }`}
             >
-              <BookmarkIcon className="w-4 h-4" filled={controller.activeTab === 'saved'} />
+              <BookmarkIcon className="w-4 h-4" filled={controller.isHomeRoute && controller.activeTab === 'saved'} />
               <span>Đã lưu</span>
             </button>
           </nav>
@@ -136,11 +135,18 @@ export const ClientLayout: React.FC = () => {
                 aria-expanded={controller.isNotificationOpen}
                 aria-haspopup="dialog"
                 aria-label="Thông báo cộng đồng"
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-secondary/50 hover:text-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                title="Thông báo"
+                className="group relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:rounded-full"
               >
-                <BellIcon className="w-5 h-5" />
+                <BellIcon
+                  className={`w-6 h-6 ${ICON_SCALE_ANIMATION} ${
+                    controller.isNotificationOpen
+                      ? 'text-primary'
+                      : 'text-foreground group-hover:text-primary group-focus-visible:text-primary'
+                  }`}
+                />
                 {controller.unreadNotificationsCount > 0 && (
-                  <span className="absolute -right-1 -top-1 min-w-4.5 h-4.5 rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-on-primary flex items-center justify-center ring-2 ring-card tabular-nums">
+                  <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-on-primary flex items-center justify-center ring-2 ring-card tabular-nums">
                     {controller.unreadNotificationsCount}
                   </span>
                 )}
@@ -194,18 +200,16 @@ export const ClientLayout: React.FC = () => {
                             controller.handleSelectTab(item.targetTab);
                           }
                         }}
-                        className={`w-full text-left flex items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors cursor-pointer ${
-                          item.isRead
-                            ? 'border-border bg-card hover:bg-background'
-                            : 'border-secondary-strong/70 bg-secondary/35 hover:bg-secondary/55'
-                        }`}
+                        className={`w-full text-left flex items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors cursor-pointer ${item.isRead
+                          ? 'border-border bg-card hover:bg-background'
+                          : 'border-secondary-strong/70 bg-secondary/35 hover:bg-secondary/55'
+                          }`}
                       >
                         <span
-                          className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
-                            item.isRead
-                              ? 'border-border bg-background text-muted'
-                              : 'border-secondary-strong bg-card text-primary'
-                          }`}
+                          className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${item.isRead
+                            ? 'border-border bg-background text-muted'
+                            : 'border-secondary-strong bg-card text-primary'
+                            }`}
                         >
                           <BellIcon className="w-4 h-4" />
                         </span>
@@ -238,6 +242,24 @@ export const ClientLayout: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Header Message Button */}
+            <button
+              type="button"
+              onClick={controller.handleNavigateMessages}
+              title="Tin nhắn"
+              aria-label="Tin nhắn"
+              aria-current={controller.isMessagesRoute ? 'page' : undefined}
+              className="group relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:rounded-full"
+            >
+              <ChatBubbleOutlineIcon
+                className={`w-6 h-6 ${ICON_SCALE_ANIMATION} ${
+                  controller.isMessagesRoute
+                    ? 'text-primary'
+                    : 'text-foreground group-hover:text-primary group-focus-visible:text-primary'
+                }`}
+              />
+            </button>
 
             {/* Account Dropdown */}
             <div ref={controller.accountMenuRef} className="relative">
@@ -323,11 +345,13 @@ export const ClientLayout: React.FC = () => {
                           type="button"
                           role="menuitem"
                           onClick={controller.handleOpenProfile}
-                          className="w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                          className="group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer min-h-[44px]"
                         >
                           <span className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-background text-foreground border border-border">
-                              <UserCircleIcon className="w-4 h-4" />
+                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
+                              <UserCircleIcon
+                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
+                              />
                             </span>
                             <span>Trang cá nhân & Bài viết của tôi</span>
                           </span>
@@ -341,11 +365,14 @@ export const ClientLayout: React.FC = () => {
                             controller.handleToggleAccountMenu();
                             controller.handleSelectTab('saved');
                           }}
-                          className="w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                          className="group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer min-h-[44px]"
                         >
                           <span className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-background text-primary border border-border">
-                              <BookmarkIcon className="w-4 h-4" filled />
+                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
+                              <BookmarkIcon
+                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
+                                filled={false}
+                              />
                             </span>
                             <span>Bài viết đã lưu</span>
                           </span>
@@ -355,12 +382,38 @@ export const ClientLayout: React.FC = () => {
                         <button
                           type="button"
                           role="menuitem"
-                          onClick={() => controller.handleNavigateAccountPanel('settings')}
-                          className="w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                          onClick={controller.handleNavigateMessages}
+                          className={`group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors cursor-pointer min-h-[44px] ${controller.isMessagesRoute
+                            ? 'bg-secondary/60 text-primary font-semibold'
+                            : 'text-foreground hover:bg-background'
+                            }`}
                         >
                           <span className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-background text-foreground border border-border">
-                              <SettingsIcon className="w-4 h-4" />
+                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
+                              <ChatBubbleOutlineIcon
+                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} ${
+                                  controller.isMessagesRoute
+                                    ? 'text-primary'
+                                    : 'text-foreground group-hover:text-primary group-focus-visible:text-primary'
+                                }`}
+                              />
+                            </span>
+                            <span>Tin nhắn</span>
+                          </span>
+                          <ChevronRightIcon className="w-4 h-4 text-muted" />
+                        </button>
+
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => controller.handleNavigateAccountPanel('settings')}
+                          className="group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer min-h-[44px]"
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
+                              <SettingsIcon
+                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
+                              />
                             </span>
                             <span>Cài đặt & quyền riêng tư</span>
                           </span>
@@ -371,11 +424,13 @@ export const ClientLayout: React.FC = () => {
                           type="button"
                           role="menuitem"
                           onClick={() => controller.handleNavigateAccountPanel('accessibility')}
-                          className="w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                          className="group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer min-h-[44px]"
                         >
                           <span className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-background text-foreground border border-border">
-                              <AccessibilityIcon className="w-4 h-4" />
+                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
+                              <AccessibilityIcon
+                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
+                              />
                             </span>
                             <span>Màn hình & trợ năng</span>
                           </span>
@@ -386,11 +441,13 @@ export const ClientLayout: React.FC = () => {
                           type="button"
                           role="menuitem"
                           onClick={() => controller.handleNavigateAccountPanel('help')}
-                          className="w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                          className="group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer min-h-[44px]"
                         >
                           <span className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-background text-foreground border border-border">
-                              <HelpCircleIcon className="w-4 h-4" />
+                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
+                              <HelpCircleIcon
+                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
+                              />
                             </span>
                             <span>Trợ giúp & hỗ trợ</span>
                           </span>
@@ -401,12 +458,16 @@ export const ClientLayout: React.FC = () => {
                           type="button"
                           role="menuitem"
                           onClick={controller.handleSendFeedback}
-                          className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                          className="group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer min-h-[44px]"
                         >
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-background text-foreground border border-border">
-                            <SmileIcon className="w-4 h-4" />
+                          <span className="flex items-center gap-2.5">
+                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
+                              <SmileIcon
+                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
+                              />
+                            </span>
+                            <span>Đóng góp ý kiến</span>
                           </span>
-                          <span>Đóng góp ý kiến</span>
                         </button>
 
                         <div className="my-1 border-t border-border" />
@@ -416,11 +477,13 @@ export const ClientLayout: React.FC = () => {
                           role="menuitem"
                           disabled={controller.isLoggingOut}
                           onClick={() => void controller.handleLogout()}
-                          className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-error hover:bg-error/10 disabled:opacity-50 transition-colors cursor-pointer"
+                          className="group w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-error hover:bg-error/10 disabled:opacity-50 transition-colors cursor-pointer min-h-[44px]"
                         >
                           <span className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-error/10 text-error">
-                              <LogoutIcon className="w-4 h-4" />
+                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
+                              <LogoutIcon
+                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-error group-hover:text-error/80`}
+                              />
                             </span>
                             <span>{controller.isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
                           </span>
@@ -450,11 +513,10 @@ export const ClientLayout: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => controller.handleSelectFontScale('normal')}
-                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium cursor-pointer ${
-                              controller.fontScale === 'normal'
-                                ? 'border-primary bg-secondary text-primary-active font-semibold'
-                                : 'border-border bg-background text-foreground'
-                            }`}
+                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium cursor-pointer ${controller.fontScale === 'normal'
+                              ? 'border-primary bg-secondary text-primary-active font-semibold'
+                              : 'border-border bg-background text-foreground'
+                              }`}
                           >
                             <span>Mặc định</span>
                             {controller.fontScale === 'normal' && <CheckIcon className="w-3.5 h-3.5" />}
@@ -463,11 +525,10 @@ export const ClientLayout: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => controller.handleSelectFontScale('large')}
-                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium cursor-pointer ${
-                              controller.fontScale === 'large'
-                                ? 'border-primary bg-secondary text-primary-active font-semibold'
-                                : 'border-border bg-background text-foreground'
-                            }`}
+                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium cursor-pointer ${controller.fontScale === 'large'
+                              ? 'border-primary bg-secondary text-primary-active font-semibold'
+                              : 'border-border bg-background text-foreground'
+                              }`}
                           >
                             <span>Lớn hơn</span>
                             {controller.fontScale === 'large' && <CheckIcon className="w-3.5 h-3.5" />}
@@ -485,9 +546,8 @@ export const ClientLayout: React.FC = () => {
                           role="switch"
                           aria-checked={controller.reduceMotion}
                           onClick={controller.handleToggleReduceMotion}
-                          className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                            controller.reduceMotion ? 'bg-primary justify-end' : 'bg-border justify-start'
-                          }`}
+                          className={`inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors cursor-pointer ${controller.reduceMotion ? 'bg-primary justify-end' : 'bg-border justify-start'
+                            }`}
                         >
                           <span className="h-5 w-5 rounded-full bg-card shadow-sm" />
                         </button>
@@ -587,11 +647,10 @@ export const ClientLayout: React.FC = () => {
           <button
             type="button"
             onClick={() => controller.handleSelectTab('all')}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
-              controller.activeTab === 'all'
-                ? 'text-primary bg-secondary/70 font-semibold'
-                : 'text-muted hover:text-foreground'
-            }`}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${controller.isHomeRoute && controller.activeTab === 'all'
+              ? 'text-primary bg-secondary/70 font-semibold'
+              : 'text-muted hover:text-foreground'
+              }`}
           >
             <HomeFeedIcon className="w-5 h-5" />
             <span>Bảng tin</span>
@@ -609,24 +668,22 @@ export const ClientLayout: React.FC = () => {
           <button
             type="button"
             onClick={() => controller.handleSelectTab('saved')}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
-              controller.activeTab === 'saved'
-                ? 'text-primary bg-secondary/70 font-semibold'
-                : 'text-muted hover:text-foreground'
-            }`}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${controller.isHomeRoute && controller.activeTab === 'saved'
+              ? 'text-primary bg-secondary/70 font-semibold'
+              : 'text-muted hover:text-foreground'
+              }`}
           >
-            <BookmarkIcon className="w-5 h-5" filled={controller.activeTab === 'saved'} />
+            <BookmarkIcon className="w-5 h-5" filled={controller.isHomeRoute && controller.activeTab === 'saved'} />
             <span>Đã lưu</span>
           </button>
 
           <button
             type="button"
             onClick={() => controller.handleSelectTab('mine')}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
-              controller.activeTab === 'mine'
-                ? 'text-primary bg-secondary/70 font-semibold'
-                : 'text-muted hover:text-foreground'
-            }`}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${controller.isHomeRoute && controller.activeTab === 'mine'
+              ? 'text-primary bg-secondary/70 font-semibold'
+              : 'text-muted hover:text-foreground'
+              }`}
           >
             <UserCircleIcon className="w-5 h-5" />
             <span>Của tôi</span>

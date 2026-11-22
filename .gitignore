@@ -46,6 +46,11 @@ secrets.*
 *.sqlite3
 *.db
 *.dump
+seed/.manifest/
+.manifest/
+*demo-friends-manifest.json
+*manifest.json
+
 
 # Logs
 *.log
