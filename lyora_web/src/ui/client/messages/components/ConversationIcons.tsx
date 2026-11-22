@@ -439,3 +439,98 @@ export const ClipboardListIcon: React.FC<{ className?: string }> = ({
     <path d="M8 16h.01" />
   </svg>
 );
+
+export const DotsVerticalIcon: React.FC<{ className?: string }> = ({
+  className = 'h-5 w-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`${className} ${ICON_STROKE_CLASSES}`}
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="12" cy="5" r="1" />
+    <circle cx="12" cy="19" r="1" />
+  </svg>
+);
+
+export const TrashIcon: React.FC<{ className?: string }> = ({
+  className = 'h-5 w-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`${className} ${ICON_STROKE_CLASSES}`}
+    aria-hidden="true"
+  >
+    <path d="M3 6h18" />
+    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    <line x1="10" x2="10" y1="11" y2="17" />
+    <line x1="14" x2="14" y1="11" y2="17" />
+  </svg>
+);
+
+export const LogOutIcon: React.FC<{ className?: string }> = ({
+  className = 'h-5 w-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`${className} ${ICON_STROKE_CLASSES}`}
+    aria-hidden="true"
+  >
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" x2="9" y1="12" y2="12" />
+  </svg>
+);
+
+export const CrownIcon: React.FC<{ className?: string }> = ({
+  className = 'h-5 w-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`${className} ${ICON_STROKE_CLASSES}`}
+    aria-hidden="true"
+  >
+    <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+  </svg>
+);
+
+export const UserMinusIcon: React.FC<{ className?: string }> = ({
+  className = 'h-5 w-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`${className} ${ICON_STROKE_CLASSES}`}
+    aria-hidden="true"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <line x1="22" x2="16" y1="11" y2="11" />
+  </svg>
+);

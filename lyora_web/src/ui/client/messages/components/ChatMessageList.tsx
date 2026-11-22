@@ -1,10 +1,20 @@
 import React, { useEffect, useRef } from 'react';
 import type { ConversationDetail } from '@/features/conversations';
-import type { DemoChatMessage } from '../demo-messages.fixtures';
 import { ChatOutlineIcon } from './ConversationIcons';
 
+export interface ChatMessageItem {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatarUrl?: string | null;
+  content: string;
+  createdAt: string;
+  isOutgoing?: boolean;
+}
+
 interface ChatMessageListProps {
-  messages: DemoChatMessage[];
+  messages?: ChatMessageItem[];
   conversation: ConversationDetail | null;
   currentUserId?: string;
 }
@@ -22,7 +32,7 @@ function formatMessageTime(isoString: string): string {
 }
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
-  messages,
+  messages = [],
   conversation,
   currentUserId,
 }) => {
@@ -44,7 +54,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           Chưa có tin nhắn nào
         </h4>
         <p className="mt-1 text-xs text-muted max-w-xs leading-relaxed">
-          Hãy nhập tin nhắn demo bên dưới để bắt đầu trải nghiệm giao diện bong bóng trò chuyện.
+          Tính năng gửi và nhận tin nhắn theo thời gian thực đang được phát triển.
         </p>
       </div>
     );
@@ -64,7 +74,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       </div>
 
       {messages.map((msg) => {
-        const isOutgoing = msg.isOutgoing || (currentUserId && msg.senderId === currentUserId);
+        const isOutgoing =
+          msg.isOutgoing || (currentUserId && msg.senderId === currentUserId);
         const timeFormatted = formatMessageTime(msg.createdAt);
 
         if (isOutgoing) {
@@ -88,7 +99,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         const senderInitial = (msg.senderName || 'L').charAt(0).toUpperCase();
 
         return (
-          <div key={msg.id} className="flex items-start gap-2.5 max-w-[85%] sm:max-w-[70%]">
+          <div
+            key={msg.id}
+            className="flex items-start gap-2.5 max-w-[85%] sm:max-w-[70%]"
+          >
             {isGroup && (
               <div className="relative shrink-0 mt-0.5">
                 {msg.senderAvatarUrl ? (

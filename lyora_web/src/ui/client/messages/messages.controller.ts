@@ -1,18 +1,21 @@
 import { useCallback, useMemo, useState } from 'react';
 import { isApiError, toast, useAuthStore, useDebounce } from '@/core';
 import {
+  useAddGroupMembersMutation,
   useConversationDetailQuery,
   useConversationFriendsQuery,
   useConversationsQuery,
   useCreateDirectConversationMutation,
   useCreateGroupConversationMutation,
+  useDissolveGroupMutation,
+  useLeaveGroupMutation,
+  useRemoveGroupMemberMutation,
+  useTransferGroupOwnershipMutation,
+  useUpdateGroupTitleMutation,
   type ConversationSummary,
   type ConversationType,
 } from '@/features/conversations';
-import {
-  getInitialDemoMessages,
-  type DemoChatMessage,
-} from './demo-messages.fixtures';
+import type { ChatMessageItem } from './components/ChatMessageList';
 
 export type MessagesFilterType = 'ALL' | ConversationType;
 export type MessagesActiveView = 'list' | 'detail';
@@ -28,11 +31,25 @@ export function useMessagesController() {
   const [isNewDirectModalOpen, setIsNewDirectModalOpen] = useState(false);
   const [isNewGroupModalOpen, setIsNewGroupModalOpen] = useState(false);
 
-  // Chat UI Demo in-memory state (Front-end only, zero persistence)
+  // Group Management Modals state
+  const [isRenameGroupModalOpen, setIsRenameGroupModalOpen] = useState(false);
+  const [isAddGroupMembersModalOpen, setIsAddGroupMembersModalOpen] =
+    useState(false);
+  const [isTransferOwnershipModalOpen, setIsTransferOwnershipModalOpen] =
+    useState(false);
+  const [isOwnerLeaveGroupModalOpen, setIsOwnerLeaveGroupModalOpen] =
+    useState(false);
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    type: 'KICK' | 'LEAVE' | 'DISSOLVE' | null;
+    targetUserId?: string;
+    targetUserName?: string;
+  }>({
+    isOpen: false,
+    type: null,
+  });
+
   const currentUser = useAuthStore((s) => s.user);
-  const [demoMessagesMap, setDemoMessagesMap] = useState<
-    Record<string, DemoChatMessage[]>
-  >({});
   const [composerText, setComposerText] = useState('');
 
   const debouncedSearch = useDebounce(searchQuery.trim(), 300);
@@ -52,6 +69,12 @@ export function useMessagesController() {
   // Mutations
   const createDirectMutation = useCreateDirectConversationMutation();
   const createGroupMutation = useCreateGroupConversationMutation();
+  const updateGroupTitleMutation = useUpdateGroupTitleMutation();
+  const addGroupMembersMutation = useAddGroupMembersMutation();
+  const removeMemberMutation = useRemoveGroupMemberMutation();
+  const transferOwnershipMutation = useTransferGroupOwnershipMutation();
+  const leaveGroupMutation = useLeaveGroupMutation();
+  const dissolveGroupMutation = useDissolveGroupMutation();
 
   const conversations = useMemo<ConversationSummary[]>(() => {
     return conversationsQuery.data ?? [];
@@ -151,88 +174,248 @@ export function useMessagesController() {
     [createGroupMutation],
   );
 
-  // Chat UI Demo: Danh sách tin nhắn cho cuộc hội thoại đang chọn
-  const activeMessages = useMemo<DemoChatMessage[]>(() => {
-    if (!selectedConversationId || !activeConversationQuery.data) {
-      return [];
-    }
-    const existing = demoMessagesMap[selectedConversationId];
-    if (existing !== undefined) {
-      return existing;
-    }
-    return getInitialDemoMessages(
-      activeConversationQuery.data,
-      currentUser?.id,
-    );
-  }, [
-    selectedConversationId,
-    activeConversationQuery.data,
-    demoMessagesMap,
-    currentUser?.id,
-  ]);
+  // Danh sách tin nhắn cho cuộc hội thoại đang chọn (Rỗng cho đến khi Messaging Core được triển khai)
+  const activeMessages = useMemo<ChatMessageItem[]>(() => {
+    return [];
+  }, []);
 
-  // Chat UI Demo: Thay đổi văn bản ô nhập
+  // Thay đổi văn bản ô nhập
   const handleComposerTextChange = useCallback((text: string) => {
     setComposerText(text);
   }, []);
 
-  // Chat UI Demo: Gửi tin nhắn mô phỏng (tạo bong bóng bên phải trong bộ nhớ)
-  const handleSendDemoMessage = useCallback(() => {
-    const trimmed = composerText.trim();
-    if (!trimmed || !selectedConversationId) {
-      return;
-    }
-
-    const newMessage: DemoChatMessage = {
-      id: `demo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      conversationId: selectedConversationId,
-      senderId: currentUser?.id ?? 'current-user',
-      senderName: currentUser?.fullName ?? 'Tôi',
-      senderAvatarUrl: currentUser?.avatarUrl ?? null,
-      content: trimmed,
-      createdAt: new Date().toISOString(),
-      isOutgoing: true,
-    };
-
-    setDemoMessagesMap((prev) => {
-      const currentList =
-        prev[selectedConversationId] ??
-        (activeConversationQuery.data
-          ? getInitialDemoMessages(activeConversationQuery.data, currentUser?.id)
-          : []);
-      return {
-        ...prev,
-        [selectedConversationId]: [...currentList, newMessage],
-      };
-    });
-
-    setComposerText('');
-  }, [
-    composerText,
-    selectedConversationId,
-    currentUser,
-    activeConversationQuery.data,
-  ]);
-
-  // Chat UI Demo: Phím tắt Enter để gửi / Shift+Enter xuống dòng
+  // Phím tắt bàn phím trên composer (Enter chặn gửi vì tính năng đang phát triển)
   const handleComposerKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        handleSendDemoMessage();
       }
     },
-    [handleSendDemoMessage],
+    [],
   );
+
+  // Group Management Handlers
+  const handleOpenRenameGroupModal = useCallback(() => {
+    setIsRenameGroupModalOpen(true);
+  }, []);
+
+  const handleCloseRenameGroupModal = useCallback(() => {
+    setIsRenameGroupModalOpen(false);
+  }, []);
+
+  const handleUpdateGroupTitle = useCallback(
+    async (title: string) => {
+      if (!selectedConversationId) return;
+      try {
+        await updateGroupTitleMutation.mutateAsync({
+          conversationId: selectedConversationId,
+          title,
+        });
+        toast.success('Đã cập nhật tên nhóm thành công');
+        setIsRenameGroupModalOpen(false);
+      } catch (error: unknown) {
+        if (isApiError(error)) {
+          toast.error(error.message);
+        } else if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error('Không thể cập nhật tên nhóm');
+        }
+        throw error;
+      }
+    },
+    [selectedConversationId, updateGroupTitleMutation],
+  );
+
+  const handleOpenAddGroupMembersModal = useCallback(() => {
+    setIsAddGroupMembersModalOpen(true);
+  }, []);
+
+  const handleCloseAddGroupMembersModal = useCallback(() => {
+    setIsAddGroupMembersModalOpen(false);
+  }, []);
+
+  const handleAddGroupMembers = useCallback(
+    async (memberIds: string[]) => {
+      if (!selectedConversationId) return;
+      try {
+        await addGroupMembersMutation.mutateAsync({
+          conversationId: selectedConversationId,
+          memberIds,
+        });
+        toast.success(`Đã thêm ${memberIds.length} thành viên vào nhóm`);
+        setIsAddGroupMembersModalOpen(false);
+      } catch (error: unknown) {
+        if (isApiError(error)) {
+          toast.error(error.message);
+        } else if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error('Không thể thêm thành viên vào nhóm');
+        }
+        throw error;
+      }
+    },
+    [selectedConversationId, addGroupMembersMutation],
+  );
+
+  const handleOpenTransferOwnershipModal = useCallback(() => {
+    setIsTransferOwnershipModalOpen(true);
+  }, []);
+
+  const handleCloseTransferOwnershipModal = useCallback(() => {
+    setIsTransferOwnershipModalOpen(false);
+  }, []);
+
+  const handleTransferOwnership = useCallback(
+    async (newOwnerId: string) => {
+      if (!selectedConversationId) return;
+      try {
+        await transferOwnershipMutation.mutateAsync({
+          conversationId: selectedConversationId,
+          newOwnerId,
+        });
+        toast.success('Đã chuyển quyền Trưởng nhóm thành công');
+        setIsTransferOwnershipModalOpen(false);
+      } catch (error: unknown) {
+        if (isApiError(error)) {
+          toast.error(error.message);
+        } else if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error('Không thể chuyển quyền Trưởng nhóm');
+        }
+        throw error;
+      }
+    },
+    [selectedConversationId, transferOwnershipMutation],
+  );
+
+  const handleOpenKickMemberModal = useCallback(
+    (userId: string, userName: string) => {
+      setConfirmModalState({
+        isOpen: true,
+        type: 'KICK',
+        targetUserId: userId,
+        targetUserName: userName,
+      });
+    },
+    [],
+  );
+
+  const handleOpenMemberLeaveModal = useCallback(() => {
+    setConfirmModalState({
+      isOpen: true,
+      type: 'LEAVE',
+    });
+  }, []);
+
+  const handleOpenOwnerLeaveGroupModal = useCallback(() => {
+    setIsOwnerLeaveGroupModalOpen(true);
+  }, []);
+
+  const handleCloseOwnerLeaveGroupModal = useCallback(() => {
+    setIsOwnerLeaveGroupModalOpen(false);
+  }, []);
+
+  const handleOwnerLeaveGroup = useCallback(
+    async (newOwnerId?: string) => {
+      if (!selectedConversationId) return;
+      try {
+        await leaveGroupMutation.mutateAsync({
+          conversationId: selectedConversationId,
+          newOwnerId,
+        });
+        toast.success('Bạn đã rời khỏi nhóm thành công');
+        setIsOwnerLeaveGroupModalOpen(false);
+        setSelectedConversationId(null);
+        setActiveView('list');
+        setIsInfoPanelOpen(false);
+      } catch (error: unknown) {
+        if (isApiError(error)) {
+          toast.error(error.message);
+        } else if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error('Không thể rời khỏi nhóm');
+        }
+        throw error;
+      }
+    },
+    [selectedConversationId, leaveGroupMutation],
+  );
+
+  const handleOpenDissolveGroupModal = useCallback(() => {
+    setConfirmModalState({
+      isOpen: true,
+      type: 'DISSOLVE',
+    });
+  }, []);
+
+  const handleCloseConfirmModal = useCallback(() => {
+    setConfirmModalState({
+      isOpen: false,
+      type: null,
+    });
+  }, []);
+
+  const handleExecuteConfirmAction = useCallback(async () => {
+    if (!selectedConversationId) return;
+    const { type, targetUserId } = confirmModalState;
+
+    try {
+      if (type === 'KICK' && targetUserId) {
+        await removeMemberMutation.mutateAsync({
+          conversationId: selectedConversationId,
+          userId: targetUserId,
+        });
+        toast.success('Đã xóa thành viên khỏi nhóm');
+        handleCloseConfirmModal();
+      } else if (type === 'LEAVE') {
+        await leaveGroupMutation.mutateAsync({
+          conversationId: selectedConversationId,
+        });
+        toast.success('Bạn đã rời khỏi nhóm thành công');
+        handleCloseConfirmModal();
+        setSelectedConversationId(null);
+        setActiveView('list');
+        setIsInfoPanelOpen(false);
+      } else if (type === 'DISSOLVE') {
+        await dissolveGroupMutation.mutateAsync({
+          conversationId: selectedConversationId,
+        });
+        toast.success('Đã giải tán nhóm thành công');
+        handleCloseConfirmModal();
+        setSelectedConversationId(null);
+        setActiveView('list');
+        setIsInfoPanelOpen(false);
+      }
+    } catch (error: unknown) {
+      if (isApiError(error)) {
+        toast.error(error.message);
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Thao tác không thành công');
+      }
+      throw error;
+    }
+  }, [
+    selectedConversationId,
+    confirmModalState,
+    removeMemberMutation,
+    leaveGroupMutation,
+    dissolveGroupMutation,
+    handleCloseConfirmModal,
+  ]);
 
   return {
     // Current User
     currentUser,
-    // Chat UI Demo
+    // Composer & Messages state
     composerText,
     activeMessages,
     handleComposerTextChange,
-    handleSendDemoMessage,
     handleComposerKeyDown,
     // State
     selectedConversationId,
@@ -242,6 +425,12 @@ export function useMessagesController() {
     isInfoPanelOpen,
     isNewDirectModalOpen,
     isNewGroupModalOpen,
+    // Group Management Modal States
+    isRenameGroupModalOpen,
+    isAddGroupMembersModalOpen,
+    isTransferOwnershipModalOpen,
+    isOwnerLeaveGroupModalOpen,
+    confirmModalState,
     // Data
     conversations,
     activeConversation: activeConversationQuery.data ?? null,
@@ -252,6 +441,12 @@ export function useMessagesController() {
     isLoadingFriends: friendsQuery.isLoading,
     isCreatingDirect: createDirectMutation.isPending,
     isCreatingGroup: createGroupMutation.isPending,
+    isUpdatingGroupTitle: updateGroupTitleMutation.isPending,
+    isAddingGroupMembers: addGroupMembersMutation.isPending,
+    isRemovingGroupMember: removeMemberMutation.isPending,
+    isTransferringOwnership: transferOwnershipMutation.isPending,
+    isLeavingGroup: leaveGroupMutation.isPending,
+    isDissolvingGroup: dissolveGroupMutation.isPending,
     // Actions
     setFilterType,
     setSearchQuery,
@@ -265,6 +460,24 @@ export function useMessagesController() {
     handleCloseGroupModal,
     handleCreateDirect,
     handleCreateGroup,
+    // Group Management Actions
+    handleOpenRenameGroupModal,
+    handleCloseRenameGroupModal,
+    handleUpdateGroupTitle,
+    handleOpenAddGroupMembersModal,
+    handleCloseAddGroupMembersModal,
+    handleAddGroupMembers,
+    handleOpenTransferOwnershipModal,
+    handleCloseTransferOwnershipModal,
+    handleTransferOwnership,
+    handleOpenKickMemberModal,
+    handleOpenMemberLeaveModal,
+    handleOpenOwnerLeaveGroupModal,
+    handleCloseOwnerLeaveGroupModal,
+    handleOwnerLeaveGroup,
+    handleOpenDissolveGroupModal,
+    handleCloseConfirmModal,
+    handleExecuteConfirmAction,
   };
 }
 

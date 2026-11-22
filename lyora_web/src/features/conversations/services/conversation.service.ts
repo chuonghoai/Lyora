@@ -3,11 +3,18 @@ import {
   type IConversationRepository,
 } from '../repositories/conversation.repository';
 import type {
+  AddGroupMembersPayload,
   ConversationDetail,
   ConversationQueryParams,
   ConversationSummary,
   CreateDirectConversationPayload,
   CreateGroupConversationPayload,
+  DissolveGroupPayload,
+  GroupActionResponse,
+  LeaveGroupPayload,
+  RemoveGroupMemberPayload,
+  TransferGroupOwnershipPayload,
+  UpdateGroupTitlePayload,
 } from '../types/conversation.types';
 
 export class ConversationService {
@@ -42,6 +49,48 @@ export class ConversationService {
     payload: CreateGroupConversationPayload,
   ): Promise<ConversationDetail> {
     const response = await this.repository.createGroupConversation(payload);
+    return response.data;
+  }
+
+  async updateGroupTitle(
+    payload: UpdateGroupTitlePayload,
+  ): Promise<ConversationDetail> {
+    const response = await this.repository.updateGroupTitle(payload);
+    return response.data;
+  }
+
+  async addGroupMembers(
+    payload: AddGroupMembersPayload,
+  ): Promise<ConversationDetail> {
+    const response = await this.repository.addGroupMembers(payload);
+    return response.data;
+  }
+
+  async removeMember(
+    payload: RemoveGroupMemberPayload,
+  ): Promise<ConversationDetail> {
+    const response = await this.repository.removeMember(payload);
+    return response.data;
+  }
+
+  async transferOwnership(
+    payload: TransferGroupOwnershipPayload,
+  ): Promise<ConversationDetail> {
+    const response = await this.repository.transferOwnership(payload);
+    return response.data;
+  }
+
+  async leaveGroup(
+    payload: LeaveGroupPayload,
+  ): Promise<GroupActionResponse> {
+    const response = await this.repository.leaveGroup(payload);
+    return response.data;
+  }
+
+  async dissolveGroup(
+    payload: DissolveGroupPayload,
+  ): Promise<GroupActionResponse> {
+    const response = await this.repository.dissolveGroup(payload);
     return response.data;
   }
 }

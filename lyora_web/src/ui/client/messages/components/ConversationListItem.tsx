@@ -33,6 +33,7 @@ export const ConversationListItem: React.FC<ConversationListItemProps> = ({
   return (
     <button
       type="button"
+      data-conversation-id={conversation.id}
       onClick={() => onSelect(conversation.id)}
       className={`group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
         isSelected

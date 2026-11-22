@@ -128,7 +128,6 @@ describe('Messages Page & Conversation Management Contracts', () => {
       | 'composerText'
       | 'activeMessages'
       | 'handleComposerTextChange'
-      | 'handleSendDemoMessage'
       | 'handleComposerKeyDown';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;

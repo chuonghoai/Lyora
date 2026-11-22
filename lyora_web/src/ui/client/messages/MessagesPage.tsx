@@ -1,10 +1,15 @@
 import React from 'react';
+import { AddGroupMembersModal } from './components/AddGroupMembersModal';
+import { ConfirmActionModal } from './components/ConfirmActionModal';
 import { ConversationEmptyState } from './components/ConversationEmptyState';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
 import { ConversationSidebar } from './components/ConversationSidebar';
 import { ConversationWorkspace } from './components/ConversationWorkspace';
 import { NewDirectChatModal } from './components/NewDirectChatModal';
 import { NewGroupChatModal } from './components/NewGroupChatModal';
+import { OwnerLeaveGroupModal } from './components/OwnerLeaveGroupModal';
+import { RenameGroupModal } from './components/RenameGroupModal';
+import { TransferOwnershipModal } from './components/TransferOwnershipModal';
 import { useMessagesController } from './messages.controller';
 
 export const MessagesPage: React.FC = () => {
@@ -74,6 +79,82 @@ export const MessagesPage: React.FC = () => {
         isLoadingFriends={controller.isLoadingFriends}
         isCreating={controller.isCreatingGroup}
         onSubmit={controller.handleCreateGroup}
+      />
+
+      {/* Group Management Modals */}
+      <RenameGroupModal
+        isOpen={controller.isRenameGroupModalOpen}
+        onClose={controller.handleCloseRenameGroupModal}
+        currentTitle={controller.activeConversation?.title || ''}
+        isUpdating={controller.isUpdatingGroupTitle}
+        onSubmit={controller.handleUpdateGroupTitle}
+      />
+
+      <AddGroupMembersModal
+        isOpen={controller.isAddGroupMembersModalOpen}
+        onClose={controller.handleCloseAddGroupMembersModal}
+        friends={controller.friends}
+        isLoadingFriends={controller.isLoadingFriends}
+        existingMemberUserIds={
+          controller.activeConversation?.members?.map((m) => m.userId) || []
+        }
+        isAdding={controller.isAddingGroupMembers}
+        onSubmit={controller.handleAddGroupMembers}
+      />
+
+      <TransferOwnershipModal
+        isOpen={controller.isTransferOwnershipModalOpen}
+        onClose={controller.handleCloseTransferOwnershipModal}
+        members={controller.activeConversation?.members || []}
+        currentUserId={controller.currentUser?.id}
+        isTransferring={controller.isTransferringOwnership}
+        onSubmit={controller.handleTransferOwnership}
+      />
+
+      <OwnerLeaveGroupModal
+        isOpen={controller.isOwnerLeaveGroupModalOpen}
+        onClose={controller.handleCloseOwnerLeaveGroupModal}
+        members={controller.activeConversation?.members || []}
+        currentUserId={controller.currentUser?.id}
+        isLeaving={controller.isLeavingGroup}
+        onSubmit={controller.handleOwnerLeaveGroup}
+      />
+
+      <ConfirmActionModal
+        isOpen={controller.confirmModalState.isOpen}
+        onClose={controller.handleCloseConfirmModal}
+        onConfirm={controller.handleExecuteConfirmAction}
+        title={
+          controller.confirmModalState.type === 'KICK'
+            ? 'Xác nhận xóa thành viên'
+            : controller.confirmModalState.type === 'DISSOLVE'
+            ? 'Giải tán nhóm trò chuyện'
+            : 'Rời khỏi cuộc hội thoại nhóm'
+        }
+        description={
+          controller.confirmModalState.type === 'KICK'
+            ? `Bạn có chắc chắn muốn xóa "${
+                controller.confirmModalState.targetUserName || 'thành viên này'
+              }" ra khỏi nhóm không?`
+            : controller.confirmModalState.type === 'DISSOLVE'
+            ? 'Giải tán nhóm sẽ xóa vĩnh viễn cuộc trò chuyện này với toàn bộ thành viên. Hành động này không thể hoàn tác.\n\nBạn có chắc chắn muốn giải tán nhóm không?'
+            : `Bạn có chắc chắn muốn rời khỏi nhóm "${
+                controller.activeConversation?.title || 'này'
+              }" không?`
+        }
+        confirmLabel={
+          controller.confirmModalState.type === 'KICK'
+            ? 'Xóa thành viên'
+            : controller.confirmModalState.type === 'DISSOLVE'
+            ? 'Giải tán nhóm'
+            : 'Rời nhóm'
+        }
+        isDestructive={true}
+        isLoading={
+          controller.isRemovingGroupMember ||
+          controller.isLeavingGroup ||
+          controller.isDissolvingGroup
+        }
       />
     </div>
   );
