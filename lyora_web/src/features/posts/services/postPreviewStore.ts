@@ -564,6 +564,21 @@ class PostPreviewStore {
     };
   }
 
+  createLocalMedia(files: File[]): PostMediaItem[] {
+    return files.map((file, idx) => ({
+      id: `local-media-${Date.now()}-${idx}`,
+      url: URL.createObjectURL(file),
+      type: file.type.startsWith('audio/')
+        ? 'AUDIO'
+        : file.type.startsWith('video/')
+          ? 'VIDEO'
+          : 'IMAGE',
+      alt: file.name,
+      fileName: file.name,
+      size: file.size,
+    }));
+  }
+
   createPost(payload: CreatePostPayload): Post {
     const author = resolveCurrentAuthor();
     const newPost: Post = {

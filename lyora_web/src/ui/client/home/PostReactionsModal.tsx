@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Button, LoadingSpinner } from '@/core';
 import { getReactionMeta, REACTION_OPTIONS } from '@/features/posts';
 import type { HomeController } from './home.controller';
-import { ChatBubbleOutlineIcon, CloseIcon } from './ClientIcons';
+import { ChatBubbleOutlineIcon, CloseIcon, ReactionIcon } from './ClientIcons';
 import { PostAvatarChip } from './PostCard';
 
 export interface PostReactionsModalProps {
@@ -96,7 +97,7 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controll
                   : 'border-transparent text-muted hover:bg-background hover:text-foreground'
               }`}
             >
-              <span className="text-base leading-none">{opt.emoji}</span>
+              <ReactionIcon type={opt.type} className="w-5 h-5" />
               <span className="tabular-nums">{post.reactionBreakdown[opt.type]}</span>
             </button>
           ))}
@@ -136,9 +137,9 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controll
                       />
                       <span
                         title={meta.label}
-                        className="absolute -bottom-0.5 -right-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-card ring-2 ring-card shadow-sm text-xs"
+                        className="absolute -bottom-0.5 -right-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-card ring-2 ring-card shadow-sm"
                       >
-                        {meta.emoji}
+                        <ReactionIcon type={meta.type} className="w-4 h-4" />
                       </span>
                     </div>
 
@@ -172,7 +173,7 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controll
                       <span
                         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${meta.activeBgClass} ${meta.activeTextClass}`}
                       >
-                        <span>{meta.emoji}</span>
+                        <ReactionIcon type={meta.type} className="w-4 h-4" />
                         <span>{meta.label}</span>
                       </span>
                     )}

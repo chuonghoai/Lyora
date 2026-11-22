@@ -301,4 +301,64 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async delResetToken(email: string): Promise<void> {
     await this.del(REDIS_KEYS.resetPasswordToken(email));
   }
+
+  async incrementCounter(key: string, ttlSeconds: number): Promise<number> {
+    const res = await this.execClient('INCR', async (client) => {
+      const count = await client.incr(key);
+      if (count === 1 && ttlSeconds > 0) {
+        await client.expire(key, ttlSeconds);
+      }
+      return count;
+    });
+    if (res.ok) {
+      return res.value;
+    }
+
+    const now = Date.now();
+    const existing = this.memoryStore.get(key);
+    const isValid =
+      existing !== undefined &&
+      (existing.expiresAt === null || now <= existing.expiresAt);
+    const nextCount = isValid ? (parseInt(existing.value, 10) || 0) + 1 : 1;
+    const expiresAt = isValid
+      ? existing.expiresAt
+      : ttlSeconds > 0
+        ? now + ttlSeconds * 1000
+        : null;
+    this.memoryStore.set(key, { value: String(nextCount), expiresAt });
+    return nextCount;
+  }
+
+  async decrementCounter(key: string): Promise<void> {
+    const res = await this.execClient('DECR', async (client) => {
+      const count = await client.decr(key);
+      if (count <= 0) {
+        await client.del(key);
+      }
+      return count;
+    });
+    if (res.ok) {
+      return;
+    }
+
+    const now = Date.now();
+    const existing = this.memoryStore.get(key);
+    const isValid =
+      existing !== undefined &&
+      (existing.expiresAt === null || now <= existing.expiresAt);
+    if (!isValid) {
+      this.memoryStore.delete(key);
+      return;
+    }
+
+    const nextCount = (parseInt(existing.value, 10) || 0) - 1;
+    if (nextCount <= 0) {
+      this.memoryStore.delete(key);
+      return;
+    }
+    this.memoryStore.set(key, {
+      value: String(nextCount),
+      expiresAt: existing.expiresAt,
+    });
+  }
 }

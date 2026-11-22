@@ -8,13 +8,19 @@ import type {
   PostReactionUser,
   PostReactionsQueryParams,
   PostsQueryParams,
+  PostSuggestionsResult,
   ReactionType,
+  SuggestPostContentPayload,
 } from '../types/post.types';
 
 export interface IPostRepository {
   getPosts(params: PostsQueryParams): Promise<ApiResponse<Post[]>>;
   getFriends(): Promise<ApiResponse<PostAuthor[]>>;
+  uploadMedia(files: File[]): Promise<ApiResponse<PostMediaItem[]>>;
   createPost(payload: CreatePostPayload): Promise<ApiResponse<Post>>;
+  suggestContent(
+    payload: SuggestPostContentPayload,
+  ): Promise<ApiResponse<PostSuggestionsResult>>;
   reactPost(postId: string, reactionType: ReactionType): Promise<ApiResponse<Post>>;
   getPostReactions(
     postId: string,
@@ -45,11 +51,33 @@ export class PostRepository implements IPostRepository {
     );
   }
 
+  async uploadMedia(files: File[]): Promise<ApiResponse<PostMediaItem[]>> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+
+    return apiClient.post<ApiResponse<PostMediaItem[]>, ApiResponse<PostMediaItem[]>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/upload`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 180000 },
+    );
+  }
+
   async createPost(payload: CreatePostPayload): Promise<ApiResponse<Post>> {
     return apiClient.post<ApiResponse<Post>, ApiResponse<Post>>(
       CORE_CONSTANTS.API_ENDPOINTS.POSTS,
       payload,
     );
+  }
+
+  async suggestContent(
+    payload: SuggestPostContentPayload,
+  ): Promise<ApiResponse<PostSuggestionsResult>> {
+    return apiClient.post<
+      ApiResponse<PostSuggestionsResult>,
+      ApiResponse<PostSuggestionsResult>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/ai-suggestions`, payload, {
+      timeout: 30000,
+    });
   }
 
   async reactPost(postId: string, reactionType: ReactionType): Promise<ApiResponse<Post>> {
