@@ -107,3 +107,52 @@ npx ts-node -r tsconfig-paths/register seed/createSeedDB.ts
 > 2. **Authentication Flow:** Tuyệt đối không sửa đổi authentication logic hoặc password hashing của Backend chỉ để phục vụ seed. Dữ liệu seed phải tuân thủ 100% chuẩn mật khẩu và mã hóa của Backend.
 > 3. **An toàn dữ liệu:** Quá trình chạy `/lya-createSeedDB` KHÔNG được phép tự ý thực hiện xóa sạch Database. Việc xóa và nạp lại Database chỉ diễn ra khi kích hoạt `/lya-insertSeedDB`.
 
+---
+
+## G. Tiện ích Seed Bạn Bè Mẫu Đảo Ngược Được (Reversible Personal Demo Friends Seed)
+
+Tiện ích độc lập `seed/demo-friends.seed.ts` được thiết kế để nạp và dọn dẹp an toàn một bộ 10 bạn bè mẫu cho tài khoản cá nhân kiểm thử thực tế (`giang0912005@gmail.com`).
+
+### 1. Đặc tính thiết kế & Nguyên tắc an toàn
+- **Hoàn toàn độc lập**: KHÔNG tích hợp vào luồng seed mặc định (`createSeedDB.ts`) hoặc lệnh reset CSDL (`deleteAllData.ts`).
+- **Khả năng đảo ngược 100%**: Lưu vết chính xác danh tính các bản ghi đã tạo thông qua manifest file (`seed/.manifest/demo-friends-manifest.json`). Khi dọn dẹp, toàn bộ bạn bè mẫu, quan hệ bạn bè và các hội thoại thuần test giữa tài khoản mục tiêu với bạn bè mẫu sẽ được dọn sạch mà không ảnh hưởng đến bất kỳ người dùng thật nào.
+- **Bảo vệ người dùng thật & Xung đột**:
+  - Không bao giờ xóa tài khoản mục tiêu hoặc bất kỳ người dùng nào không thuộc tên miền `@lyora-demo.test`.
+  - Nếu bạn bè mẫu đã được thêm vào hội thoại nhóm có chứa người dùng thật khác bên ngoài, hội thoại đó sẽ được phân loại là `[PROTECTED]` và **TUYỆT ĐỐI KHÔNG BỊ XÓA** để bảo toàn lịch sử dữ liệu của người dùng thật.
+- **Giao dịch toàn vẹn (ACID Transaction)**: Mọi thao tác thêm hoặc xóa đều được đóng gói trong TypeORM transaction, tự động rollback nếu gặp lỗi giữa chừng.
+- **Kiểm soát bảo mật Manifest**: Thư mục `.manifest/` và các file `*manifest.json` được loại trừ trong `.gitignore`. Manifest chỉ lưu ID và email, tuyệt đối không lưu password hash, token hay credentials.
+
+### 2. Danh sách 10 Bạn Bè Mẫu (`@lyora-demo.test`)
+
+Mật khẩu chuẩn hóa cho toàn bộ bạn bè mẫu: `DemoFriend@Lyora2026` (Bcrypt 10 rounds, `role: CLIENT`, `isActive: true`, `avatarUrl: null`).
+
+| STT | Họ và tên | Email (`@lyora-demo.test`) | Số điện thoại | Vị trí | Tiểu sử tóm tắt |
+| :---: | :--- | :--- | :---: | :---: | :--- |
+| 1 | Nguyễn Minh Anh | `minh-anh@lyora-demo.test` | `0905001001` | TP. Hồ Chí Minh | Thành viên demo Lyora — Thích đọc sách và nghe nhạc. |
+| 2 | Trần Hoàng Nam | `hoang-nam@lyora-demo.test` | `0905001002` | Hà Nội | Thành viên demo Lyora — Kỹ sư phần mềm. |
+| 3 | Lê Thảo Vy | `thao-vy@lyora-demo.test` | `0905001003` | Đà Nẵng | Thành viên demo Lyora — Đam mê nhiếp ảnh và nghệ thuật số. |
+| 4 | Phạm Quốc Bảo | `quoc-bao@lyora-demo.test` | `0905001004` | TP. Hồ Chí Minh | Thành viên demo Lyora — Chuyên viên an toàn thông tin. |
+| 5 | Võ Gia Hân | `gia-han@lyora-demo.test` | `0905001005` | Cần Thơ | Thành viên demo Lyora — Thiết kế đồ họa và sáng tạo nội dung. |
+| 6 | Nguyễn Đăng Khoa | `dang-khoa@lyora-demo.test` | `0905001006` | Hà Nội | Thành viên demo Lyora — Nghiên cứu trí tuệ nhân tạo. |
+| 7 | Trần Khánh Linh | `khanh-linh@lyora-demo.test` | `0905001007` | Hải Phòng | Thành viên demo Lyora — Nhiệt huyết với các hoạt động cộng đồng. |
+| 8 | Lê Minh Hoàng | `minh-hoang@lyora-demo.test` | `0905001008` | Đà Lạt | Thành viên demo Lyora — Thích đi phượt và khám phá ẩm thực. |
+| 9 | Phạm Như Ý | `nhu-y@lyora-demo.test` | `0905001009` | Huế | Thành viên demo Lyora — Yêu thích kiến trúc và không gian tối giản. |
+| 10 | Đỗ Thành Đạt | `thanh-dat@lyora-demo.test` | `0905001010` | Nha Trang | Thành viên demo Lyora — Chơi cờ vua và lập trình hệ thống. |
+
+### 3. Các chế độ thực thi & Lệnh NPM
+
+Hệ thống hỗ trợ 5 chế độ hoạt động thông qua npm scripts:
+
+| Chế độ (Mode) | Lệnh từ `lyora_backend` | Lệnh từ Monorepo Root | Hành vi & Tác động |
+| :--- | :--- | :--- | :--- |
+| **PREVIEW ADD** | `npm run seed:demo-friends:preview` | `npm run backend:seed:demo-friends:preview` | Dry-run kiểm tra tài khoản mục tiêu và các bản ghi dự kiến thêm. **Không ghi CSDL hay Manifest.** |
+| **ADD** | `npm run seed:demo-friends:add` | `npm run backend:seed:demo-friends:add` | Tạo 10 tài khoản demo, thiết lập quan hệ bạn bè `ACCEPTED`, ghi log Manifest. Idempotent khi chạy lại. |
+| **STATUS** | `npm run seed:demo-friends:status` | `npm run backend:seed:demo-friends:status` | Kiểm tra tình trạng đồng bộ giữa CSDL, Manifest, các quan hệ bạn bè và hội thoại liên quan. |
+| **PREVIEW CLEANUP** | `npm run seed:demo-friends:cleanup:preview` | `npm run backend:seed:demo-friends:cleanup:preview` | Dry-run kiểm tra các bản ghi sẽ xóa, phát hiện xung đột và phân loại `[PROTECTED]`. **Không xóa CSDL.** |
+| **CLEANUP** | `npm run seed:demo-friends:cleanup` | `npm run backend:seed:demo-friends:cleanup` | Xóa an toàn toàn bộ bạn bè demo, quan hệ bạn bè và hội thoại thuần test. Cập nhật Manifest thành `CLEANED`. |
+
+#### Tùy chỉnh tham số dòng lệnh:
+Có thể truyền trực tiếp email tài khoản mục tiêu khác:
+```bash
+npx ts-node -r tsconfig-paths/register seed/demo-friends.seed.ts --mode=add --email=custom@example.com
+```

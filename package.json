@@ -21,6 +21,11 @@
     "backend:lint": "npm run lint --workspace=lyora_backend",
     "backend:seed": "npm run seed:create --workspace=lyora_backend",
     "backend:db:reset": "npm run seed:reset --workspace=lyora_backend",
+    "backend:seed:demo-friends:preview": "npm run seed:demo-friends:preview --workspace=lyora_backend",
+    "backend:seed:demo-friends:add": "npm run seed:demo-friends:add --workspace=lyora_backend",
+    "backend:seed:demo-friends:status": "npm run seed:demo-friends:status --workspace=lyora_backend",
+    "backend:seed:demo-friends:cleanup:preview": "npm run seed:demo-friends:cleanup:preview --workspace=lyora_backend",
+    "backend:seed:demo-friends:cleanup": "npm run seed:demo-friends:cleanup --workspace=lyora_backend",
 
     "web:install": "npm ci --workspace=lyora_web --include-workspace-root=false",
     "web:dev": "npm run dev --workspace=lyora_web",

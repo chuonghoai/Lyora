@@ -1,28 +1,26 @@
 import React from 'react';
-import type { ConversationDetail } from '@/features/conversations';
+import type { MessagesController } from '../messages.controller';
+import { ChatComposer } from './ChatComposer';
+import { ChatMessageList } from './ChatMessageList';
 import {
   ArrowLeftIcon,
-  ChatOutlineIcon,
   InfoIcon,
-  ShieldCheckIcon,
   UsersIcon,
 } from './ConversationIcons';
 
-interface ConversationWorkspaceProps {
-  conversation: ConversationDetail | null;
-  isLoading: boolean;
-  onBackToList: () => void;
-  isInfoPanelOpen: boolean;
-  onToggleInfoPanel: () => void;
+export interface ConversationWorkspaceProps {
+  controller: MessagesController;
 }
 
 export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
-  conversation,
-  isLoading,
-  onBackToList,
-  isInfoPanelOpen,
-  onToggleInfoPanel,
+  controller,
 }) => {
+  const conversation = controller.activeConversation;
+  const isLoading = controller.isLoadingActiveConversation;
+  const onBackToList = controller.handleBackToList;
+  const isInfoPanelOpen = controller.isInfoPanelOpen;
+  const onToggleInfoPanel = controller.handleToggleInfoPanel;
+
   if (isLoading) {
     return (
       <div className="flex h-full flex-1 flex-col bg-background animate-pulse">
@@ -42,7 +40,7 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
   return (
     <div className="flex h-full flex-1 flex-col bg-background min-w-0">
       {/* Top Header */}
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4 z-10 shadow-xs">
         <div className="flex items-center gap-3 min-w-0">
           {/* Mobile Back Button */}
           <button
@@ -79,11 +77,16 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
             )}
           </div>
 
-          {/* Title & Status */}
+          {/* Title & Status with Demo Badge */}
           <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold text-foreground leading-tight">
-              {conversation.title}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="truncate text-base font-semibold text-foreground leading-tight">
+                {conversation.title}
+              </h2>
+              <span className="hidden sm:inline-flex items-center rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-medium text-primary border border-secondary-strong/40 shrink-0 select-none">
+                Bản xem trước
+              </span>
+            </div>
             <p className="text-xs text-muted">
               {isGroup
                 ? `${conversation.members?.length ?? 0} thành viên`
@@ -111,37 +114,20 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
         </button>
       </header>
 
-      {/* Main Workspace Body — Zero mock messages! */}
-      <main className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center">
-        <div className="max-w-md w-full rounded-2xl border border-border bg-card p-6 shadow-sm text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-primary mb-4">
-            <ChatOutlineIcon className="h-8 w-8 text-primary" />
-          </div>
+      {/* Main Workspace: Messages Display Area */}
+      <ChatMessageList
+        messages={controller.activeMessages}
+        conversation={conversation}
+        currentUserId={controller.currentUser?.id}
+      />
 
-          <h3 className="text-lg font-bold text-foreground">
-            {conversation.title}
-          </h3>
-
-          <p className="mt-1 text-xs text-muted">
-            {isGroup
-              ? `Nhóm trò chuyện được bảo mật với ${conversation.members?.length ?? 0} thành viên.`
-              : 'Cuộc hội thoại trực tiếp được mã hóa và bảo mật an toàn.'}
-          </p>
-
-          <div className="mt-6 rounded-xl bg-background p-4 border border-border/60 text-left">
-            <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-              <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-              <span>Chế độ Quản lý Hội thoại</span>
-            </div>
-            <p className="mt-2 text-xs text-muted leading-relaxed">
-              Bạn đang ở giao diện quản lý hội thoại. Tại đây bạn có thể xem chi tiết thông tin phòng chat, kiểm tra danh sách thành viên và vai trò trong nhóm.
-            </p>
-            <p className="mt-2 text-[11px] text-muted italic">
-              * Tính năng gửi và nhận tin nhắn trực tiếp sẽ được kích hoạt ở giai đoạn tiếp theo của dự án Lyora.
-            </p>
-          </div>
-        </div>
-      </main>
+      {/* Bottom Area: Chat Composer (Demo Only) */}
+      <ChatComposer
+        text={controller.composerText}
+        onChange={controller.handleComposerTextChange}
+        onSend={controller.handleSendDemoMessage}
+        onKeyDown={controller.handleComposerKeyDown}
+      />
     </div>
   );
 };

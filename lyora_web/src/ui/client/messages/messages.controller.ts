@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { isApiError, toast, useDebounce } from '@/core';
+import { isApiError, toast, useAuthStore, useDebounce } from '@/core';
 import {
   useConversationDetailQuery,
   useConversationFriendsQuery,
@@ -9,6 +9,10 @@ import {
   type ConversationSummary,
   type ConversationType,
 } from '@/features/conversations';
+import {
+  getInitialDemoMessages,
+  type DemoChatMessage,
+} from './demo-messages.fixtures';
 
 export type MessagesFilterType = 'ALL' | ConversationType;
 export type MessagesActiveView = 'list' | 'detail';
@@ -23,6 +27,13 @@ export function useMessagesController() {
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [isNewDirectModalOpen, setIsNewDirectModalOpen] = useState(false);
   const [isNewGroupModalOpen, setIsNewGroupModalOpen] = useState(false);
+
+  // Chat UI Demo in-memory state (Front-end only, zero persistence)
+  const currentUser = useAuthStore((s) => s.user);
+  const [demoMessagesMap, setDemoMessagesMap] = useState<
+    Record<string, DemoChatMessage[]>
+  >({});
+  const [composerText, setComposerText] = useState('');
 
   const debouncedSearch = useDebounce(searchQuery.trim(), 300);
 
@@ -54,6 +65,7 @@ export function useMessagesController() {
   const handleSelectConversation = useCallback((id: string) => {
     setSelectedConversationId(id);
     setActiveView('detail');
+    setComposerText('');
   }, []);
 
   // Back to list (Mobile)
@@ -139,7 +151,89 @@ export function useMessagesController() {
     [createGroupMutation],
   );
 
+  // Chat UI Demo: Danh sách tin nhắn cho cuộc hội thoại đang chọn
+  const activeMessages = useMemo<DemoChatMessage[]>(() => {
+    if (!selectedConversationId || !activeConversationQuery.data) {
+      return [];
+    }
+    const existing = demoMessagesMap[selectedConversationId];
+    if (existing !== undefined) {
+      return existing;
+    }
+    return getInitialDemoMessages(
+      activeConversationQuery.data,
+      currentUser?.id,
+    );
+  }, [
+    selectedConversationId,
+    activeConversationQuery.data,
+    demoMessagesMap,
+    currentUser?.id,
+  ]);
+
+  // Chat UI Demo: Thay đổi văn bản ô nhập
+  const handleComposerTextChange = useCallback((text: string) => {
+    setComposerText(text);
+  }, []);
+
+  // Chat UI Demo: Gửi tin nhắn mô phỏng (tạo bong bóng bên phải trong bộ nhớ)
+  const handleSendDemoMessage = useCallback(() => {
+    const trimmed = composerText.trim();
+    if (!trimmed || !selectedConversationId) {
+      return;
+    }
+
+    const newMessage: DemoChatMessage = {
+      id: `demo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      conversationId: selectedConversationId,
+      senderId: currentUser?.id ?? 'current-user',
+      senderName: currentUser?.fullName ?? 'Tôi',
+      senderAvatarUrl: currentUser?.avatarUrl ?? null,
+      content: trimmed,
+      createdAt: new Date().toISOString(),
+      isOutgoing: true,
+    };
+
+    setDemoMessagesMap((prev) => {
+      const currentList =
+        prev[selectedConversationId] ??
+        (activeConversationQuery.data
+          ? getInitialDemoMessages(activeConversationQuery.data, currentUser?.id)
+          : []);
+      return {
+        ...prev,
+        [selectedConversationId]: [...currentList, newMessage],
+      };
+    });
+
+    setComposerText('');
+  }, [
+    composerText,
+    selectedConversationId,
+    currentUser,
+    activeConversationQuery.data,
+  ]);
+
+  // Chat UI Demo: Phím tắt Enter để gửi / Shift+Enter xuống dòng
+  const handleComposerKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSendDemoMessage();
+      }
+    },
+    [handleSendDemoMessage],
+  );
+
   return {
+    // Current User
+    currentUser,
+    // Chat UI Demo
+    composerText,
+    activeMessages,
+    handleComposerTextChange,
+    handleSendDemoMessage,
+    handleComposerKeyDown,
     // State
     selectedConversationId,
     filterType,

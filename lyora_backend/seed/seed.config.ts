@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { parsePostgresConnectionConfig } from '../src/database/postgres-connection.util';
 import { ConversationMember } from '../src/modules/conversations/entities/conversation-member.entity';
 import { Conversation } from '../src/modules/conversations/entities/conversation.entity';
+import { IdempotencyRecord } from '../src/modules/conversations/entities/idempotency-record.entity';
 import { Friendship } from '../src/modules/friends/entities/friendship.entity';
 import { User } from '../src/modules/users/entities/user.entity';
 
@@ -17,6 +18,7 @@ export const SEED_ENTITIES = [
   Friendship,
   Conversation,
   ConversationMember,
+  IdempotencyRecord,
 ];
 
 /**

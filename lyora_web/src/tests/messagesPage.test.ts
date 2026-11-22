@@ -123,7 +123,13 @@ describe('Messages Page & Conversation Management Contracts', () => {
       | 'handleOpenGroupModal'
       | 'handleCloseGroupModal'
       | 'handleCreateDirect'
-      | 'handleCreateGroup';
+      | 'handleCreateGroup'
+      | 'currentUser'
+      | 'composerText'
+      | 'activeMessages'
+      | 'handleComposerTextChange'
+      | 'handleSendDemoMessage'
+      | 'handleComposerKeyDown';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<MessagesController, ExpectedKeys>;

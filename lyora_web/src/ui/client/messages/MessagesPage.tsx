@@ -39,13 +39,7 @@ export const MessagesPage: React.FC = () => {
         } h-full flex-1 min-w-0`}
       >
         {controller.selectedConversationId ? (
-          <ConversationWorkspace
-            conversation={controller.activeConversation}
-            isLoading={controller.isLoadingActiveConversation}
-            onBackToList={controller.handleBackToList}
-            isInfoPanelOpen={controller.isInfoPanelOpen}
-            onToggleInfoPanel={controller.handleToggleInfoPanel}
-          />
+          <ConversationWorkspace controller={controller} />
         ) : (
           <ConversationEmptyState
             title="Chưa chọn cuộc hội thoại"
@@ -58,11 +52,8 @@ export const MessagesPage: React.FC = () => {
 
       {/* 3. Right Info Panel: Collapsible on desktop, full modal on mobile if open */}
       {controller.isInfoPanelOpen && controller.selectedConversationId && (
-        <div className="fixed inset-y-0 right-0 z-40 w-full sm:w-80 lg:static lg:z-auto lg:w-72 shrink-0 shadow-lg lg:shadow-none bg-card">
-          <ConversationInfoPanel
-            conversation={controller.activeConversation}
-            onClose={controller.handleCloseInfoPanel}
-          />
+        <div className="fixed inset-y-0 right-0 z-40 w-full sm:w-80 lg:static lg:z-auto lg:w-80 shrink-0 shadow-lg lg:shadow-none bg-card">
+          <ConversationInfoPanel controller={controller} />
         </div>
       )}
 
