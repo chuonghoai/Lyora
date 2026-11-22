@@ -1,10 +1,17 @@
 import { apiClient, CORE_CONSTANTS, type ApiResponse } from '@/core';
 import type {
+  AddGroupMembersPayload,
   ConversationDetail,
   ConversationQueryParams,
   ConversationSummary,
   CreateDirectConversationPayload,
   CreateGroupConversationPayload,
+  DissolveGroupPayload,
+  GroupActionResponse,
+  LeaveGroupPayload,
+  RemoveGroupMemberPayload,
+  TransferGroupOwnershipPayload,
+  UpdateGroupTitlePayload,
 } from '../types/conversation.types';
 
 export interface IConversationRepository {
@@ -18,6 +25,24 @@ export interface IConversationRepository {
   createGroupConversation(
     payload: CreateGroupConversationPayload,
   ): Promise<ApiResponse<ConversationDetail>>;
+  updateGroupTitle(
+    payload: UpdateGroupTitlePayload,
+  ): Promise<ApiResponse<ConversationDetail>>;
+  addGroupMembers(
+    payload: AddGroupMembersPayload,
+  ): Promise<ApiResponse<ConversationDetail>>;
+  removeMember(
+    payload: RemoveGroupMemberPayload,
+  ): Promise<ApiResponse<ConversationDetail>>;
+  transferOwnership(
+    payload: TransferGroupOwnershipPayload,
+  ): Promise<ApiResponse<ConversationDetail>>;
+  leaveGroup(
+    payload: LeaveGroupPayload,
+  ): Promise<ApiResponse<GroupActionResponse>>;
+  dissolveGroup(
+    payload: DissolveGroupPayload,
+  ): Promise<ApiResponse<GroupActionResponse>>;
 }
 
 export class ConversationRepository implements IConversationRepository {
@@ -60,6 +85,74 @@ export class ConversationRepository implements IConversationRepository {
     >(`${CORE_CONSTANTS.API_ENDPOINTS.CONVERSATIONS}/group`, payload, {
       headers,
     });
+  }
+
+  async updateGroupTitle(
+    payload: UpdateGroupTitlePayload,
+  ): Promise<ApiResponse<ConversationDetail>> {
+    return apiClient.patch<
+      ApiResponse<ConversationDetail>,
+      ApiResponse<ConversationDetail>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.CONVERSATIONS}/${payload.conversationId}/title`,
+      { title: payload.title },
+    );
+  }
+
+  async addGroupMembers(
+    payload: AddGroupMembersPayload,
+  ): Promise<ApiResponse<ConversationDetail>> {
+    return apiClient.post<
+      ApiResponse<ConversationDetail>,
+      ApiResponse<ConversationDetail>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.CONVERSATIONS}/${payload.conversationId}/members`,
+      { memberIds: payload.memberIds },
+    );
+  }
+
+  async removeMember(
+    payload: RemoveGroupMemberPayload,
+  ): Promise<ApiResponse<ConversationDetail>> {
+    return apiClient.delete<
+      ApiResponse<ConversationDetail>,
+      ApiResponse<ConversationDetail>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.CONVERSATIONS}/${payload.conversationId}/members/${payload.userId}`,
+    );
+  }
+
+  async transferOwnership(
+    payload: TransferGroupOwnershipPayload,
+  ): Promise<ApiResponse<ConversationDetail>> {
+    return apiClient.post<
+      ApiResponse<ConversationDetail>,
+      ApiResponse<ConversationDetail>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.CONVERSATIONS}/${payload.conversationId}/transfer-owner`,
+      { newOwnerId: payload.newOwnerId },
+    );
+  }
+
+  async leaveGroup(
+    payload: LeaveGroupPayload,
+  ): Promise<ApiResponse<GroupActionResponse>> {
+    return apiClient.post<
+      ApiResponse<GroupActionResponse>,
+      ApiResponse<GroupActionResponse>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.CONVERSATIONS}/${payload.conversationId}/leave`,
+      { newOwnerId: payload.newOwnerId },
+    );
+  }
+
+  async dissolveGroup(
+    payload: DissolveGroupPayload,
+  ): Promise<ApiResponse<GroupActionResponse>> {
+    return apiClient.delete<
+      ApiResponse<GroupActionResponse>,
+      ApiResponse<GroupActionResponse>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.CONVERSATIONS}/${payload.conversationId}`);
   }
 }
 

@@ -36,6 +36,7 @@ export const ConversationInfoPanel: React.FC<ConversationInfoPanelProps> = ({
         conversation={conversation}
         onClose={onClose}
         currentUserId={currentUserId}
+        controller={controller}
       />
     );
   }

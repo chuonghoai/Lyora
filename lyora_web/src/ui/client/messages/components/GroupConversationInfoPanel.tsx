@@ -1,17 +1,22 @@
 import React from 'react';
 import { toast } from '@/core';
 import type { ConversationDetail } from '@/features/conversations';
+import type { MessagesController } from '../messages.controller';
 import {
   BellOffIcon,
   CalendarIcon,
   ClipboardListIcon,
   CloseIcon,
+  CrownIcon,
   FileIcon,
   ImageIcon,
   LinkIcon,
+  LogOutIcon,
   PencilIcon,
   PinIcon,
   SettingsIcon,
+  TrashIcon,
+  UserMinusIcon,
   UserPlusIcon,
   UsersIcon,
 } from './ConversationIcons';
@@ -21,16 +26,42 @@ export interface GroupConversationInfoPanelProps {
   conversation: ConversationDetail;
   onClose: () => void;
   currentUserId?: string;
+  controller?: MessagesController;
 }
 
 export const GroupConversationInfoPanel: React.FC<
   GroupConversationInfoPanelProps
-> = ({ conversation, onClose, currentUserId }) => {
+> = ({ conversation, onClose, currentUserId, controller }) => {
   const memberCount = conversation.members?.length ?? 0;
   const initial = (conversation.title || 'G').charAt(0).toUpperCase();
 
+  const callerMembership = conversation.members?.find(
+    (m) => m.userId === currentUserId,
+  );
+  const isCallerOwner = callerMembership?.role === 'OWNER';
+
   const handlePreviewAction = (actionName: string) => {
     toast.info(`${actionName}: Tính năng đang phát triển`);
+  };
+
+  const handleRenameClick = () => {
+    if (isCallerOwner && controller) {
+      controller.handleOpenRenameGroupModal();
+    } else if (!isCallerOwner) {
+      toast.info('Chỉ Trưởng nhóm mới có quyền đổi tên nhóm');
+    } else {
+      handlePreviewAction('Đổi tên nhóm');
+    }
+  };
+
+  const handleAddMemberClick = () => {
+    if (isCallerOwner && controller) {
+      controller.handleOpenAddGroupMembersModal();
+    } else if (!isCallerOwner) {
+      toast.info('Chỉ Trưởng nhóm mới có quyền thêm thành viên vào nhóm');
+    } else {
+      handlePreviewAction('Thêm bạn vào nhóm');
+    }
   };
 
   return (
@@ -84,10 +115,18 @@ export const GroupConversationInfoPanel: React.FC<
             </h4>
             <button
               type="button"
-              onClick={() => handlePreviewAction('Đổi tên nhóm')}
-              title="Đổi tên nhóm (Tính năng đang phát triển)"
-              aria-label="Đổi tên nhóm (Tính năng đang phát triển)"
-              className="text-muted/60 hover:text-primary transition-colors cursor-pointer p-1 rounded-md min-h-[32px] min-w-[32px] inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none"
+              onClick={handleRenameClick}
+              title={
+                isCallerOwner
+                  ? 'Đổi tên nhóm'
+                  : 'Chỉ Trưởng nhóm mới có quyền đổi tên nhóm'
+              }
+              aria-label="Đổi tên nhóm"
+              className={`p-1 rounded-md min-h-[32px] min-w-[32px] inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none transition-colors cursor-pointer ${
+                isCallerOwner
+                  ? 'text-muted hover:text-primary hover:bg-primary/5'
+                  : 'text-muted/40 cursor-not-allowed'
+              }`}
             >
               <PencilIcon className="h-3.5 w-3.5" />
             </button>
@@ -115,8 +154,12 @@ export const GroupConversationInfoPanel: React.FC<
           <QuickActionItem
             icon={<UserPlusIcon className="h-4.5 w-4.5" />}
             label="Thêm bạn"
-            title="Thêm thành viên vào nhóm (Tính năng đang phát triển)"
-            onClick={() => handlePreviewAction('Thêm bạn vào nhóm')}
+            title={
+              isCallerOwner
+                ? 'Thêm thành viên vào nhóm'
+                : 'Chỉ Trưởng nhóm mới có quyền thêm thành viên'
+            }
+            onClick={handleAddMemberClick}
           />
           <QuickActionItem
             icon={<SettingsIcon className="h-4.5 w-4.5" />}
@@ -181,16 +224,49 @@ export const GroupConversationInfoPanel: React.FC<
                       </div>
                     </div>
 
-                    {/* Role Badge */}
-                    {isOwner ? (
-                      <span className="shrink-0 rounded bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                        Trưởng nhóm
-                      </span>
-                    ) : (
-                      <span className="shrink-0 text-[10px] text-muted">
-                        Thành viên
-                      </span>
-                    )}
+                    {/* Role Badge & Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isOwner ? (
+                        <span className="shrink-0 rounded bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          Trưởng nhóm
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[10px] text-muted">
+                          Thành viên
+                        </span>
+                      )}
+
+                      {/* Thao tác của Trưởng nhóm trên thành viên khác */}
+                      {isCallerOwner && !isMe && (
+                        <div className="flex items-center gap-0.5 ml-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              controller?.handleOpenTransferOwnershipModal()
+                            }
+                            title="Chuyển quyền Trưởng nhóm"
+                            aria-label={`Chuyển quyền Trưởng nhóm cho ${member.user?.fullName}`}
+                            className="p-1 rounded text-muted hover:text-amber-500 hover:bg-amber-500/10 transition-colors cursor-pointer min-h-[28px] min-w-[28px] inline-flex items-center justify-center"
+                          >
+                            <CrownIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              controller?.handleOpenKickMemberModal(
+                                member.userId,
+                                member.user?.fullName || 'thành viên',
+                              )
+                            }
+                            title="Xóa khỏi nhóm"
+                            aria-label={`Xóa ${member.user?.fullName} khỏi nhóm`}
+                            className="p-1 rounded text-muted hover:text-error hover:bg-error/10 transition-colors cursor-pointer min-h-[28px] min-w-[28px] inline-flex items-center justify-center"
+                          >
+                            <UserMinusIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -265,6 +341,35 @@ export const GroupConversationInfoPanel: React.FC<
               Chưa có đường dẫn liên kết web nào được chia sẻ trong nhóm.
             </div>
           </InfoPanelSection>
+        </div>
+
+        {/* E. Action Zone */}
+        <div className="p-4 space-y-2 border-t border-border/80 bg-card">
+          <button
+            type="button"
+            onClick={() => {
+              if (isCallerOwner) {
+                controller?.handleOpenOwnerLeaveGroupModal();
+              } else {
+                controller?.handleOpenMemberLeaveModal();
+              }
+            }}
+            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-border text-error hover:bg-error/5 hover:border-error/30 font-semibold text-xs transition-colors cursor-pointer min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/40"
+          >
+            <LogOutIcon className="h-4 w-4" />
+            <span>Rời khỏi nhóm</span>
+          </button>
+
+          {isCallerOwner && (
+            <button
+              type="button"
+              onClick={() => controller?.handleOpenDissolveGroupModal()}
+              className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-error/10 text-error hover:bg-error/15 font-semibold text-xs transition-colors cursor-pointer min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/40"
+            >
+              <TrashIcon className="h-4 w-4" />
+              <span>Giải tán nhóm</span>
+            </button>
+          )}
         </div>
       </div>
     </aside>

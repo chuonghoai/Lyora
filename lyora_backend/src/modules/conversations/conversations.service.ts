@@ -6,11 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, IsNull, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, IsNull, Repository } from 'typeorm';
 import { PaginationMetaDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { FriendsService } from '../friends/friends.service';
 import { User } from '../users/entities/user.entity';
+import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { ConversationQueryDto } from './dto/conversation-query.dto';
 import {
   ConversationDetailDto,
@@ -21,6 +22,9 @@ import {
 } from './dto/conversation-response.dto';
 import { CreateDirectConversationDto } from './dto/create-direct-conversation.dto';
 import { CreateGroupConversationDto } from './dto/create-group-conversation.dto';
+import { LeaveGroupDto } from './dto/leave-group.dto';
+import { TransferGroupOwnershipDto } from './dto/transfer-group-ownership.dto';
+import { UpdateGroupTitleDto } from './dto/update-group-title.dto';
 import { ConversationMember } from './entities/conversation-member.entity';
 import { Conversation } from './entities/conversation.entity';
 import { IdempotencyRecord } from './entities/idempotency-record.entity';
@@ -537,6 +541,368 @@ export class ConversationsService {
       directParticipant: partnerSummary,
       createdAt: conv.createdAt,
       updatedAt: conv.updatedAt,
+    };
+  }
+
+  /**
+   * Helper kiểm tra tư cách thành viên nhóm và vai trò (IDOR Safe)
+   * Hỗ trợ Transactional Pessimistic Locking chống Race Conditions
+   */
+  private async assertGroupMembership(
+    currentUserId: string,
+    conversationId: string,
+    requireOwner = false,
+    manager?: EntityManager,
+  ): Promise<{ conversation: Conversation; callerMember: ConversationMember }> {
+    const convRepo = manager
+      ? manager.getRepository(Conversation)
+      : this.conversationRepository;
+
+    const conversation = await convRepo.findOne({
+      where: { id: conversationId, deletedAt: IsNull() },
+      lock: manager ? { mode: 'pessimistic_write' } : undefined,
+    });
+
+    if (!conversation) {
+      throw new NotFoundException(
+        'Không tìm thấy cuộc hội thoại hoặc bạn không có quyền truy cập',
+      );
+    }
+
+    if (conversation.type !== ConversationType.GROUP) {
+      throw new BadRequestException(
+        'Thao tác này chỉ áp dụng cho hội thoại nhóm',
+      );
+    }
+
+    const memberRepo = manager
+      ? manager.getRepository(ConversationMember)
+      : this.memberRepository;
+
+    const callerMember = await memberRepo.findOne({
+      where: {
+        conversationId,
+        userId: currentUserId,
+        deletedAt: IsNull(),
+      },
+    });
+
+    if (!callerMember) {
+      throw new NotFoundException(
+        'Không tìm thấy cuộc hội thoại hoặc bạn không có quyền truy cập',
+      );
+    }
+
+    if (requireOwner && callerMember.role !== ConversationMemberRole.OWNER) {
+      throw new ForbiddenException(
+        'Chỉ Trưởng nhóm mới có quyền thực hiện thao tác này',
+      );
+    }
+
+    return { conversation, callerMember };
+  }
+
+  /**
+   * Cập nhật tên nhóm trò chuyện (Chỉ OWNER)
+   */
+  async updateGroupTitle(
+    currentUserId: string,
+    conversationId: string,
+    dto: UpdateGroupTitleDto,
+  ): Promise<ConversationDetailDto> {
+    const trimmedTitle = dto.title.trim();
+    if (trimmedTitle.length < 2 || trimmedTitle.length > 100) {
+      throw new BadRequestException(
+        'Tên nhóm phải có độ dài từ 2 đến 100 ký tự',
+      );
+    }
+
+    const { conversation } = await this.assertGroupMembership(
+      currentUserId,
+      conversationId,
+      true,
+    );
+
+    conversation.title = trimmedTitle;
+    await this.conversationRepository.save(conversation);
+
+    return this.findById(currentUserId, conversationId);
+  }
+
+  /**
+   * Thêm thành viên vào nhóm từ danh sách bạn bè (CHỈ OWNER)
+   * Sử dụng Transactional Pessimistic Locking & cơ chế phục hồi Soft-Delete
+   */
+  async addGroupMembers(
+    currentUserId: string,
+    conversationId: string,
+    dto: AddGroupMembersDto,
+  ): Promise<ConversationDetailDto> {
+    const memberIdsToAdd = [
+      ...new Set(dto.memberIds.filter((id) => id !== currentUserId)),
+    ];
+    if (memberIdsToAdd.length === 0) {
+      throw new BadRequestException(
+        'Cần chọn ít nhất 1 thành viên để thêm vào nhóm',
+      );
+    }
+
+    // Kiểm tra quyền OWNER trước tiên để đảm bảo IDOR và RBAC an toàn
+    await this.assertGroupMembership(currentUserId, conversationId, true);
+
+    // Bắt buộc tất cả thành viên được thêm phải là bạn bè của người mời
+    await this.friendsService.validateAllAreFriends(
+      currentUserId,
+      memberIdsToAdd,
+    );
+
+    await this.dataSource.transaction(async (manager) => {
+      // Chỉ OWNER mới được thêm thành viên (chống race condition với lock)
+      await this.assertGroupMembership(
+        currentUserId,
+        conversationId,
+        true,
+        manager,
+      );
+
+      const activeMembers = await manager.find(ConversationMember, {
+        where: { conversationId, deletedAt: IsNull() },
+      });
+
+      const activeUserIds = new Set(activeMembers.map((m) => m.userId));
+      const alreadyInGroup = memberIdsToAdd.filter((id) =>
+        activeUserIds.has(id),
+      );
+      if (alreadyInGroup.length > 0) {
+        throw new BadRequestException(
+          'Một số người dùng được chọn đã là thành viên trong nhóm',
+        );
+      }
+
+      if (activeMembers.length + memberIdsToAdd.length > 100) {
+        throw new BadRequestException(
+          'Hội thoại nhóm không được vượt quá 100 thành viên',
+        );
+      }
+
+      for (const targetUserId of memberIdsToAdd) {
+        // Tìm bản ghi cũ (kể cả đã soft-deleted) để khôi phục hoặc tạo mới
+        const existingRecord = await manager.findOne(ConversationMember, {
+          where: { conversationId, userId: targetUserId },
+          withDeleted: true,
+        });
+
+        if (existingRecord) {
+          existingRecord.deletedAt = null;
+          existingRecord.joinedAt = new Date();
+          existingRecord.role = ConversationMemberRole.MEMBER;
+          await manager.save(existingRecord);
+        } else {
+          const newMember = manager.create(ConversationMember, {
+            conversationId,
+            userId: targetUserId,
+            role: ConversationMemberRole.MEMBER,
+          });
+          await manager.save(newMember);
+        }
+      }
+
+      await manager.update(Conversation, conversationId, {
+        updatedAt: new Date(),
+      });
+    });
+
+    return this.findById(currentUserId, conversationId);
+  }
+
+  /**
+   * Xóa thành viên ra khỏi nhóm (Chỉ OWNER)
+   */
+  async removeMember(
+    currentUserId: string,
+    conversationId: string,
+    targetUserId: string,
+  ): Promise<ConversationDetailDto> {
+    if (targetUserId === currentUserId) {
+      throw new BadRequestException(
+        'Không thể tự xóa chính mình khỏi nhóm. Vui lòng sử dụng chức năng Rời nhóm',
+      );
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      await this.assertGroupMembership(
+        currentUserId,
+        conversationId,
+        true,
+        manager,
+      );
+
+      const targetMember = await manager.findOne(ConversationMember, {
+        where: {
+          conversationId,
+          userId: targetUserId,
+          deletedAt: IsNull(),
+        },
+      });
+
+      if (!targetMember) {
+        throw new NotFoundException(
+          'Thành viên không tồn tại trong cuộc hội thoại này',
+        );
+      }
+
+      await manager.softDelete(ConversationMember, targetMember.id);
+      await manager.update(Conversation, conversationId, {
+        updatedAt: new Date(),
+      });
+    });
+
+    return this.findById(currentUserId, conversationId);
+  }
+
+  /**
+   * Chuyển quyền Trưởng nhóm (Chỉ OWNER)
+   */
+  async transferOwnership(
+    currentUserId: string,
+    conversationId: string,
+    dto: TransferGroupOwnershipDto,
+  ): Promise<ConversationDetailDto> {
+    if (dto.newOwnerId === currentUserId) {
+      throw new BadRequestException('Bạn hiện đã là Trưởng nhóm');
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      const { callerMember } = await this.assertGroupMembership(
+        currentUserId,
+        conversationId,
+        true,
+        manager,
+      );
+
+      const targetMember = await manager.findOne(ConversationMember, {
+        where: {
+          conversationId,
+          userId: dto.newOwnerId,
+          deletedAt: IsNull(),
+        },
+      });
+
+      if (!targetMember) {
+        throw new BadRequestException(
+          'Người được chỉ định không phải là thành viên hợp lệ của nhóm',
+        );
+      }
+
+      callerMember.role = ConversationMemberRole.MEMBER;
+      targetMember.role = ConversationMemberRole.OWNER;
+
+      await manager.save([callerMember, targetMember]);
+      await manager.update(Conversation, conversationId, {
+        updatedAt: new Date(),
+      });
+    });
+
+    return this.findById(currentUserId, conversationId);
+  }
+
+  /**
+   * Rời khỏi cuộc hội thoại nhóm (OWNER hoặc MEMBER)
+   * Nếu OWNER rời nhóm và nhóm còn > 1 người, bắt buộc chỉ định successor.
+   * Nếu thành viên duy nhất (OWNER) rời nhóm, tự động giải tán nhóm.
+   */
+  async leaveGroup(
+    currentUserId: string,
+    conversationId: string,
+    dto: LeaveGroupDto,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.dataSource.transaction(async (manager) => {
+      const { callerMember } = await this.assertGroupMembership(
+        currentUserId,
+        conversationId,
+        false,
+        manager,
+      );
+
+      const activeMembers = await manager.find(ConversationMember, {
+        where: { conversationId, deletedAt: IsNull() },
+      });
+
+      if (callerMember.role === ConversationMemberRole.OWNER) {
+        if (activeMembers.length > 1) {
+          if (!dto.newOwnerId) {
+            throw new BadRequestException(
+              'Trưởng nhóm cần chỉ định người kế nhiệm trước khi rời nhóm',
+            );
+          }
+          if (dto.newOwnerId === currentUserId) {
+            throw new BadRequestException(
+              'Người kế nhiệm không thể là chính bạn',
+            );
+          }
+          const successor = activeMembers.find(
+            (m) => m.userId === dto.newOwnerId,
+          );
+          if (!successor) {
+            throw new BadRequestException(
+              'Người được chỉ định không phải là thành viên hợp lệ của nhóm',
+            );
+          }
+
+          successor.role = ConversationMemberRole.OWNER;
+          await manager.save(successor);
+        } else {
+          // Thành viên duy nhất rời nhóm -> Tự động giải tán nhóm
+          await manager.softDelete(ConversationMember, callerMember.id);
+          await manager.softDelete(Conversation, conversationId);
+          return {
+            success: true,
+            message:
+              'Bạn đã rời khỏi nhóm và nhóm đã được tự động giải tán vì không còn thành viên nào',
+          };
+        }
+      }
+
+      await manager.softDelete(ConversationMember, callerMember.id);
+      await manager.update(Conversation, conversationId, {
+        updatedAt: new Date(),
+      });
+
+      return {
+        success: true,
+        message: 'Bạn đã rời khỏi nhóm thành công',
+      };
+    });
+  }
+
+  /**
+   * Giải tán cuộc hội thoại nhóm (Chỉ OWNER)
+   */
+  async dissolveGroup(
+    currentUserId: string,
+    conversationId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    await this.dataSource.transaction(async (manager) => {
+      await this.assertGroupMembership(
+        currentUserId,
+        conversationId,
+        true,
+        manager,
+      );
+
+      await manager.softDelete(Conversation, conversationId);
+      const members = await manager.find(ConversationMember, {
+        where: { conversationId, deletedAt: IsNull() },
+      });
+      if (members.length > 0) {
+        const memberIds = members.map((m) => m.id);
+        await manager.softDelete(ConversationMember, memberIds);
+      }
+    });
+
+    return {
+      success: true,
+      message: 'Đã giải tán nhóm thành công',
     };
   }
 }

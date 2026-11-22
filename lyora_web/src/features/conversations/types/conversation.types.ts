@@ -49,6 +49,40 @@ export interface CreateGroupConversationPayload {
   idempotencyKey?: string;
 }
 
+export interface UpdateGroupTitlePayload {
+  conversationId: string;
+  title: string;
+}
+
+export interface AddGroupMembersPayload {
+  conversationId: string;
+  memberIds: string[];
+}
+
+export interface RemoveGroupMemberPayload {
+  conversationId: string;
+  userId: string;
+}
+
+export interface TransferGroupOwnershipPayload {
+  conversationId: string;
+  newOwnerId: string;
+}
+
+export interface LeaveGroupPayload {
+  conversationId: string;
+  newOwnerId?: string;
+}
+
+export interface DissolveGroupPayload {
+  conversationId: string;
+}
+
+export interface GroupActionResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface ConversationQueryParams {
   page?: number;
   limit?: number;

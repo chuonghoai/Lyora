@@ -77,16 +77,11 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
             )}
           </div>
 
-          {/* Title & Status with Demo Badge */}
+          {/* Title & Status */}
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="truncate text-base font-semibold text-foreground leading-tight">
-                {conversation.title}
-              </h2>
-              <span className="hidden sm:inline-flex items-center rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-medium text-primary border border-secondary-strong/40 shrink-0 select-none">
-                Bản xem trước
-              </span>
-            </div>
+            <h2 className="truncate text-base font-semibold text-foreground leading-tight">
+              {conversation.title}
+            </h2>
             <p className="text-xs text-muted">
               {isGroup
                 ? `${conversation.members?.length ?? 0} thành viên`
@@ -121,12 +116,12 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
         currentUserId={controller.currentUser?.id}
       />
 
-      {/* Bottom Area: Chat Composer (Demo Only) */}
+      {/* Bottom Area: Chat Composer */}
       <ChatComposer
         text={controller.composerText}
         onChange={controller.handleComposerTextChange}
-        onSend={controller.handleSendDemoMessage}
         onKeyDown={controller.handleComposerKeyDown}
+        disabled
       />
     </div>
   );
