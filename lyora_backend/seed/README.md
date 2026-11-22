@@ -106,4 +106,3 @@ npx ts-node -r tsconfig-paths/register seed/createSeedDB.ts
 > 1. **Môi trường:** Seed data chỉ dành cho `development` và `testing`. Hệ thống tích hợp sẵn cơ chế chặn tự động `assertSafeEnvironment()`, sẽ ném ngoại lệ và dừng ngay lập tức nếu phát hiện `NODE_ENV === 'production'` hoặc chuỗi kết nối chứa các host đám mây thật (RDS, Supabase, ElephantSQL, v.v.).
 > 2. **Authentication Flow:** Tuyệt đối không sửa đổi authentication logic hoặc password hashing của Backend chỉ để phục vụ seed. Dữ liệu seed phải tuân thủ 100% chuẩn mật khẩu và mã hóa của Backend.
 > 3. **An toàn dữ liệu:** Quá trình chạy `/lya-createSeedDB` KHÔNG được phép tự ý thực hiện xóa sạch Database. Việc xóa và nạp lại Database chỉ diễn ra khi kích hoạt `/lya-insertSeedDB`.
-

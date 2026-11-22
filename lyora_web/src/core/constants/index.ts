@@ -23,7 +23,16 @@ export const CORE_CONSTANTS = {
     USERS: '/users',
     USERS_STATISTICS: '/users/statistics',
     POSTS: '/posts',
+    FRIENDS: '/friends',
+    CONVERSATIONS: '/conversations',
   },
 } as const;
 
 export const SHARED_CONSTANTS = CORE_CONSTANTS;
+
+export const ICON_SCALE_ANIMATION =
+  'transition-colors ' +
+  'motion-safe:transition-[scale,color] motion-safe:duration-200 motion-safe:ease-out ' +
+  'motion-safe:group-hover:scale-[1.18] motion-safe:group-focus-visible:scale-[1.18] ' +
+  'motion-safe:active:scale-[0.94] motion-safe:group-active:scale-[0.94] ' +
+  'motion-reduce:scale-100 motion-reduce:transform-none motion-reduce:transition-none';

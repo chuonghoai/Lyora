@@ -1,10 +1,13 @@
 import React from 'react';
 import type { ReactionType } from '@/features/posts';
 
-interface IconProps {
+export interface IconProps {
   className?: string;
   filled?: boolean;
 }
+
+export const ICON_SCALE_ANIMATION =
+  'transition-colors motion-safe:transition-[scale,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:group-hover:scale-[1.18] motion-safe:group-focus-visible:scale-[1.18] motion-safe:group-active:scale-[0.94]';
 
 export const HomeFeedIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className} aria-hidden="true">
@@ -238,6 +241,21 @@ export const ChatBubbleIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) =
       strokeLinejoin="round"
       d="M7.5 8.5h9m-9 4h6m6.5-.5a8.5 8.5 0 0 1-8.5 8.5 8.7 8.7 0 0 1-3.8-.9L3 21l1.4-4.2A8.4 8.4 0 0 1 3.5 12a8.5 8.5 0 1 1 17 0Z"
     />
+  </svg>
+);
+
+export const ChatBubbleOutlineIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M21 11.5a8.5 8.5 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.5 8.5 0 0 1-3.8-.9L3 21l1.8-5.4A8.5 8.5 0 1 1 21 11.5Z" />
   </svg>
 );
 

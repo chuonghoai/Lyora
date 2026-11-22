@@ -10,12 +10,13 @@ import { FriendChatWidget } from './FriendChatWidget';
 import {
   BookmarkIcon,
   CalendarIcon,
-  ChatBubbleIcon,
+  ChatBubbleOutlineIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
   EditIcon,
   GlobeIcon,
+  ICON_SCALE_ANIMATION,
   LockIcon,
   MailIcon,
   MapPinIcon,
@@ -469,9 +470,11 @@ export default function HomeView(): React.ReactElement {
                         onClick={() => controller.handleOpenChatWithFriend(friend.id)}
                         aria-label={`Nhắn tin với ${friend.fullName}`}
                         title={`Nhắn tin với ${friend.fullName}`}
-                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary/70 text-primary hover:bg-primary hover:text-on-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        className="group inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
-                        <ChatBubbleIcon className="w-4 h-4" />
+                        <ChatBubbleOutlineIcon
+                          className={`w-5 h-5 text-primary group-hover:text-primary-hover ${ICON_SCALE_ANIMATION}`}
+                        />
                       </button>
                     </div>
                   </li>

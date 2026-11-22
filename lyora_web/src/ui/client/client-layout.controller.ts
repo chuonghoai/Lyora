@@ -261,6 +261,18 @@ export function useClientLayoutController() {
     handleSelectTab('mine');
   };
 
+  const isMessagesRoute = location.pathname === ROUTES.CLIENT.MESSAGES;
+  const isHomeRoute = location.pathname === ROUTES.CLIENT.ROOT;
+
+  const handleNavigateMessages = () => {
+    setIsAccountMenuOpen(false);
+    setAccountMenuPanel('main');
+    setIsNotificationOpen(false);
+    if (location.pathname !== ROUTES.CLIENT.MESSAGES) {
+      navigate(ROUTES.CLIENT.MESSAGES);
+    }
+  };
+
   const handleSelectFontScale = (scale: FontScalePreference) => {
     setFontScale(scale);
     toast.info(
@@ -328,6 +340,8 @@ export function useClientLayoutController() {
     isRefreshingSession: refreshSessionMutation.isPending,
     searchQuery,
     activeTab,
+    isMessagesRoute,
+    isHomeRoute,
     isAccountMenuOpen,
     accountMenuPanel,
     fontScale,
@@ -345,6 +359,7 @@ export function useClientLayoutController() {
     handleOpenComposer,
     handleToggleAccountMenu,
     handleNavigateAccountPanel,
+    handleNavigateMessages,
     handleOpenProfile,
     handleSelectFontScale,
     handleToggleReduceMotion,
