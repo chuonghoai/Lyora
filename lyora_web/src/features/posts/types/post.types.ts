@@ -4,13 +4,16 @@ export type PostVisibility = 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
 
 export type ReactionType = 'LIKE' | 'LOVE' | 'HAHA' | 'WOW' | 'SAD' | 'ANGRY';
 
-export type PostMediaType = 'IMAGE' | 'VIDEO';
+export type PostMediaType = 'IMAGE' | 'VIDEO' | 'AUDIO';
 
 export interface PostMediaItem {
   id?: string;
   url: string;
   type: PostMediaType;
   alt?: string;
+  duration?: number;
+  fileName?: string;
+  size?: number;
 }
 
 export interface PostAuthor {
@@ -68,6 +71,7 @@ export interface CreatePostPayload {
   content: string;
   visibility: PostVisibility;
   media?: PostMediaItem[];
+  taggedUserIds?: string[];
 }
 
 export interface ReactPostPayload {
@@ -99,4 +103,27 @@ export interface PaginatedPostReactionsResult {
   meta: PaginationMeta;
   breakdown: ReactionBreakdown;
   isPreviewFallback?: boolean;
+}
+
+export type PostSuggestionTone =
+  | 'FRIENDLY'
+  | 'FUNNY'
+  | 'PROFESSIONAL'
+  | 'INSPIRING'
+  | 'CONCISE';
+
+export interface SuggestPostContentPayload {
+  topic?: string;
+  currentContent?: string;
+  tone: PostSuggestionTone;
+}
+
+export interface PostContentSuggestion {
+  id: string;
+  content: string;
+}
+
+export interface PostSuggestionsResult {
+  tone: PostSuggestionTone;
+  suggestions: PostContentSuggestion[];
 }

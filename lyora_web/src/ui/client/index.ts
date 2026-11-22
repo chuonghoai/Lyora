@@ -3,6 +3,8 @@ export * from './client-layout.controller';
 export * from './home/home.controller';
 export * from './home/HomeView';
 export * from './home/PostComposer';
+export * from './home/PostAiSuggestionPanel';
+export * from './home/post-ai-assistant.controller';
 export * from './home/PostCard';
 export * from './home/PostDetailModal';
 export * from './home/PostReactionsModal';

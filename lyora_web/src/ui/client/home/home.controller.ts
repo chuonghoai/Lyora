@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   isApiError,
+  localStorageService,
   toast,
   useAuthStore,
   useDebounce,
@@ -19,6 +20,7 @@ import {
   useReactPostMutation,
   useSharePostMutation,
   useUnhidePostMutation,
+  useUploadPostMediaMutation,
   type Post,
   type PostMediaItem,
   type PostMediaType,
@@ -30,12 +32,40 @@ import {
   useUpdateUserProfileMutation,
   useUserProfileQuery,
 } from '@/features/user';
+import { usePostAiAssistant } from './post-ai-assistant.controller';
 
 export type VisibilityFilterOption = 'ALL' | PostVisibility;
 
 export interface MediaLightboxState {
   items: PostMediaItem[];
   index: number;
+}
+
+export interface ComposerTaggedUser {
+  id: string;
+  fullName: string;
+}
+
+interface ComposerDraft {
+  content: string;
+  visibility: PostVisibility;
+  taggedUsers: ComposerTaggedUser[];
+}
+
+const COMPOSER_DRAFT_KEY = 'lyora:post-composer-draft';
+const MAX_COMPOSER_MEDIA = 8;
+export const MAX_AUDIO_RECORDING_SECONDS = 60;
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function resolveRecorderMimeType(): string | undefined {
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+  return candidates.find((type) => MediaRecorder.isTypeSupported(type));
+}
+
+function resolveAudioExtension(mimeType: string): string {
+  if (mimeType.includes('mp4')) return 'm4a';
+  if (mimeType.includes('ogg')) return 'ogg';
+  return 'webm';
 }
 
 export interface FriendContactItem {
@@ -51,6 +81,8 @@ export interface ChatReplySnapshot {
   text: string;
 }
 
+export type ChatMessageKind = 'TEXT' | 'LIKE';
+
 export interface ChatMessageItem {
   id: string;
   senderId: string;
@@ -58,7 +90,8 @@ export interface ChatMessageItem {
   text: string;
   createdAt: string;
   isMine: boolean;
-  reaction?: string | null;
+  kind?: ChatMessageKind;
+  reaction?: ReactionType | null;
   isRecalled?: boolean;
   replyTo?: ChatReplySnapshot | null;
   forwardedFrom?: string | null;
@@ -158,6 +191,7 @@ export function useHomeController() {
   const updateProfileMutation = useUpdateUserProfileMutation();
 
   const createPostMutation = useCreatePostMutation();
+  const uploadMediaMutation = useUploadPostMediaMutation();
   const reactPostMutation = useReactPostMutation();
   const bookmarkPostMutation = useBookmarkPostMutation();
   const sharePostMutation = useSharePostMutation();
@@ -183,6 +217,30 @@ export function useHomeController() {
   const [composerError, setComposerError] = useState<string | null>(null);
   const [isDraggingComposerMedia, setIsDraggingComposerMedia] = useState(false);
   const composerDragDepthRef = useRef(0);
+  const composerPendingFilesRef = useRef<Map<string, File>>(new Map());
+  const createdBlobUrlsRef = useRef<Set<string>>(new Set());
+  const [composerTaggedUsers, setComposerTaggedUsers] = useState<ComposerTaggedUser[]>([]);
+  const [isMentionPickerOpen, setIsMentionPickerOpen] = useState(false);
+  const [isComposerPreviewOpen, setIsComposerPreviewOpen] = useState(false);
+  const [hasSavedDraft, setHasSavedDraft] = useState(
+    () => (localStorageService.getItem<ComposerDraft>(COMPOSER_DRAFT_KEY)?.content ?? '').trim().length > 0,
+  );
+
+  const { clearAiUndo, resetAiAssistant, ...aiAssistant } = usePostAiAssistant({
+    composerContent,
+    setComposerContent,
+    onClearComposerError: () => setComposerError(null),
+  });
+
+  // Trạng thái thu âm giọng nói
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [audioRecordingDuration, setAudioRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioTimerRef = useRef<number | null>(null);
+  const audioDurationRef = useRef(0);
+  const isRecordingCancelledRef = useRef(false);
 
   // Comment, Hide, Detail Modal, Reactions Modal, All Friends Modal & Lightbox State
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -306,7 +364,7 @@ export function useHomeController() {
           text: sample.outgoing,
           createdAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
           isMine: true,
-          reaction: '❤️',
+          reaction: 'LOVE',
         },
       ];
     },
@@ -529,10 +587,12 @@ export function useHomeController() {
     setIsDraggingComposerMedia(false);
     setIsComposerExpanded(false);
     setComposerError(null);
+    resetAiAssistant();
   };
 
   const handleComposerContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setComposerContent(e.target.value);
+    clearAiUndo();
     if (composerError) setComposerError(null);
   };
 
@@ -569,23 +629,31 @@ export function useHomeController() {
         return;
       }
 
-      const remainingSlots = Math.max(0, 8 - composerMedia.length);
+      const remainingSlots = Math.max(0, MAX_COMPOSER_MEDIA - composerMedia.length);
       if (remainingSlots === 0) {
-        toast.warning('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh hoặc video.');
+        toast.warning('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh, video hoặc bản ghi âm.');
         return;
       }
 
       if (validFiles.length > remainingSlots) {
-        toast.warning('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh hoặc video.');
+        toast.warning('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh, video hoặc bản ghi âm.');
       }
 
       const selected = validFiles.slice(0, remainingSlots);
-      const addedItems: PostMediaItem[] = selected.map((file, idx) => ({
-        id: `local-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
-        url: URL.createObjectURL(file),
-        type: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
-        alt: file.name,
-      }));
+      const addedItems: PostMediaItem[] = selected.map((file, idx) => {
+        const id = `local-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
+        composerPendingFilesRef.current.set(id, file);
+        const url = URL.createObjectURL(file);
+        createdBlobUrlsRef.current.add(url);
+        return {
+          id,
+          url,
+          type: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+          alt: file.name,
+          fileName: file.name,
+          size: file.size,
+        };
+      });
 
       setIsComposerExpanded(true);
       setComposerMedia((prev) => [...prev, ...addedItems]);
@@ -644,8 +712,194 @@ export function useHomeController() {
       if (target?.url.startsWith('blob:')) {
         URL.revokeObjectURL(target.url);
       }
+      if (target?.id) {
+        composerPendingFilesRef.current.delete(target.id);
+      }
       return prev.filter((_, idx) => idx !== index);
     });
+  };
+
+  // Thu âm giọng nói từ MediaRecorder
+  const releaseAudioResources = useCallback(() => {
+    if (audioTimerRef.current !== null) {
+      window.clearInterval(audioTimerRef.current);
+      audioTimerRef.current = null;
+    }
+    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    audioStreamRef.current = null;
+    mediaRecorderRef.current = null;
+    setIsRecordingAudio(false);
+  }, []);
+
+  const stopAudioRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop();
+    }
+  }, []);
+
+  const cancelAudioRecording = useCallback(() => {
+    isRecordingCancelledRef.current = true;
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop();
+    } else {
+      releaseAudioResources();
+    }
+    setAudioRecordingDuration(0);
+  }, [releaseAudioResources]);
+
+  const startAudioRecording = async () => {
+    if (isRecordingAudio) return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      toast.warning('Trình duyệt của bạn chưa hỗ trợ ghi âm.');
+      return;
+    }
+    if (composerMedia.length >= MAX_COMPOSER_MEDIA) {
+      toast.warning('Mỗi bài viết chỉ đính kèm tối đa 8 ảnh, video hoặc bản ghi âm.');
+      return;
+    }
+    if (composerMedia.some((item) => item.type === 'AUDIO')) {
+      toast.warning('Mỗi bài viết chỉ có một bản ghi âm. Hãy xóa bản ghi hiện tại trước.');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = resolveRecorderMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+
+      audioStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+      audioDurationRef.current = 0;
+      isRecordingCancelledRef.current = false;
+      setAudioRecordingDuration(0);
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        const wasCancelled = isRecordingCancelledRef.current;
+        const recordedType = (recorder.mimeType || mimeType || 'audio/webm').split(';')[0];
+        const duration = audioDurationRef.current;
+        const chunks = audioChunksRef.current;
+        audioChunksRef.current = [];
+        releaseAudioResources();
+
+        if (wasCancelled || chunks.length === 0 || duration < 1) {
+          if (!wasCancelled) toast.warning('Bản ghi âm quá ngắn, vui lòng thử lại.');
+          setAudioRecordingDuration(0);
+          return;
+        }
+
+        const file = new File(
+          [new Blob(chunks, { type: recordedType })],
+          `ghi-am-${Date.now()}.${resolveAudioExtension(recordedType)}`,
+          { type: recordedType },
+        );
+        const id = `local-audio-${Date.now()}`;
+        composerPendingFilesRef.current.set(id, file);
+        const audioUrl = URL.createObjectURL(file);
+        createdBlobUrlsRef.current.add(audioUrl);
+        setComposerMedia((prev) => [
+          ...prev,
+          {
+            id,
+            url: audioUrl,
+            type: 'AUDIO',
+            alt: 'Bản ghi âm giọng nói',
+            fileName: file.name,
+            size: file.size,
+            duration,
+          },
+        ]);
+        setComposerError(null);
+      };
+
+      recorder.start();
+      setIsComposerExpanded(true);
+      setIsRecordingAudio(true);
+      audioTimerRef.current = window.setInterval(() => {
+        audioDurationRef.current += 1;
+        setAudioRecordingDuration(audioDurationRef.current);
+        if (audioDurationRef.current >= MAX_AUDIO_RECORDING_SECONDS) {
+          stopAudioRecording();
+        }
+      }, 1000);
+    } catch {
+      releaseAudioResources();
+      toast.error('Không thể truy cập micro. Vui lòng cấp quyền ghi âm cho trình duyệt.');
+    }
+  };
+
+  useEffect(() => cancelAudioRecording, [cancelAudioRecording]);
+
+  // Dọn dẹp toàn bộ Blob URL khi component unmount
+  useEffect(() => {
+    const blobUrls = createdBlobUrlsRef.current;
+    const pendingFiles = composerPendingFilesRef.current;
+    return () => {
+      blobUrls.forEach((url) => URL.revokeObjectURL(url));
+      blobUrls.clear();
+      pendingFiles.clear();
+    };
+  }, []);
+
+  // Gắn thẻ bạn bè (@ Mention)
+  const handleToggleMentionPicker = () => {
+    setIsMentionPickerOpen((prev) => !prev);
+  };
+
+  const handleToggleTaggedUser = (friend: FriendContactItem) => {
+    const isTagged = composerTaggedUsers.some((user) => user.id === friend.id);
+    if (isTagged) {
+      setComposerTaggedUsers((prev) => prev.filter((user) => user.id !== friend.id));
+      return;
+    }
+    setComposerTaggedUsers((prev) => [...prev, { id: friend.id, fullName: friend.fullName }]);
+    setComposerContent((prev) => `${prev}${prev && !/\s$/.test(prev) ? ' ' : ''}@${friend.fullName} `);
+  };
+
+  const handleRemoveTaggedUser = (userId: string) => {
+    setComposerTaggedUsers((prev) => prev.filter((user) => user.id !== userId));
+  };
+
+  const handleToggleComposerPreview = () => {
+    setIsComposerPreviewOpen((prev) => !prev);
+  };
+
+  // Tự động lưu nháp bài viết đang soạn
+  useEffect(() => {
+    if (composerContent.trim().length === 0) return;
+    const timer = window.setTimeout(() => {
+      const draft: ComposerDraft = {
+        content: composerContent,
+        visibility: composerVisibility,
+        taggedUsers: composerTaggedUsers,
+      };
+      localStorageService.setItem(COMPOSER_DRAFT_KEY, draft);
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [composerContent, composerVisibility, composerTaggedUsers]);
+
+  const handleRestoreDraft = () => {
+    const draft = localStorageService.getItem<ComposerDraft>(COMPOSER_DRAFT_KEY);
+    if (!draft) {
+      setHasSavedDraft(false);
+      return;
+    }
+    setComposerContent(draft.content);
+    setComposerVisibility(draft.visibility);
+    setComposerTaggedUsers(draft.taggedUsers ?? []);
+    setIsComposerExpanded(true);
+    setHasSavedDraft(false);
+  };
+
+  const handleDiscardDraft = () => {
+    localStorageService.removeItem(COMPOSER_DRAFT_KEY);
+    setHasSavedDraft(false);
   };
 
   const handleSubmitPost = async (e: React.FormEvent) => {
@@ -664,22 +918,58 @@ export function useHomeController() {
     }
 
     try {
+      // Tải tệp lên Cloudinary (qua backend) rồi gắn URL trả về vào bài viết
+      const pendingFiles = composerMedia.map((item) =>
+        item.id ? composerPendingFilesRef.current.get(item.id) : undefined,
+      );
+      const filesToUpload = pendingFiles.filter((file): file is File => Boolean(file));
+      const uploadedMedia =
+        filesToUpload.length > 0 ? await uploadMediaMutation.mutateAsync(filesToUpload) : [];
+
+      if (uploadedMedia.length !== filesToUpload.length) {
+        throw new Error('Tải tệp lên chưa hoàn tất, vui lòng thử lại.');
+      }
+
+      let uploadCursor = 0;
+      const finalMedia: PostMediaItem[] = validation.data.media.map((item, idx) => {
+        if (!pendingFiles[idx]) return item;
+        const uploaded = uploadedMedia[uploadCursor++];
+        return { ...uploaded, alt: item.alt ?? uploaded.alt, duration: uploaded.duration ?? item.duration };
+      });
+
       await createPostMutation.mutateAsync({
         content: validation.data.content,
         visibility: validation.data.visibility,
-        media: validation.data.media,
+        media: finalMedia,
+        taggedUserIds: composerTaggedUsers
+          .map((user) => user.id)
+          .filter((id) => UUID_V4_PATTERN.test(id)),
       });
 
+      composerMedia.forEach((item) => {
+        if (item.url.startsWith('blob:')) URL.revokeObjectURL(item.url);
+      });
+      composerPendingFilesRef.current.clear();
+      localStorageService.removeItem(COMPOSER_DRAFT_KEY);
+      setHasSavedDraft(false);
       composerDragDepthRef.current = 0;
       setIsDraggingComposerMedia(false);
       setComposerContent('');
       setComposerMedia([]);
+      setComposerTaggedUsers([]);
+      setIsMentionPickerOpen(false);
+      setIsComposerPreviewOpen(false);
       setComposerError(null);
+      resetAiAssistant();
       setIsComposerExpanded(false);
 
       toast.success('Đăng bài viết thành công!');
     } catch (err) {
-      const message = isApiError(err) ? err.message : 'Không thể đăng bài viết lúc này.';
+      const message = isApiError(err)
+        ? err.message
+        : err instanceof Error && err.message
+          ? err.message
+          : 'Không thể đăng bài viết lúc này.';
       toast.error(message);
     }
   };
@@ -990,6 +1280,7 @@ export function useHomeController() {
     friendId: string,
     text: string,
     mediaUrl?: string | null,
+    kind: ChatMessageKind = 'TEXT',
   ) => {
     const friend = getFriendById(friendId);
     if (!friend) return;
@@ -1013,6 +1304,7 @@ export function useHomeController() {
       senderId: currentUser?.id || 'me',
       senderName: currentUser?.fullName || 'Bạn',
       text,
+      kind,
       createdAt: new Date().toISOString(),
       isMine: true,
       replyTo: replySnapshot,
@@ -1043,7 +1335,7 @@ export function useHomeController() {
   };
 
   const handleSendQuickLike = (friendId: string) => {
-    appendOutgoingChatMessage(friendId, '👍');
+    appendOutgoingChatMessage(friendId, 'Đã gửi lượt thích', null, 'LIKE');
   };
 
   const handleReplyMessage = (friendId: string, msg: ChatMessageItem) => {
@@ -1114,6 +1406,7 @@ export function useHomeController() {
       senderId: currentUser?.id || 'me',
       senderName: currentUser?.fullName || 'Bạn',
       text: forwardingState.message.text,
+      kind: forwardingState.message.kind,
       createdAt: new Date().toISOString(),
       isMine: true,
       forwardedFrom: forwardingState.message.senderName,
@@ -1128,7 +1421,7 @@ export function useHomeController() {
     toast.success(`Đã chuyển tiếp tin nhắn tới ${targetFriend.fullName}.`);
   };
 
-  const handleReactChatMessage = (friendId: string, msgId: string, emoji: string) => {
+  const handleReactChatMessage = (friendId: string, msgId: string, reactionType: ReactionType) => {
     const friend = getFriendById(friendId);
     if (!friend) return;
     const baseMessages = ensureFriendConversation(friend);
@@ -1136,7 +1429,7 @@ export function useHomeController() {
       ...prev,
       [friendId]: baseMessages.map((m) =>
         m.id === msgId
-          ? { ...m, reaction: m.reaction === emoji ? null : emoji }
+          ? { ...m, reaction: m.reaction === reactionType ? null : reactionType }
           : m,
       ),
     }));
@@ -1253,7 +1546,14 @@ export function useHomeController() {
     composerMedia,
     composerError,
     isDraggingComposerMedia,
-    isCreatingPost: createPostMutation.isPending,
+    isCreatingPost: createPostMutation.isPending || uploadMediaMutation.isPending,
+    composerTaggedUsers,
+    isMentionPickerOpen,
+    isComposerPreviewOpen,
+    showDraftBanner: hasSavedDraft && composerContent.trim().length === 0,
+    isRecordingAudio,
+    audioRecordingDuration,
+    ...aiAssistant,
 
     // Interaction, Comment Media, Detail Modal & Reactions Modal States
     commentDrafts,
@@ -1305,6 +1605,15 @@ export function useHomeController() {
     handleDragLeaveComposer,
     handleDropComposerMedia,
     handleRemoveMedia,
+    startAudioRecording,
+    stopAudioRecording,
+    cancelAudioRecording,
+    handleToggleMentionPicker,
+    handleToggleTaggedUser,
+    handleRemoveTaggedUser,
+    handleToggleComposerPreview,
+    handleRestoreDraft,
+    handleDiscardDraft,
     handleSubmitPost,
     handleReactPost,
     handleOpenReactionsPopover,
