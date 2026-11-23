@@ -6,6 +6,9 @@ import { ConversationMember } from '../src/modules/conversations/entities/conver
 import { Conversation } from '../src/modules/conversations/entities/conversation.entity';
 import { IdempotencyRecord } from '../src/modules/conversations/entities/idempotency-record.entity';
 import { Friendship } from '../src/modules/friends/entities/friendship.entity';
+import { PostComment } from '../src/modules/posts/entities/post-comment.entity';
+import { PostReaction } from '../src/modules/posts/entities/post-reaction.entity';
+import { Post } from '../src/modules/posts/entities/post.entity';
 import { User } from '../src/modules/users/entities/user.entity';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -19,6 +22,9 @@ export const SEED_ENTITIES = [
   Conversation,
   ConversationMember,
   IdempotencyRecord,
+  Post,
+  PostComment,
+  PostReaction,
 ];
 
 /**
