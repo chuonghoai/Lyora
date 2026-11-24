@@ -14,6 +14,7 @@ import { AiService } from '../../ai/ai.service';
 import { PostSuggestionTone } from '../dto/suggest-post-content.dto';
 import {
   buildPostSuggestionPrompt,
+  getVietnamDateKey,
   POST_SUGGESTION_SYSTEM_INSTRUCTION,
   PostAiSuggestionService,
 } from './post-ai-suggestion.service';
@@ -194,5 +195,14 @@ describe('PostAiSuggestionService', () => {
     expect(POST_SUGGESTION_SYSTEM_INSTRUCTION).toContain('TUYỆT ĐỐI KHÔNG');
     expect(POST_SUGGESTION_SYSTEM_INSTRUCTION).toContain('quảng cáo, bán hàng');
     expect(POST_SUGGESTION_SYSTEM_INSTRUCTION).toContain('TUYỆT ĐỐI BỎ QUA');
+  });
+
+  it('computes daily quota dateKey using Asia/Ho_Chi_Minh timezone (UTC+7)', () => {
+    expect(getVietnamDateKey(new Date('2026-11-23T16:59:59.000Z'))).toBe(
+      '20261123',
+    );
+    expect(getVietnamDateKey(new Date('2026-11-23T17:00:00.000Z'))).toBe(
+      '20261124',
+    );
   });
 });

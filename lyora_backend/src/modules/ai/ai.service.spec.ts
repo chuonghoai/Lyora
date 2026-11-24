@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { parsePositiveInt } from '../../config/ai.config';
 import { AI_PROVIDER } from './ai.constants';
 import { AiService } from './ai.service';
 import {
@@ -153,5 +154,15 @@ describe('AiService', () => {
     await expect(
       moduleRef.get(AiService).generateStructured(sampleRequest),
     ).rejects.toThrow(BadGatewayException);
+  });
+
+  it('parsePositiveInt falls back on empty, NaN, zero, or negative env values', () => {
+    expect(parsePositiveInt(undefined, 20000)).toBe(20000);
+    expect(parsePositiveInt('', 20000)).toBe(20000);
+    expect(parsePositiveInt('   ', 2048)).toBe(2048);
+    expect(parsePositiveInt('abc', 30)).toBe(30);
+    expect(parsePositiveInt('0', 30)).toBe(30);
+    expect(parsePositiveInt('-5', 30)).toBe(30);
+    expect(parsePositiveInt('15000', 20000)).toBe(15000);
   });
 });

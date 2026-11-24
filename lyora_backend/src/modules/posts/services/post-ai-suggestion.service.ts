@@ -83,6 +83,22 @@ export function buildPostSuggestionPrompt(
   ].join('\n');
 }
 
+const VIETNAM_TIMEZONE = 'Asia/Ho_Chi_Minh';
+
+export function getVietnamDateKey(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: VIETNAM_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+
+  const year = parts.find((part) => part.type === 'year')?.value ?? '1970';
+  const month = parts.find((part) => part.type === 'month')?.value ?? '01';
+  const day = parts.find((part) => part.type === 'day')?.value ?? '01';
+  return `${year}${month}${day}`;
+}
+
 interface RawAiSuggestionPayload {
   suggestions?: Array<{ content?: unknown }>;
 }
@@ -118,7 +134,7 @@ export class PostAiSuggestionService {
       'ai.dailyQuotaPerUser',
       30,
     );
-    const dateKey = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const dateKey = getVietnamDateKey();
     const quotaKey = REDIS_KEYS.aiDailyQuota(currentUser.id, dateKey);
 
     const currentCount = await this.redisService.incrementCounter(
