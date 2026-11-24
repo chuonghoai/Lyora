@@ -41,7 +41,7 @@ graph TD
 ## 3. Module AI Cốt Lõi (`AiModule`)
 
 - **Ranh giới hạ tầng:** `lyora_backend/src/modules/ai/` chỉ đóng vai trò hạ tầng dùng chung (không khai báo Controller, không chứa nghiệp vụ bài viết hay kiểm duyệt).
-- **Trừu tượng hóa nhà cung cấp (Provider Abstraction):** `AiService` giao tiếp qua token `AI_PROVIDER` (`IAiProvider`), mặc định triển khai bằng `GeminiProvider` (`@google/genai`). Các biến cấu hình (`AI_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `AI_REQUEST_TIMEOUT_MS`, `AI_MAX_OUTPUT_TOKENS`, `AI_DAILY_QUOTA_PER_USER`) được nạp qua `aiConfig` từ `.env` nội bộ của `lyora_backend`.
+- **Trừu tượng hóa nhà cung cấp (Provider Abstraction):** `AiService` giao tiếp qua token `AI_PROVIDER` (`IAiProvider`), mặc định triển khai bằng `GeminiProvider` (`@google/genai`) có cơ chế retry lỗi tạm thời và fallback sang `gemma-4-31b-it`. Các biến cấu hình (`AI_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`, `AI_REQUEST_TIMEOUT_MS`, `AI_MAX_OUTPUT_TOKENS`, `AI_DAILY_QUOTA_PER_USER`) được nạp qua `aiConfig` từ `.env` nội bộ của `lyora_backend`.
 - **Bảo mật:** API key tuyệt đối chỉ nằm ở `lyora_backend/.env`, không truyền sang `lyora_web` và không log nội dung prompt/phản hồi người dùng.
 - **Mở rộng tính năng AI mới:** Feature module (ví dụ `PostsModule`) import `AiModule`, inject `AiService`, định nghĩa prompt + JSON Schema + kiểm soát hạn mức Redis tại service nghiệp vụ riêng của module đó.
 

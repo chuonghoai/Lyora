@@ -860,6 +860,7 @@ export function useHomeController() {
     }
     setComposerTaggedUsers((prev) => [...prev, { id: friend.id, fullName: friend.fullName }]);
     setComposerContent((prev) => `${prev}${prev && !/\s$/.test(prev) ? ' ' : ''}@${friend.fullName} `);
+    clearAiUndo();
   };
 
   const handleRemoveTaggedUser = (userId: string) => {
@@ -893,6 +894,7 @@ export function useHomeController() {
     setComposerContent(draft.content);
     setComposerVisibility(draft.visibility);
     setComposerTaggedUsers(draft.taggedUsers ?? []);
+    clearAiUndo();
     setIsComposerExpanded(true);
     setHasSavedDraft(false);
   };

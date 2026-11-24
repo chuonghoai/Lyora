@@ -15,13 +15,6 @@ export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({
     return null;
   }
 
-  const handleTopicKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      void controller.handleRequestAiSuggestions();
-    }
-  };
-
   return (
     <section
       aria-label="Trợ lý gợi ý nội dung bài viết"
@@ -73,7 +66,7 @@ export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({
           maxLength={500}
           value={controller.aiTopic}
           onChange={controller.handleAiTopicChange}
-          onKeyDown={handleTopicKeyDown}
+          onKeyDown={controller.handleAiTopicKeyDown}
           disabled={controller.isGeneratingAi}
           placeholder="Ví dụ: Cuối tuần đi cà phê cùng bạn thân..."
           className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:bg-background disabled:text-muted/60 disabled:cursor-not-allowed"
