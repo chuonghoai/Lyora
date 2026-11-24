@@ -168,6 +168,7 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'canUndoAiApply'
       | 'handleToggleAiPanel'
       | 'handleAiTopicChange'
+      | 'handleAiTopicKeyDown'
       | 'handleAiToneChange'
       | 'handleRequestAiSuggestions'
       | 'handleApplyAiSuggestion'

@@ -1,5 +1,10 @@
-import { GoogleGenAI, HarmBlockThreshold, HarmCategory } from '@google/genai';
-import { Injectable } from '@nestjs/common';
+import {
+  FinishReason,
+  GoogleGenAI,
+  HarmBlockThreshold,
+  HarmCategory,
+} from '@google/genai';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   AiProviderError,
@@ -13,6 +18,8 @@ interface UpstreamErrorInfo {
   status?: number;
   code?: number | string;
 }
+
+const TRANSIENT_RETRY_DELAY_MS = 400;
 
 function extractUpstreamErrorInfo(error: unknown): UpstreamErrorInfo {
   if (error instanceof Error) {
@@ -47,22 +54,76 @@ function extractUpstreamErrorInfo(error: unknown): UpstreamErrorInfo {
   };
 }
 
+function isAbortError(info: UpstreamErrorInfo, signal?: AbortSignal): boolean {
+  return Boolean(signal?.aborted) || info.name === 'AbortError';
+}
+
+function isRateLimitedError(info: UpstreamErrorInfo): boolean {
+  return (
+    info.status === 429 ||
+    info.code === 429 ||
+    info.message.includes('429') ||
+    info.message.includes('RESOURCE_EXHAUSTED')
+  );
+}
+
+function isTransientUpstreamError(info: UpstreamErrorInfo): boolean {
+  return (
+    info.status === 503 ||
+    info.status === 500 ||
+    info.status === 504 ||
+    info.code === 503 ||
+    info.message.includes('503') ||
+    info.message.includes('UNAVAILABLE') ||
+    info.message.includes('high demand')
+  );
+}
+
+function delayWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) {
+    return Promise.reject(
+      new AiProviderError('TIMEOUT', 'Gemini request aborted/timed out'),
+    );
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(
+        new AiProviderError('TIMEOUT', 'Gemini request aborted/timed out'),
+      );
+    };
+
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
 @Injectable()
 export class GeminiProvider implements IAiProvider {
+  private readonly logger = new Logger(GeminiProvider.name);
   readonly providerName = 'gemini';
   readonly modelName: string;
+  readonly fallbackModelName: string;
   private readonly defaultMaxOutputTokens: number;
   private readonly client: GoogleGenAI | null;
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('ai.apiKey', '').trim();
-    this.modelName = this.configService.get<string>(
-      'ai.model',
-      'gemini-3.5-flash-lite',
-    );
+    this.modelName =
+      this.configService
+        .get<string>('ai.model', 'gemini-3.5-flash-lite')
+        .trim() || 'gemini-3.5-flash-lite';
+    this.fallbackModelName = this.configService
+      .get<string>('ai.fallbackModel', 'gemma-4-31b-it')
+      .trim();
     this.defaultMaxOutputTokens = this.configService.get<number>(
       'ai.maxOutputTokens',
-      1024,
+      2048,
     );
     this.client = apiKey.length > 0 ? new GoogleGenAI({ apiKey }) : null;
   }
@@ -82,81 +143,154 @@ export class GeminiProvider implements IAiProvider {
       );
     }
 
-    try {
-      const response = await this.client.models.generateContent({
-        model: this.modelName,
-        contents: request.userPrompt,
-        config: {
-          systemInstruction: request.systemInstruction,
-          responseMimeType: 'application/json',
-          responseJsonSchema: request.responseSchema,
-          maxOutputTokens:
-            request.maxOutputTokens ?? this.defaultMaxOutputTokens,
-          temperature: request.temperature ?? 0.7,
-          abortSignal: signal,
-          safetySettings: [
-            {
-              category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-              threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-            {
-              category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-              threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-            {
-              category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-              threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-            {
-              category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-              threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-          ],
-        },
-      });
+    const canUseFallback =
+      this.fallbackModelName.length > 0 &&
+      this.fallbackModelName !== this.modelName;
 
-      const rawText = response.text?.trim();
-      if (!rawText) {
-        throw new AiProviderError('INVALID_RESPONSE', 'Empty AI response');
+    try {
+      return await this.requestWithTransientRetry<T>(
+        this.modelName,
+        request,
+        signal,
+      );
+    } catch (error) {
+      if (
+        !canUseFallback ||
+        signal?.aborted ||
+        !this.shouldFallbackOnError(error)
+      ) {
+        throw this.normalizeError(error, signal);
       }
+
+      const reason =
+        error instanceof AiProviderError
+          ? error.code
+          : (extractUpstreamErrorInfo(error).status ?? 'UNAVAILABLE');
+      this.logger.warn(
+        `Primary model (${this.modelName}) unavailable (${reason}), falling back to ${this.fallbackModelName}`,
+      );
 
       try {
-        return JSON.parse(rawText) as T;
-      } catch {
-        throw new AiProviderError(
-          'INVALID_RESPONSE',
-          'Invalid JSON payload returned from Gemini',
+        return await this.invokeModel<T>(
+          this.fallbackModelName,
+          request,
+          signal,
         );
+      } catch (fallbackError) {
+        throw this.normalizeError(fallbackError, signal);
       }
-    } catch (error) {
-      if (error instanceof AiProviderError) {
-        throw error;
-      }
+    }
+  }
 
-      const info = extractUpstreamErrorInfo(error);
-      if (signal?.aborted || info.name === 'AbortError') {
-        throw new AiProviderError(
-          'TIMEOUT',
-          'Gemini request aborted/timed out',
-        );
-      }
-
+  private async requestWithTransientRetry<T>(
+    model: string,
+    request: AiStructuredRequest,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    try {
+      return await this.invokeModel<T>(model, request, signal);
+    } catch (firstError) {
+      const info = extractUpstreamErrorInfo(firstError);
       if (
-        info.status === 429 ||
-        info.code === 429 ||
-        info.message.includes('429') ||
-        info.message.includes('RESOURCE_EXHAUSTED')
+        firstError instanceof AiProviderError ||
+        isAbortError(info, signal) ||
+        !isTransientUpstreamError(info)
       ) {
-        throw new AiProviderError(
-          'RATE_LIMITED',
-          'Gemini upstream rate limit reached',
-        );
+        throw firstError;
       }
 
-      throw new AiProviderError(
-        'UPSTREAM_ERROR',
-        info.message || 'Gemini request failed',
+      this.logger.warn(
+        `Transient upstream error on ${model} (status=${info.status ?? 'unknown'}), retrying once`,
+      );
+      await delayWithAbort(TRANSIENT_RETRY_DELAY_MS, signal);
+      return await this.invokeModel<T>(model, request, signal);
+    }
+  }
+
+  private async invokeModel<T>(
+    model: string,
+    request: AiStructuredRequest,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    const response = await this.client!.models.generateContent({
+      model,
+      contents: request.userPrompt,
+      config: {
+        systemInstruction: request.systemInstruction,
+        responseMimeType: 'application/json',
+        responseJsonSchema: request.responseSchema,
+        maxOutputTokens: request.maxOutputTokens ?? this.defaultMaxOutputTokens,
+        temperature: request.temperature ?? 0.7,
+        abortSignal: signal,
+        safetySettings: [
+          {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+          },
+        ],
+      },
+    });
+
+    const rawText = response.text?.trim();
+    if (!rawText) {
+      throw new AiProviderError('INVALID_RESPONSE', 'Empty AI response');
+    }
+
+    try {
+      return JSON.parse(rawText) as T;
+    } catch {
+      const finishReason = response.candidates?.[0]?.finishReason;
+      const detail =
+        finishReason === FinishReason.MAX_TOKENS
+          ? 'Truncated JSON payload (MAX_TOKENS)'
+          : 'Invalid JSON payload returned from Gemini';
+      throw new AiProviderError('INVALID_RESPONSE', detail);
+    }
+  }
+
+  private shouldFallbackOnError(error: unknown): boolean {
+    if (error instanceof AiProviderError) {
+      return error.code === 'RATE_LIMITED';
+    }
+    const info = extractUpstreamErrorInfo(error);
+    return isTransientUpstreamError(info) || isRateLimitedError(info);
+  }
+
+  private normalizeError(
+    error: unknown,
+    signal?: AbortSignal,
+  ): AiProviderError {
+    if (error instanceof AiProviderError) {
+      return error;
+    }
+
+    const info = extractUpstreamErrorInfo(error);
+    if (isAbortError(info, signal)) {
+      return new AiProviderError('TIMEOUT', 'Gemini request aborted/timed out');
+    }
+
+    if (isRateLimitedError(info)) {
+      return new AiProviderError(
+        'RATE_LIMITED',
+        'Gemini upstream rate limit reached',
       );
     }
+
+    return new AiProviderError(
+      'UPSTREAM_ERROR',
+      info.message || 'Gemini request failed',
+    );
   }
 }
