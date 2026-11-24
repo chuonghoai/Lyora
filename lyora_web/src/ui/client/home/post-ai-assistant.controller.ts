@@ -77,6 +77,13 @@ export function usePostAiAssistant({
     }
   };
 
+  const handleAiTopicKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      void handleRequestAiSuggestions();
+    }
+  };
+
   const handleApplyAiSuggestion = (suggestionId: string) => {
     const selected = aiSuggestions.find((item) => item.id === suggestionId);
     if (!selected) return;
@@ -116,6 +123,7 @@ export function usePostAiAssistant({
     canUndoAiApply: aiPreviousContent !== null,
     handleToggleAiPanel,
     handleAiTopicChange,
+    handleAiTopicKeyDown,
     handleAiToneChange,
     handleRequestAiSuggestions,
     handleApplyAiSuggestion,
