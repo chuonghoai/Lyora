@@ -123,6 +123,18 @@ export const ClientLayout: React.FC = () => {
               <BookmarkIcon className="w-4 h-4" filled={controller.isHomeRoute && controller.activeTab === 'saved'} />
               <span>Đã lưu</span>
             </button>
+
+            <button
+              type="button"
+              onClick={controller.handleOpenProfile}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${controller.isProfileRoute
+                ? 'bg-secondary text-primary'
+                : 'text-muted hover:bg-background hover:text-foreground'
+                }`}
+            >
+              <UserCircleIcon className="w-4 h-4" />
+              <span>Hồ sơ</span>
+            </button>
           </nav>
 
           {/* Far Right: Notifications & User Account Dropdown */}
@@ -353,7 +365,7 @@ export const ClientLayout: React.FC = () => {
                                 className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
                               />
                             </span>
-                            <span>Trang cá nhân & Bài viết của tôi</span>
+                            <span>Trang cá nhân</span>
                           </span>
                           <ChevronRightIcon className="w-4 h-4 text-muted" />
                         </button>
@@ -643,7 +655,7 @@ export const ClientLayout: React.FC = () => {
         aria-label="Thanh điều hướng nhanh"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card px-2 py-1.5 md:hidden"
       >
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-5 gap-1">
           <button
             type="button"
             onClick={() => controller.handleSelectTab('all')}
@@ -687,6 +699,18 @@ export const ClientLayout: React.FC = () => {
           >
             <UserCircleIcon className="w-5 h-5" />
             <span>Của tôi</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={controller.handleOpenProfile}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${controller.isProfileRoute
+              ? 'text-primary bg-secondary/70 font-semibold'
+              : 'text-muted hover:text-foreground'
+              }`}
+          >
+            <UserCircleIcon className="w-5 h-5" />
+            <span>Hồ sơ</span>
           </button>
         </div>
       </nav>

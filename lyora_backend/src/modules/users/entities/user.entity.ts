@@ -26,6 +26,21 @@ export class User extends AbstractBaseEntity {
   @Column({ type: 'varchar', length: 500, nullable: true })
   avatarUrl?: string | null;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  coverUrl?: string | null;
+
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  hometown?: string | null;
+
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  workplace?: string | null;
+
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  education?: string | null;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  website?: string | null;
+
   @Index()
   @Column({
     type: 'enum',
