@@ -255,14 +255,21 @@ export function useClientLayoutController() {
     setAccountMenuPanel(panel);
   };
 
+  const isMessagesRoute = location.pathname === ROUTES.CLIENT.MESSAGES;
+  const isHomeRoute = location.pathname === ROUTES.CLIENT.ROOT;
+  const isProfileRoute =
+    location.pathname === ROUTES.CLIENT.PROFILE ||
+    location.pathname.startsWith(`${ROUTES.CLIENT.PROFILE}/`);
+
   const handleOpenProfile = () => {
     setIsAccountMenuOpen(false);
     setAccountMenuPanel('main');
-    handleSelectTab('mine');
+    setIsNotificationOpen(false);
+    if (location.pathname !== ROUTES.CLIENT.PROFILE) {
+      navigate(ROUTES.CLIENT.PROFILE);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const isMessagesRoute = location.pathname === ROUTES.CLIENT.MESSAGES;
-  const isHomeRoute = location.pathname === ROUTES.CLIENT.ROOT;
 
   const handleNavigateMessages = () => {
     setIsAccountMenuOpen(false);
@@ -342,6 +349,7 @@ export function useClientLayoutController() {
     activeTab,
     isMessagesRoute,
     isHomeRoute,
+    isProfileRoute,
     isAccountMenuOpen,
     accountMenuPanel,
     fontScale,

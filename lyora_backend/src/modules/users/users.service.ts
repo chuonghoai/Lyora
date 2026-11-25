@@ -2,24 +2,51 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Repository } from 'typeorm';
+import { isUUID } from 'class-validator';
+import { In, Repository } from 'typeorm';
 import { PaginationMetaDto } from '../../common/dto/api-response.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserRole } from '../../common/enums/role.enum';
+import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { Friendship } from '../friends/entities/friendship.entity';
+import { FriendshipStatus } from '../friends/enums/friendship-status.enum';
 import { CreateUserDto } from './dto/create-user.dto';
+import {
+  ProfileFriendPreviewDto,
+  PublicProfileFriendshipStatus,
+  PublicProfileResponseDto,
+} from './dto/public-profile-response.dto';
 import { UserStatisticsDto } from './dto/user-statistics.dto';
 import { User } from './entities/user.entity';
 
 const BCRYPT_SALT_ROUNDS = 10;
+const FRIENDS_PREVIEW_LIMIT = 6;
+
+export interface UpdateProfilePayload {
+  fullName?: string;
+  phoneNumber?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  hometown?: string | null;
+  workplace?: string | null;
+  education?: string | null;
+  website?: string | null;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
+}
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @Optional()
+    @InjectRepository(Friendship)
+    private readonly friendshipRepository?: Repository<Friendship>,
   ) {}
 
   async findByEmail(
@@ -79,12 +106,7 @@ export class UsersService {
 
   async updateProfile(
     userId: string,
-    payload: {
-      fullName?: string;
-      phoneNumber?: string | null;
-      bio?: string | null;
-      location?: string | null;
-    },
+    payload: UpdateProfilePayload,
   ): Promise<User> {
     const user = await this.findById(userId);
 
@@ -94,18 +116,298 @@ export class UsersService {
         user.fullName = trimmedName;
       }
     }
-    if (payload.phoneNumber !== undefined) {
-      user.phoneNumber = payload.phoneNumber?.trim() || null;
-    }
-    if (payload.bio !== undefined) {
-      user.bio = payload.bio?.trim() || null;
-    }
-    if (payload.location !== undefined) {
-      user.location = payload.location?.trim() || null;
+
+    const optionalFields: Array<keyof Omit<UpdateProfilePayload, 'fullName'>> =
+      [
+        'phoneNumber',
+        'bio',
+        'location',
+        'hometown',
+        'workplace',
+        'education',
+        'website',
+        'avatarUrl',
+        'coverUrl',
+      ];
+
+    for (const field of optionalFields) {
+      const value = payload[field];
+      if (value !== undefined) {
+        user[field] = value?.trim() || null;
+      }
     }
 
     await this.userRepository.save(user);
     return this.findById(userId);
+  }
+
+  async getPublicProfile(
+    currentUser: AuthenticatedUser,
+    targetIdOrMe: string,
+  ): Promise<PublicProfileResponseDto> {
+    const resolvedId =
+      targetIdOrMe === 'me' ? currentUser.id : targetIdOrMe.trim();
+
+    if (!isUUID(resolvedId)) {
+      throw new NotFoundException('Không tìm thấy thông tin người dùng');
+    }
+
+    const targetUser = await this.userRepository.findOne({
+      where: { id: resolvedId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('Không tìm thấy thông tin người dùng');
+    }
+
+    const isSelf = targetUser.id === currentUser.id;
+    if (
+      !isSelf &&
+      !targetUser.isActive &&
+      currentUser.role !== UserRole.ADMIN
+    ) {
+      throw new NotFoundException('Không tìm thấy thông tin người dùng');
+    }
+
+    const relationship = await this.buildProfileRelationshipSummary(
+      currentUser.id,
+      targetUser.id,
+      isSelf,
+    );
+
+    return {
+      id: targetUser.id,
+      // Bảo mật: chỉ chủ tài khoản mới nhận email & số điện thoại cá nhân
+      email: isSelf ? targetUser.email : null,
+      fullName: targetUser.fullName,
+      role: targetUser.role,
+      phoneNumber: isSelf ? (targetUser.phoneNumber ?? null) : null,
+      bio: targetUser.bio ?? null,
+      location: targetUser.location ?? null,
+      hometown: targetUser.hometown ?? null,
+      workplace: targetUser.workplace ?? null,
+      education: targetUser.education ?? null,
+      website: targetUser.website ?? null,
+      avatarUrl: targetUser.avatarUrl ?? null,
+      coverUrl: targetUser.coverUrl ?? null,
+      isActive: targetUser.isActive,
+      isOnline: false,
+      createdAt: targetUser.createdAt,
+      friendshipStatus: relationship.friendshipStatus,
+      friendsCount: relationship.friendsCount,
+      mutualFriendsCount: relationship.mutualFriendsCount,
+      friendsPreview: relationship.friendsPreview,
+    };
+  }
+
+  private async buildProfileRelationshipSummary(
+    viewerId: string,
+    targetUserId: string,
+    isSelf: boolean,
+  ): Promise<{
+    friendshipStatus: PublicProfileFriendshipStatus;
+    friendsCount: number;
+    mutualFriendsCount: number;
+    friendsPreview: ProfileFriendPreviewDto[];
+  }> {
+    if (!this.friendshipRepository) {
+      return {
+        friendshipStatus: isSelf ? 'SELF' : 'NONE',
+        friendsCount: 0,
+        mutualFriendsCount: 0,
+        friendsPreview: [],
+      };
+    }
+
+    let friendshipStatus: PublicProfileFriendshipStatus = isSelf
+      ? 'SELF'
+      : 'NONE';
+
+    if (!isSelf) {
+      const directRelation = await this.friendshipRepository
+        .createQueryBuilder('f')
+        .where(
+          '((f.userId = :viewer AND f.friendId = :target) OR (f.userId = :target AND f.friendId = :viewer))',
+          { viewer: viewerId, target: targetUserId },
+        )
+        .getOne();
+
+      if (directRelation) {
+        if (directRelation.status === FriendshipStatus.BLOCKED) {
+          throw new NotFoundException('Không tìm thấy thông tin người dùng');
+        }
+        friendshipStatus = this.mapRelationToStatus(directRelation, viewerId);
+      }
+    }
+
+    const userIdsToInspect = isSelf ? [targetUserId] : [targetUserId, viewerId];
+    const acceptedRelations = await this.friendshipRepository
+      .createQueryBuilder('f')
+      .where('f.status = :status', { status: FriendshipStatus.ACCEPTED })
+      .andWhere('(f.userId IN (:...ids) OR f.friendId IN (:...ids))', {
+        ids: userIdsToInspect,
+      })
+      .getMany();
+
+    const targetFriendIds = this.extractPartnerIds(
+      acceptedRelations,
+      targetUserId,
+    );
+    const viewerFriendSet = new Set(
+      isSelf
+        ? targetFriendIds
+        : this.extractPartnerIds(acceptedRelations, viewerId),
+    );
+
+    if (targetFriendIds.length === 0) {
+      return {
+        friendshipStatus,
+        friendsCount: 0,
+        mutualFriendsCount: 0,
+        friendsPreview: [],
+      };
+    }
+
+    const activeFriends = await this.userRepository.find({
+      where: { id: In(targetFriendIds), isActive: true },
+      select: ['id', 'fullName', 'avatarUrl', 'workplace', 'bio', 'location'],
+    });
+
+    const activeFriendIdSet = new Set(activeFriends.map((u) => u.id));
+    const mutualFriendsCount = isSelf
+      ? 0
+      : [...activeFriendIdSet].filter((id) => viewerFriendSet.has(id)).length;
+
+    const previewUsers = activeFriends.slice(0, FRIENDS_PREVIEW_LIMIT);
+    const previewIds = previewUsers.map((u) => u.id);
+
+    const { statusByPartnerId, mutualCountByPartnerId } =
+      await this.resolvePreviewFriendMetadata(
+        viewerId,
+        viewerFriendSet,
+        previewIds,
+      );
+
+    const friendsPreview: ProfileFriendPreviewDto[] = previewUsers.map((u) => ({
+      id: u.id,
+      fullName: u.fullName,
+      avatarUrl: u.avatarUrl ?? null,
+      headline: u.workplace || u.bio || null,
+      location: u.location ?? null,
+      mutualFriendsCount: mutualCountByPartnerId.get(u.id) ?? 0,
+      friendshipStatus: statusByPartnerId.get(u.id) ?? 'NONE',
+      isOnline: false,
+    }));
+
+    return {
+      friendshipStatus,
+      friendsCount: activeFriends.length,
+      mutualFriendsCount,
+      friendsPreview,
+    };
+  }
+
+  private async resolvePreviewFriendMetadata(
+    viewerId: string,
+    viewerFriendSet: Set<string>,
+    previewIds: string[],
+  ): Promise<{
+    statusByPartnerId: Map<
+      string,
+      Exclude<PublicProfileFriendshipStatus, 'SELF'>
+    >;
+    mutualCountByPartnerId: Map<string, number>;
+  }> {
+    const statusByPartnerId = new Map<
+      string,
+      Exclude<PublicProfileFriendshipStatus, 'SELF'>
+    >();
+    const mutualCountByPartnerId = new Map<string, number>();
+
+    if (!this.friendshipRepository || previewIds.length === 0) {
+      return { statusByPartnerId, mutualCountByPartnerId };
+    }
+
+    // 1 truy vấn cho trạng thái trực tiếp giữa viewer và từng người trong danh sách preview
+    const viewerRelations = await this.friendshipRepository
+      .createQueryBuilder('f')
+      .where(
+        '((f.userId = :viewer AND f.friendId IN (:...ids)) OR (f.friendId = :viewer AND f.userId IN (:...ids)))',
+        { viewer: viewerId, ids: previewIds },
+      )
+      .getMany();
+
+    for (const rel of viewerRelations) {
+      const partnerId = rel.userId === viewerId ? rel.friendId : rel.userId;
+      statusByPartnerId.set(partnerId, this.mapRelationToStatus(rel, viewerId));
+    }
+
+    // 1 truy vấn cho danh sách bạn chung của nhóm preview
+    const previewFriendEdges = await this.friendshipRepository
+      .createQueryBuilder('f')
+      .where('f.status = :status', { status: FriendshipStatus.ACCEPTED })
+      .andWhere('(f.userId IN (:...ids) OR f.friendId IN (:...ids))', {
+        ids: previewIds,
+      })
+      .getMany();
+
+    const previewSet = new Set(previewIds);
+    const friendSetsByPreview = new Map<string, Set<string>>();
+    for (const id of previewIds) {
+      friendSetsByPreview.set(id, new Set<string>());
+    }
+
+    for (const edge of previewFriendEdges) {
+      if (previewSet.has(edge.userId)) {
+        friendSetsByPreview.get(edge.userId)?.add(edge.friendId);
+      }
+      if (previewSet.has(edge.friendId)) {
+        friendSetsByPreview.get(edge.friendId)?.add(edge.userId);
+      }
+    }
+
+    for (const previewId of previewIds) {
+      const partners = friendSetsByPreview.get(previewId) ?? new Set<string>();
+      let mutual = 0;
+      for (const candidateId of partners) {
+        if (candidateId !== viewerId && viewerFriendSet.has(candidateId)) {
+          mutual++;
+        }
+      }
+      mutualCountByPartnerId.set(previewId, mutual);
+    }
+
+    return { statusByPartnerId, mutualCountByPartnerId };
+  }
+
+  private extractPartnerIds(
+    friendships: Friendship[],
+    ownerId: string,
+  ): string[] {
+    const partnerIds = new Set<string>();
+    for (const f of friendships) {
+      if (f.userId === ownerId) {
+        partnerIds.add(f.friendId);
+      } else if (f.friendId === ownerId) {
+        partnerIds.add(f.userId);
+      }
+    }
+    return [...partnerIds];
+  }
+
+  private mapRelationToStatus(
+    friendship: Friendship,
+    viewerId: string,
+  ): Exclude<PublicProfileFriendshipStatus, 'SELF'> {
+    if (friendship.status === FriendshipStatus.ACCEPTED) {
+      return 'FRIEND';
+    }
+    if (friendship.status === FriendshipStatus.PENDING) {
+      return friendship.userId === viewerId
+        ? 'REQUEST_SENT'
+        : 'REQUEST_RECEIVED';
+    }
+    return 'NONE';
   }
 
   async findAllPaginated(query: PaginationQueryDto): Promise<{
