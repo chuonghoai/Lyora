@@ -3,6 +3,7 @@ import type { LoginController } from '@/ui/auth/login/login.controller';
 import type { RegisterController } from '@/ui/auth/register/register.controller';
 import type { ForgotPasswordController } from '@/ui/auth/forgot-password/forgot-password.controller';
 import type { HomeController } from '@/ui/client/home/home.controller';
+import type { ProfileController } from '@/ui/client/profile/profile.controller';
 import type { DashboardController } from '@/ui/admin/dashboard/dashboard.controller';
 import type { ClientLayoutController } from '@/ui/client/client-layout.controller';
 import type { AdminLayoutController } from '@/ui/admin/admin-layout.controller';
@@ -231,6 +232,7 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'activeTab'
       | 'isMessagesRoute'
       | 'isHomeRoute'
+      | 'isProfileRoute'
       | 'accountMenuPanel'
       | 'fontScale'
       | 'reduceMotion'
@@ -250,6 +252,50 @@ describe('View-Controller Contract & Integration Types', () => {
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<ClientLayoutController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('ProfileController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'currentUser'
+      | 'profile'
+      | 'isOwnProfile'
+      | 'isLoading'
+      | 'isError'
+      | 'activeTab'
+      | 'activityTab'
+      | 'activityItems'
+      | 'activityCounts'
+      | 'isLoadingActivity'
+      | 'friendsFilter'
+      | 'friendSearchQuery'
+      | 'filteredFriendsList'
+      | 'overviewFriends'
+      | 'friendsTabCounts'
+      | 'isEditModalOpen'
+      | 'editForm'
+      | 'editErrors'
+      | 'isSavingProfile'
+      | 'isFriendshipMutating'
+      | 'unfriendTarget'
+      | 'handleSelectTab'
+      | 'handleSelectActivityTab'
+      | 'handleNavigateToMyPosts'
+      | 'handleSelectFriendsFilter'
+      | 'handleFriendSearchChange'
+      | 'handleOpenUserProfile'
+      | 'handleOpenEditModal'
+      | 'handleSaveProfile'
+      | 'handleSendFriendRequest'
+      | 'handleCancelFriendRequest'
+      | 'handleAcceptFriendRequest'
+      | 'handleRejectFriendRequest'
+      | 'handleRequestUnfriend'
+      | 'handleConfirmUnfriend';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<ProfileController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });

@@ -8,6 +8,9 @@ import { ROUTES } from './paths';
 const ClientHomeView = lazy(
   () => import('@/ui/client/home/HomeView'),
 );
+const ProfileView = lazy(
+  () => import('@/ui/client/profile/ProfileView'),
+);
 const MessagesPage = lazy(
   () => import('@/ui/client/messages/MessagesPage'),
 );
@@ -93,6 +96,22 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <MessagesPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'profile',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ProfileView />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'profile/:userId',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ProfileView />
               </Suspense>
             ),
           },

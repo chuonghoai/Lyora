@@ -1,11 +1,44 @@
 import {
   IsOptional,
   IsString,
+  IsUrl,
   Matches,
   MaxLength,
   MinLength,
+  Validate,
   ValidateIf,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
+
+@ValidatorConstraint({ name: 'isValidWebsiteUrl', async: false })
+export class IsValidWebsiteUrlConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown): boolean {
+    if (typeof value !== 'string') return false;
+    const trimmed = value.trim();
+    if (!trimmed) return true;
+    const lower = trimmed.toLowerCase();
+    if (lower.startsWith('javascript:') || lower.startsWith('data:')) {
+      return false;
+    }
+    try {
+      const candidate = /^https?:\/\//i.test(trimmed)
+        ? trimmed
+        : `https://${trimmed}`;
+      const parsed = new URL(candidate);
+      return (
+        (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+        Boolean(parsed.hostname && parsed.hostname.includes('.'))
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  defaultMessage(): string {
+    return 'Liên kết cá nhân chưa đúng định dạng (ví dụ: https://lyora.vn)';
+  }
+}
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -33,4 +66,49 @@ export class UpdateProfileDto {
   @IsString({ message: 'Địa điểm phải là chuỗi ký tự' })
   @MaxLength(120, { message: 'Địa điểm tối đa 120 ký tự' })
   location?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString({ message: 'Quê quán phải là chuỗi ký tự' })
+  @MaxLength(120, { message: 'Quê quán tối đa 120 ký tự' })
+  hometown?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString({ message: 'Công việc phải là chuỗi ký tự' })
+  @MaxLength(120, { message: 'Công việc / Nơi làm việc tối đa 120 ký tự' })
+  workplace?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString({ message: 'Học vấn phải là chuỗi ký tự' })
+  @MaxLength(120, { message: 'Học vấn tối đa 120 ký tự' })
+  education?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
+  @IsString({ message: 'Liên kết cá nhân phải là chuỗi ký tự' })
+  @MaxLength(200, { message: 'Liên kết cá nhân tối đa 200 ký tự' })
+  @Validate(IsValidWebsiteUrlConstraint)
+  website?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
+  @IsString({ message: 'Đường dẫn ảnh đại diện phải là chuỗi ký tự' })
+  @MaxLength(500, { message: 'Đường dẫn ảnh đại diện tối đa 500 ký tự' })
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { message: 'Đường dẫn ảnh đại diện phải là URL hợp lệ (http/https)' },
+  )
+  avatarUrl?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
+  @IsString({ message: 'Đường dẫn ảnh bìa phải là chuỗi ký tự' })
+  @MaxLength(500, { message: 'Đường dẫn ảnh bìa tối đa 500 ký tự' })
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { message: 'Đường dẫn ảnh bìa phải là URL hợp lệ (http/https)' },
+  )
+  coverUrl?: string | null;
 }

@@ -41,6 +41,11 @@ export interface AuthTokenResponse {
     bio?: string | null;
     location?: string | null;
     avatarUrl?: string | null;
+    coverUrl?: string | null;
+    hometown?: string | null;
+    workplace?: string | null;
+    education?: string | null;
+    website?: string | null;
     isActive?: boolean;
     createdAt?: Date;
   };
@@ -354,6 +359,11 @@ export class AuthService {
         bio: user.bio ?? null,
         location: user.location ?? null,
         avatarUrl: user.avatarUrl ?? null,
+        coverUrl: user.coverUrl ?? null,
+        hometown: user.hometown ?? null,
+        workplace: user.workplace ?? null,
+        education: user.education ?? null,
+        website: user.website ?? null,
         isActive: user.isActive,
         createdAt: user.createdAt,
       },
