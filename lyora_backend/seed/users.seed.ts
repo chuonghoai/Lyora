@@ -12,6 +12,10 @@ export interface SeedUserItem {
   phoneNumber?: string | null;
   bio?: string | null;
   location?: string | null;
+  hometown?: string | null;
+  workplace?: string | null;
+  education?: string | null;
+  website?: string | null;
 }
 
 export const SEED_USERS_DATA: SeedUserItem[] = [
@@ -34,6 +38,10 @@ export const SEED_USERS_DATA: SeedUserItem[] = [
     phoneNumber: '0908123456',
     bio: 'Yêu thích nhiếp ảnh, công nghệ và chia sẻ những khoảnh khắc thường ngày trên Lyora.',
     location: 'TP. Hồ Chí Minh',
+    hometown: 'Đà Lạt, Lâm Đồng',
+    workplace: 'Thành viên Cộng đồng Lyora',
+    education: 'Đại học Sư phạm Kỹ thuật TP.HCM',
+    website: 'https://lyora.vn',
   },
   {
     email: 'inactive@lyora.com',
@@ -116,6 +124,10 @@ export async function seedUsers(dataSource: DataSource): Promise<{
       user.phoneNumber = item.phoneNumber ?? null;
       user.bio = item.bio ?? null;
       user.location = item.location ?? null;
+      user.hometown = item.hometown ?? null;
+      user.workplace = item.workplace ?? null;
+      user.education = item.education ?? null;
+      user.website = item.website ?? null;
     } else {
       user = userRepository.create({
         email: item.email,
@@ -126,6 +138,10 @@ export async function seedUsers(dataSource: DataSource): Promise<{
         phoneNumber: item.phoneNumber ?? null,
         bio: item.bio ?? null,
         location: item.location ?? null,
+        hometown: item.hometown ?? null,
+        workplace: item.workplace ?? null,
+        education: item.education ?? null,
+        website: item.website ?? null,
       });
     }
 

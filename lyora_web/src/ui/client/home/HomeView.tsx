@@ -1,5 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { AppImage, Button, Input, LoadingSpinner, formatDate } from '@/core';
+import { ROUTES } from '@/routes/paths';
 import { useHomeController } from './home.controller';
 import { PostComposer } from './PostComposer';
 import { PostCard } from './PostCard';
@@ -102,6 +104,13 @@ export default function HomeView(): React.ReactElement {
               <p className="text-[11px] text-muted">Bạn bè</p>
             </div>
           </div>
+
+          <Link
+            to={ROUTES.CLIENT.PROFILE}
+            className="block w-full rounded-xl border border-border bg-background py-2 text-center text-xs font-semibold text-primary hover:bg-secondary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            Mở trang cá nhân
+          </Link>
         </div>
 
         {/* Card 2: Thông tin cá nhân chi tiết (Email, SĐT, Khu vực, Ngày tham gia...) */}
