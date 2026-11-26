@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { isApiError, toast, useAuthStore, useDebounce } from '@/core';
+import { getClientProfilePath } from '@/routes/paths';
 import {
   useAddGroupMembersMutation,
   useConversationDetailQuery,
@@ -21,6 +23,7 @@ export type MessagesFilterType = 'ALL' | ConversationType;
 export type MessagesActiveView = 'list' | 'detail';
 
 export function useMessagesController() {
+  const navigate = useNavigate();
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null);
@@ -409,6 +412,15 @@ export function useMessagesController() {
     handleCloseConfirmModal,
   ]);
 
+  // Actions
+  const handleOpenUserProfile = useCallback(
+    (targetUserId: string) => {
+      navigate(getClientProfilePath(targetUserId, currentUser?.id));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [navigate, currentUser?.id],
+  );
+
   return {
     // Current User
     currentUser,
@@ -460,6 +472,7 @@ export function useMessagesController() {
     handleCloseGroupModal,
     handleCreateDirect,
     handleCreateGroup,
+    handleOpenUserProfile,
     // Group Management Actions
     handleOpenRenameGroupModal,
     handleCloseRenameGroupModal,

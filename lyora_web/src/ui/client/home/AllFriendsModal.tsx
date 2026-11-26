@@ -66,7 +66,11 @@ export const AllFriendsModal: React.FC<AllFriendsModalProps> = ({ controller }) 
                   key={friend.id}
                   className="flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 hover:bg-background transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => controller.handleOpenUserProfile(friend.id)}
+                    className="group flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
                     <span className="relative shrink-0">
                       {friend.avatarUrl ? (
                         <AppImage
@@ -86,14 +90,14 @@ export const AllFriendsModal: React.FC<AllFriendsModalProps> = ({ controller }) 
                     </span>
 
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
                         {friend.fullName}
                       </p>
                       <p className="text-xs text-success font-medium">
                         {friend.isOnline ? 'Đang hoạt động' : 'Ngoại tuyến'}
                       </p>
                     </div>
-                  </div>
+                  </button>
 
                   <Button
                     type="button"

@@ -1,4 +1,4 @@
-import { isApiError } from '@/core';
+import { isApiError, type UserProfile } from '@/core';
 import { updateExtendedProfileSchema } from '../models/profile.model';
 import { profileRepository, type IProfileRepository } from '../repositories/profile.repository';
 import type {
@@ -15,8 +15,35 @@ function isFallbackError(error: unknown): boolean {
     error.statusCode === 401 ||
     error.statusCode === 403 ||
     error.statusCode === 404 ||
+    error.statusCode === 503 ||
     Boolean(error.isNetworkError)
   );
+}
+
+function isHttpUrl(url?: string | null): boolean {
+  if (!url) return false;
+  return /^https?:\/\//i.test(url.trim());
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Không thể đọc dữ liệu ảnh.'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Không thể tải tệp ảnh từ thiết bị.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function isFullPublicProfile(
+  user: PublicUserProfile | UserProfile,
+): user is PublicUserProfile {
+  return 'friendshipStatus' in user && Array.isArray(user.friendsPreview);
 }
 
 export interface IProfileService {
@@ -24,6 +51,7 @@ export interface IProfileService {
   getFriendsDirectory(): Promise<ProfileFriendsDirectory>;
   getProfileActivity(userId?: string): Promise<ProfileActivityFeed>;
   updateMyProfile(payload: UpdateExtendedProfilePayload): Promise<PublicUserProfile>;
+  uploadProfileImage(file: File): Promise<string>;
   sendFriendRequest(userId: string): Promise<PublicUserProfile>;
   cancelFriendRequest(userId: string): Promise<PublicUserProfile>;
   acceptFriendRequest(userId: string): Promise<PublicUserProfile>;
@@ -57,12 +85,32 @@ export class ProfileService implements IProfileService {
     if (profilePreviewStore.isSelfId(userId)) {
       try {
         const response = await this.repository.getMyProfile();
+        if (isFullPublicProfile(response.data)) {
+          return {
+            ...response.data,
+            isPreviewFallback: false,
+          };
+        }
         return profilePreviewStore.getMyProfile(response.data, false);
       } catch (error) {
         if (isFallbackError(error)) {
           return profilePreviewStore.getMyProfile(null, true);
         }
         throw error;
+      }
+    }
+
+    if (this.repository.getPublicProfile) {
+      try {
+        const response = await this.repository.getPublicProfile(userId!);
+        return {
+          ...response.data,
+          isPreviewFallback: false,
+        };
+      } catch (error) {
+        if (!isFallbackError(error)) {
+          throw error;
+        }
       }
     }
 
@@ -80,6 +128,20 @@ export class ProfileService implements IProfileService {
 
   async getProfileActivity(userId?: string): Promise<ProfileActivityFeed> {
     return profilePreviewStore.getProfileActivity(userId);
+  }
+
+  async uploadProfileImage(file: File): Promise<string> {
+    if (this.repository.uploadProfileMedia) {
+      try {
+        const response = await this.repository.uploadProfileMedia(file);
+        return response.data.url;
+      } catch (error) {
+        if (!isFallbackError(error)) {
+          throw error;
+        }
+      }
+    }
+    return readFileAsDataUrl(file);
   }
 
   async updateMyProfile(payload: UpdateExtendedProfilePayload): Promise<PublicUserProfile> {
@@ -100,29 +162,47 @@ export class ProfileService implements IProfileService {
       );
     }
 
-    const corePayload = {
+    const apiPayload: UpdateExtendedProfilePayload = {
       fullName: parsed.data.fullName,
       phoneNumber: parsed.data.phoneNumber ? parsed.data.phoneNumber : null,
       bio: parsed.data.bio ? parsed.data.bio : null,
       location: parsed.data.location ? parsed.data.location : null,
-    };
-
-    const fullPayload: UpdateExtendedProfilePayload = {
-      ...corePayload,
       hometown: parsed.data.hometown ? parsed.data.hometown : null,
       workplace: parsed.data.workplace ? parsed.data.workplace : null,
       education: parsed.data.education ? parsed.data.education : null,
       website: parsed.data.website ? parsed.data.website : null,
-      avatarUrl: payload.avatarUrl,
-      coverUrl: payload.coverUrl,
+      ...(payload.avatarUrl === null || isHttpUrl(payload.avatarUrl)
+        ? { avatarUrl: payload.avatarUrl }
+        : {}),
+      ...(payload.coverUrl === null || isHttpUrl(payload.coverUrl)
+        ? { coverUrl: payload.coverUrl }
+        : {}),
+    };
+
+    const previewPayload: UpdateExtendedProfilePayload = {
+      ...apiPayload,
+      ...(payload.avatarUrl !== undefined ? { avatarUrl: payload.avatarUrl } : {}),
+      ...(payload.coverUrl !== undefined ? { coverUrl: payload.coverUrl } : {}),
     };
 
     try {
-      const response = await this.repository.updateMyProfile(corePayload);
-      return profilePreviewStore.saveMyExtras(fullPayload, response.data, false);
+      const response = await this.repository.updateMyProfile(apiPayload);
+      if (isFullPublicProfile(response.data)) {
+        profilePreviewStore.saveMyExtras(previewPayload, response.data, false);
+        return {
+          ...response.data,
+          coverUrl:
+            response.data.coverUrl ??
+            (previewPayload.coverUrl && !isHttpUrl(previewPayload.coverUrl)
+              ? previewPayload.coverUrl
+              : null),
+          isPreviewFallback: false,
+        };
+      }
+      return profilePreviewStore.saveMyExtras(previewPayload, response.data, false);
     } catch (error) {
       if (isFallbackError(error)) {
-        return profilePreviewStore.saveMyExtras(fullPayload, undefined, true);
+        return profilePreviewStore.saveMyExtras(previewPayload, undefined, true);
       }
       throw error;
     }

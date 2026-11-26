@@ -13,6 +13,7 @@ import {
   useSendFriendRequestMutation,
   useUnfriendMutation,
   useUpdateExtendedProfileMutation,
+  useUploadProfileImageMutation,
   type ProfileActivityItem,
   type ProfileActivityTabKey,
   type ProfileFriendsFilter,
@@ -21,6 +22,11 @@ import {
   type PublicUserProfile,
 } from '@/features/user';
 import { getClientProfilePath, ROUTES } from '@/routes/paths';
+import {
+  usePostFeedController,
+  type FriendContactItem,
+} from '../home/post-feed.controller';
+import type { VisibilityFilterOption } from '../home/home.controller';
 
 export interface ProfileEditModalFormState {
   fullName: string;
@@ -41,21 +47,6 @@ export interface UnfriendTargetState {
 }
 
 const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('Không thể đọc dữ liệu ảnh.'));
-      }
-    };
-    reader.onerror = () => reject(new Error('Không thể tải tệp ảnh từ thiết bị.'));
-    reader.readAsDataURL(file);
-  });
-}
 
 function buildEditFormState(profile?: PublicUserProfile | null): ProfileEditModalFormState {
   return {
@@ -83,6 +74,7 @@ export function useProfileController() {
   const activityQuery = useProfileActivityQuery(userId);
 
   const updateProfileMutation = useUpdateExtendedProfileMutation();
+  const uploadProfileImageMutation = useUploadProfileImageMutation();
   const sendRequestMutation = useSendFriendRequestMutation();
   const cancelRequestMutation = useCancelFriendRequestMutation();
   const acceptRequestMutation = useAcceptFriendRequestMutation();
@@ -91,8 +83,12 @@ export function useProfileController() {
 
   const tabParam = searchParams.get('tab');
   const activeTab: ProfileTabKey =
-    tabParam === 'about' || tabParam === 'friends' ? tabParam : 'overview';
+    tabParam === 'about' || tabParam === 'friends' || tabParam === 'activity'
+      ? tabParam
+      : 'overview';
 
+  const [profileVisibilityFilter, setProfileVisibilityFilter] =
+    useState<VisibilityFilterOption>('ALL');
   const [friendsFilter, setFriendsFilter] = useState<ProfileFriendsFilter>('ALL');
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -103,6 +99,9 @@ export function useProfileController() {
   const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
   const [unfriendTarget, setUnfriendTarget] = useState<UnfriendTargetState | null>(null);
 
+  const pendingAvatarFileRef = useRef<File | null>(null);
+  const pendingCoverFileRef = useRef<File | null>(null);
+  const previewBlobUrlsRef = useRef<Set<string>>(new Set());
   const friendMenuRef = useRef<HTMLDivElement>(null);
   useClickOutside(friendMenuRef, () => setIsFriendMenuOpen(false));
 
@@ -113,21 +112,42 @@ export function useProfileController() {
       : !userId || userId === 'me' || (currentUser?.id && userId === currentUser.id),
   );
 
-  const [activityTab, setActivityTab] = useState<ProfileActivityTabKey>(() =>
-    isOwnProfile ? 'tagged' : 'authored',
-  );
+  const [activityTab, setActivityTab] = useState<ProfileActivityTabKey>('tagged');
+
+  // Chuyển URL /me về /{userId} mặc định khi đã xác định user hiện tại
+  useEffect(() => {
+    if (userId === 'me' && currentUser?.id) {
+      navigate(getClientProfilePath(currentUser.id), { replace: true });
+    }
+  }, [userId, currentUser?.id, navigate]);
+
+  const releasePendingMediaPreviews = () => {
+    pendingAvatarFileRef.current = null;
+    pendingCoverFileRef.current = null;
+    previewBlobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewBlobUrlsRef.current.clear();
+  };
+
+  useEffect(() => {
+    return () => {
+      previewBlobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      previewBlobUrlsRef.current.clear();
+    };
+  }, []);
 
   // Reset bộ lọc & modal khi chuyển giữa các hồ sơ khác nhau
   useEffect(() => {
+    setProfileVisibilityFilter('ALL');
     setFriendsFilter('ALL');
     setFriendSearchQuery('');
     setIsEditModalOpen(false);
     setIsFriendMenuOpen(false);
     setUnfriendTarget(null);
+    releasePendingMediaPreviews();
   }, [userId]);
 
   useEffect(() => {
-    setActivityTab(isOwnProfile ? 'tagged' : 'authored');
+    setActivityTab('tagged');
   }, [userId, isOwnProfile]);
 
   useEffect(() => {
@@ -145,17 +165,54 @@ export function useProfileController() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [unfriendTarget, isEditModalOpen, isFriendMenuOpen]);
 
-  const directory = directoryQuery.data ?? {
-    friends: [],
-    incomingRequests: [],
-    sentRequests: [],
-    suggestions: [],
-  };
+  const directory = useMemo(
+    () =>
+      directoryQuery.data ?? {
+        friends: [],
+        incomingRequests: [],
+        sentRequests: [],
+        suggestions: [],
+      },
+    [directoryQuery.data],
+  );
 
   const overviewFriends = useMemo<ProfileFriendSummary[]>(() => {
     const list = isOwnProfile ? directory.friends : (profile?.friendsPreview ?? []);
     return list.slice(0, 6);
   }, [isOwnProfile, directory.friends, profile?.friendsPreview]);
+
+  const friendsForFeed = useMemo<FriendContactItem[]>(() => {
+    const list = isOwnProfile ? directory.friends : (profile?.friendsPreview ?? []);
+    return list.map((friend) => ({
+      id: friend.id,
+      fullName: friend.fullName,
+      avatarUrl: friend.avatarUrl,
+      isOnline: Boolean(friend.isOnline),
+    }));
+  }, [isOwnProfile, directory.friends, profile?.friendsPreview]);
+
+  const handleOpenUserProfile = (targetUserId: string) => {
+    setIsFriendMenuOpen(false);
+    navigate(getClientProfilePath(targetUserId, currentUser?.id));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const resolvedTargetAuthorId = isOwnProfile
+    ? profile?.id ?? currentUser?.id
+    : profile?.id ?? userId;
+
+  const postFeed = usePostFeedController({
+    limit: 10,
+    filter: isOwnProfile ? 'mine' : 'all',
+    authorId: resolvedTargetAuthorId,
+    visibility:
+      profileVisibilityFilter === 'ALL' ? undefined : profileVisibilityFilter,
+    enabled: Boolean(resolvedTargetAuthorId),
+    friends: friendsForFeed,
+    profileUser: profile ?? currentUser,
+    hasBlockingExternalModal: isEditModalOpen || Boolean(unfriendTarget),
+    onOpenUserProfile: handleOpenUserProfile,
+  });
 
   const friendsTabCounts = useMemo(() => {
     if (isOwnProfile) {
@@ -232,6 +289,10 @@ export function useProfileController() {
     );
   };
 
+  const handleSelectProfileVisibilityFilter = (filter: VisibilityFilterOption) => {
+    setProfileVisibilityFilter(filter);
+  };
+
   const handleSelectFriendsFilter = (filter: ProfileFriendsFilter) => {
     setFriendsFilter(filter);
   };
@@ -248,12 +309,6 @@ export function useProfileController() {
     navigate(ROUTES.CLIENT.ROOT);
   };
 
-  const handleOpenUserProfile = (targetUserId: string) => {
-    setIsFriendMenuOpen(false);
-    navigate(getClientProfilePath(targetUserId));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const handleOpenMessages = () => {
     setIsFriendMenuOpen(false);
     navigate(ROUTES.CLIENT.MESSAGES);
@@ -261,7 +316,7 @@ export function useProfileController() {
 
   const handleCopyProfileLink = async () => {
     if (!profile) return;
-    const path = isOwnProfile ? ROUTES.CLIENT.PROFILE : getClientProfilePath(profile.id);
+    const path = getClientProfilePath(profile.id, currentUser?.id);
     const shareUrl = `${window.location.origin}${path}`;
     try {
       if (navigator.clipboard?.writeText) {
@@ -274,13 +329,15 @@ export function useProfileController() {
   };
 
   const handleOpenEditModal = () => {
+    releasePendingMediaPreviews();
     setEditForm(buildEditFormState(profile));
     setEditErrors({});
     setIsEditModalOpen(true);
   };
 
   const handleCloseEditModal = () => {
-    if (updateProfileMutation.isPending) return;
+    if (updateProfileMutation.isPending || uploadProfileImageMutation.isPending) return;
+    releasePendingMediaPreviews();
     setIsEditModalOpen(false);
     setEditErrors({});
   };
@@ -301,10 +358,11 @@ export function useProfileController() {
   };
 
   const handleSelectCoverPreset = (url: string) => {
+    pendingCoverFileRef.current = null;
     setEditForm((prev) => ({ ...prev, coverUrl: url }));
   };
 
-  const handlePickAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePickAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -318,15 +376,13 @@ export function useProfileController() {
       return;
     }
 
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setEditForm((prev) => ({ ...prev, avatarUrl: dataUrl }));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không thể chọn ảnh đại diện.');
-    }
+    pendingAvatarFileRef.current = file;
+    const objectUrl = URL.createObjectURL(file);
+    previewBlobUrlsRef.current.add(objectUrl);
+    setEditForm((prev) => ({ ...prev, avatarUrl: objectUrl }));
   };
 
-  const handlePickCoverFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePickCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -340,15 +396,14 @@ export function useProfileController() {
       return;
     }
 
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setEditForm((prev) => ({ ...prev, coverUrl: dataUrl }));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không thể chọn ảnh bìa.');
-    }
+    pendingCoverFileRef.current = file;
+    const objectUrl = URL.createObjectURL(file);
+    previewBlobUrlsRef.current.add(objectUrl);
+    setEditForm((prev) => ({ ...prev, coverUrl: objectUrl }));
   };
 
   const handleRemoveAvatar = () => {
+    pendingAvatarFileRef.current = null;
     setEditForm((prev) => ({ ...prev, avatarUrl: null }));
   };
 
@@ -378,6 +433,20 @@ export function useProfileController() {
     }
 
     try {
+      let resolvedAvatarUrl = editForm.avatarUrl;
+      if (pendingAvatarFileRef.current) {
+        resolvedAvatarUrl = await uploadProfileImageMutation.mutateAsync(
+          pendingAvatarFileRef.current,
+        );
+      }
+
+      let resolvedCoverUrl = editForm.coverUrl;
+      if (pendingCoverFileRef.current) {
+        resolvedCoverUrl = await uploadProfileImageMutation.mutateAsync(
+          pendingCoverFileRef.current,
+        );
+      }
+
       await updateProfileMutation.mutateAsync({
         fullName: parsed.data.fullName,
         phoneNumber: parsed.data.phoneNumber || null,
@@ -387,9 +456,10 @@ export function useProfileController() {
         workplace: parsed.data.workplace || null,
         education: parsed.data.education || null,
         website: parsed.data.website || null,
-        avatarUrl: editForm.avatarUrl,
-        coverUrl: editForm.coverUrl,
+        avatarUrl: resolvedAvatarUrl,
+        coverUrl: resolvedCoverUrl,
       });
+      releasePendingMediaPreviews();
       setIsEditModalOpen(false);
       setEditErrors({});
       toast.success('Đã cập nhật hồ sơ cá nhân.');
@@ -496,7 +566,7 @@ export function useProfileController() {
     if (isOwnProfile) {
       return activityTab === 'reacted' || activityTab === 'saved' ? activityTab : 'tagged';
     }
-    return activityTab === 'tagged' ? 'tagged' : 'authored';
+    return 'tagged';
   }, [isOwnProfile, activityTab]);
 
   const activityItems = useMemo<ProfileActivityItem[]>(() => {
@@ -508,7 +578,10 @@ export function useProfileController() {
       tagged: activityFeed.tagged.length,
       reacted: activityFeed.reacted.length,
       saved: activityFeed.saved.length,
-      authored: activityFeed.authored.length,
+      totalGrouped:
+        activityFeed.tagged.length +
+        activityFeed.reacted.length +
+        activityFeed.saved.length,
     }),
     [activityFeed],
   );
@@ -517,8 +590,14 @@ export function useProfileController() {
     setActivityTab(tab);
   };
 
+  const handleOpenActivityTab = (tab: ProfileActivityTabKey) => {
+    setActivityTab(tab);
+    handleSelectTab('activity');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleNavigateToMyPosts = () => {
-    navigate(`${ROUTES.CLIENT.ROOT}?tab=mine`);
+    handleSelectTab('overview');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -526,15 +605,18 @@ export function useProfileController() {
     void profileQuery.refetch();
     void directoryQuery.refetch();
     void activityQuery.refetch();
+    void postFeed.handleRefreshFeed();
   };
 
   return {
+    ...postFeed,
     currentUser,
     profile,
     isOwnProfile,
     isLoading: profileQuery.isLoading,
     isError: profileQuery.isError,
     activeTab,
+    profileVisibilityFilter,
     activityTab: activeActivityTab,
     activityItems,
     activityCounts,
@@ -550,14 +632,17 @@ export function useProfileController() {
     isEditModalOpen,
     editForm,
     editErrors,
-    isSavingProfile: updateProfileMutation.isPending,
+    isSavingProfile:
+      updateProfileMutation.isPending || uploadProfileImageMutation.isPending,
     isFriendshipMutating,
     isFriendMenuOpen,
     friendMenuRef,
     unfriendTarget,
     isUnfriending: unfriendMutation.isPending,
     handleSelectTab,
+    handleSelectProfileVisibilityFilter,
     handleSelectActivityTab,
+    handleOpenActivityTab,
     handleNavigateToMyPosts,
     handleSelectFriendsFilter,
     handleFriendSearchChange,

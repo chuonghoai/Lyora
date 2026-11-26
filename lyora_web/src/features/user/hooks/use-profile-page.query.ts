@@ -33,6 +33,12 @@ export function useProfileActivityQuery(userId?: string) {
   });
 }
 
+export function useUploadProfileImageMutation() {
+  return useMutation({
+    mutationFn: (file: File) => profileService.uploadProfileImage(file),
+  });
+}
+
 export function useUpdateExtendedProfileMutation() {
   const queryClient = useQueryClient();
 
@@ -47,7 +53,12 @@ export function useUpdateExtendedProfileMutation() {
           phoneNumber: updatedProfile.phoneNumber ?? null,
           bio: updatedProfile.bio ?? null,
           location: updatedProfile.location ?? null,
+          hometown: updatedProfile.hometown ?? null,
+          workplace: updatedProfile.workplace ?? null,
+          education: updatedProfile.education ?? null,
+          website: updatedProfile.website ?? null,
           avatarUrl: updatedProfile.avatarUrl ?? null,
+          coverUrl: updatedProfile.coverUrl ?? null,
         };
         useAuthStore.getState().updateUser(syncedAuthUser);
         queryClient.setQueryData(userKeys.profile(), syncedAuthUser);

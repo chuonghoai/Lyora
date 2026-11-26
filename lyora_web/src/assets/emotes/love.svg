@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="love-orb" cx="35%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="#FDA4AF" />
+      <stop offset="46%" stop-color="#F43F5E" />
+      <stop offset="100%" stop-color="#BE123C" />
+    </radialGradient>
+    <linearGradient id="love-heart" x1="20%" y1="10%" x2="80%" y2="95%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="68%" stop-color="#FFF1F2" />
+      <stop offset="100%" stop-color="#FECDD3" />
+    </linearGradient>
+    <style><![CDATA[
+      .love-orb-anim {
+        transform-origin: 64px 66px;
+        animation: loveOrbBeat 1.35s ease-in-out infinite;
+      }
+      .love-heart-anim {
+        transform-origin: 64px 68px;
+        animation: loveHeartBeat 1.35s ease-in-out infinite;
+      }
+      .mini-heart-l {
+        transform-origin: 31px 28px;
+        animation: floatHeartL 1.35s ease-out infinite;
+      }
+      .mini-heart-r {
+        transform-origin: 98px 25px;
+        animation: floatHeartR 1.35s ease-out 0.18s infinite;
+      }
+      @keyframes loveOrbBeat {
+        0%, 66%, 100% { transform: scale(1); }
+        16% { transform: scale(1.06); }
+        30% { transform: scale(0.99); }
+        44% { transform: scale(1.04); }
+      }
+      @keyframes loveHeartBeat {
+        0%, 66%, 100% { transform: scale(1); }
+        16% { transform: scale(1.22); }
+        30% { transform: scale(1.02); }
+        44% { transform: scale(1.15); }
+      }
+      @keyframes floatHeartL {
+        0%, 10% { transform: translate(0, 8px) scale(0.2) rotate(-14deg); opacity: 0; }
+        38% { transform: translate(-4px, -4px) scale(1) rotate(-18deg); opacity: 1; }
+        82%, 100% { transform: translate(-8px, -13px) scale(0.45) rotate(-24deg); opacity: 0; }
+      }
+      @keyframes floatHeartR {
+        0%, 10% { transform: translate(0, 8px) scale(0.2) rotate(12deg); opacity: 0; }
+        42% { transform: translate(4px, -5px) scale(1.05) rotate(18deg); opacity: 1; }
+        85%, 100% { transform: translate(8px, -14px) scale(0.45) rotate(24deg); opacity: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .love-orb-anim, .love-heart-anim, .mini-heart-l, .mini-heart-r {
+          animation: none !important;
+        }
+        .mini-heart-l, .mini-heart-r { opacity: 0.85; transform: scale(0.8); }
+      }
+    ]]></style>
+  </defs>
+
+  <ellipse cx="64" cy="116" rx="34" ry="6" fill="#9F1239" opacity="0.18" />
+
+  <g class="love-orb-anim">
+    <circle cx="64" cy="66" r="49" fill="url(#love-orb)" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="2" />
+    <path d="M27 52 C32 30 51 20 71 22 C54 26 39 36 33 54 Z" fill="#FFFFFF" opacity="0.36" />
+
+    <g class="love-heart-anim">
+      <path
+        fill="url(#love-heart)"
+        d="M64 95.5 C64 95.5 34 75.5 34 55.2 C34 44.5 42.3 37.5 51.5 37.5 C57.3 37.5 61.8 40.6 64 44.6 C66.2 40.6 70.7 37.5 76.5 37.5 C85.7 37.5 94 44.5 94 55.2 C94 75.5 64 95.5 64 95.5 Z"
+      />
+      <path
+        d="M42 52 C42 46 46.5 42.5 51.5 42.5 C53 42.5 54.4 42.9 55.6 43.5 C50.5 44.5 45.8 48.2 44.5 54.5 C43 54 42 53.1 42 52 Z"
+        fill="#FFFFFF"
+        opacity="0.9"
+      />
+    </g>
+  </g>
+
+  <path class="mini-heart-l" fill="#FDA4AF" stroke="#FFFFFF" stroke-width="1.2" d="M31 35 C31 35 23 29.8 23 24.5 C23 21.6 25.3 19.7 27.8 19.7 C29.4 19.7 30.5 20.6 31 21.7 C31.5 20.6 32.6 19.7 34.2 19.7 C36.7 19.7 39 21.6 39 24.5 C39 29.8 31 35 31 35 Z" />
+  <path class="mini-heart-r" fill="#FFE4E6" stroke="#FFFFFF" stroke-width="1.2" d="M98 31 C98 31 91 26.5 91 21.8 C91 19.3 93 17.6 95.2 17.6 C96.6 17.6 97.6 18.4 98 19.4 C98.4 18.4 99.4 17.6 100.8 17.6 C103 17.6 105 19.3 105 21.8 C105 26.5 98 31 98 31 Z" />
+</svg>

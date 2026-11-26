@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { formatDateTime, formatRelativeTime } from '@/core';
-import type { HomeController } from './home.controller';
+import type { PostFeedController } from './post-feed.controller';
 import {
   PostAvatarChip,
   PostCommentForm,
@@ -13,7 +13,7 @@ import {
 import { CloseIcon } from './ClientIcons';
 
 export interface PostDetailModalProps {
-  controller: HomeController;
+  controller: PostFeedController;
 }
 
 export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) => {
@@ -58,12 +58,23 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) 
           {/* Thông tin tác giả */}
           <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5">
             <div className="flex items-center gap-3 min-w-0">
-              <PostAvatarChip name={post.author.fullName} avatarUrl={post.author.avatarUrl} />
+              <button
+                type="button"
+                onClick={() => controller.handleOpenUserProfile(post.author.id)}
+                aria-label={`Xem hồ sơ của ${post.author.fullName}`}
+                className="shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <PostAvatarChip name={post.author.fullName} avatarUrl={post.author.avatarUrl} />
+              </button>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm sm:text-base font-semibold text-foreground truncate">
+                  <button
+                    type="button"
+                    onClick={() => controller.handleOpenUserProfile(post.author.id)}
+                    className="text-sm sm:text-base font-semibold text-foreground hover:text-primary hover:underline truncate cursor-pointer text-left"
+                  >
                     {post.author.fullName}
-                  </p>
+                  </button>
                   {isOwnPost && (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-primary-active">
                       Bạn

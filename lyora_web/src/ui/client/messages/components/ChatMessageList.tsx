@@ -17,6 +17,7 @@ interface ChatMessageListProps {
   messages?: ChatMessageItem[];
   conversation: ConversationDetail | null;
   currentUserId?: string;
+  onOpenUserProfile?: (userId: string) => void;
 }
 
 function formatMessageTime(isoString: string): string {
@@ -35,6 +36,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   messages = [],
   conversation,
   currentUserId,
+  onOpenUserProfile,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isGroup = conversation?.type === 'GROUP';
@@ -104,26 +106,57 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
             className="flex items-start gap-2.5 max-w-[85%] sm:max-w-[70%]"
           >
             {isGroup && (
-              <div className="relative shrink-0 mt-0.5">
-                {msg.senderAvatarUrl ? (
-                  <img
-                    src={msg.senderAvatarUrl}
-                    alt={msg.senderName}
-                    className="h-8 w-8 rounded-full object-cover border border-border"
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs border border-border">
-                    {senderInitial}
-                  </div>
-                )}
-              </div>
+              onOpenUserProfile ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenUserProfile(msg.senderId)}
+                  aria-label={`Xem hồ sơ của ${msg.senderName}`}
+                  className="relative shrink-0 mt-0.5 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  {msg.senderAvatarUrl ? (
+                    <img
+                      src={msg.senderAvatarUrl}
+                      alt={msg.senderName}
+                      className="h-8 w-8 rounded-full object-cover border border-border"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs border border-border">
+                      {senderInitial}
+                    </div>
+                  )}
+                </button>
+              ) : (
+                <div className="relative shrink-0 mt-0.5">
+                  {msg.senderAvatarUrl ? (
+                    <img
+                      src={msg.senderAvatarUrl}
+                      alt={msg.senderName}
+                      className="h-8 w-8 rounded-full object-cover border border-border"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs border border-border">
+                      {senderInitial}
+                    </div>
+                  )}
+                </div>
+              )
             )}
 
             <div className="flex flex-col items-start min-w-0">
               {isGroup && (
-                <span className="text-[11px] font-semibold text-muted mb-1 ml-1 truncate max-w-full">
-                  {msg.senderName}
-                </span>
+                onOpenUserProfile ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenUserProfile(msg.senderId)}
+                    className="text-[11px] font-semibold text-muted hover:text-primary hover:underline mb-1 ml-1 truncate max-w-full cursor-pointer text-left"
+                  >
+                    {msg.senderName}
+                  </button>
+                ) : (
+                  <span className="text-[11px] font-semibold text-muted mb-1 ml-1 truncate max-w-full">
+                    {msg.senderName}
+                  </span>
+                )
               )}
               <div className="rounded-2xl rounded-tl-sm bg-card border border-border px-4 py-2.5 text-sm text-foreground shadow-xs break-words whitespace-pre-wrap leading-relaxed">
                 {msg.content}
