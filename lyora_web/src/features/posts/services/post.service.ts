@@ -138,12 +138,22 @@ export class PostService implements IPostService {
       );
     }
 
+    const taggedUserNames = (parsed.data.taggedUserNames ?? [])
+      .map((name) => name.trim())
+      .filter(Boolean);
+    const mediaItems = parsed.data.mediaItems ?? [];
+    const mediaFiles = parsed.data.mediaFiles ?? [];
+
     const cleanPayload: SuggestPostContentPayload = {
       tone: parsed.data.tone,
       ...(parsed.data.topic ? { topic: parsed.data.topic } : {}),
       ...(parsed.data.currentContent
         ? { currentContent: parsed.data.currentContent }
         : {}),
+      ...(parsed.data.visibility ? { visibility: parsed.data.visibility } : {}),
+      ...(taggedUserNames.length > 0 ? { taggedUserNames } : {}),
+      ...(mediaItems.length > 0 ? { mediaItems } : {}),
+      ...(mediaFiles.length > 0 ? { mediaFiles } : {}),
     };
 
     const response = await this.repository.suggestContent(cleanPayload);
