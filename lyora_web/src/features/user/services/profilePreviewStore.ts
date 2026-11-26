@@ -336,7 +336,10 @@ class ProfilePreviewStore {
     }
   }
 
-  getMyProfile(liveUser?: UserProfile | null, isPreviewFallback: boolean = true): PublicUserProfile {
+  getMyProfile(
+    liveUser?: (UserProfile & Partial<PublicUserProfile>) | PublicUserProfile | null,
+    isPreviewFallback: boolean = true,
+  ): PublicUserProfile {
     const base = liveUser ?? resolveCurrentBaseUser();
     const extras = this.readExtras();
     const myFriends = this.getMyFriendIds()
@@ -346,21 +349,32 @@ class ProfilePreviewStore {
 
     return {
       id: base.id,
-      email: base.email,
+      email: base.email ?? null,
       fullName: (isPreviewFallback ? extras.fullName : undefined) ?? base.fullName,
       role: base.role,
       phoneNumber: (isPreviewFallback ? extras.phoneNumber : undefined) ?? base.phoneNumber ?? null,
       bio:
         (isPreviewFallback ? extras.bio : undefined) ??
         base.bio ??
-        'Chia sẻ khoảnh khắc đời thường, kết nối bạn bè và lưu giữ những câu chuyện tích cực cùng cộng đồng Lyora.',
+        (isPreviewFallback
+          ? 'Chia sẻ khoảnh khắc đời thường, kết nối bạn bè và lưu giữ những câu chuyện tích cực cùng cộng đồng Lyora.'
+          : null),
       location: (isPreviewFallback ? extras.location : undefined) ?? base.location ?? null,
-      hometown: extras.hometown ?? 'Đà Lạt, Lâm Đồng',
-      workplace: extras.workplace ?? 'Thành viên Cộng đồng Lyora',
-      education: extras.education ?? '',
-      website: extras.website ?? '',
-      avatarUrl: extras.avatarUrl !== undefined ? extras.avatarUrl : base.avatarUrl ?? null,
-      coverUrl: extras.coverUrl ?? PROFILE_COVER_PRESETS[0].url,
+      hometown:
+        (isPreviewFallback ? extras.hometown : undefined) ??
+        base.hometown ??
+        (isPreviewFallback ? 'Đà Lạt, Lâm Đồng' : null),
+      workplace:
+        (isPreviewFallback ? extras.workplace : undefined) ??
+        base.workplace ??
+        (isPreviewFallback ? 'Thành viên Cộng đồng Lyora' : null),
+      education:
+        (isPreviewFallback ? extras.education : undefined) ?? base.education ?? null,
+      website: (isPreviewFallback ? extras.website : undefined) ?? base.website ?? null,
+      avatarUrl:
+        (isPreviewFallback ? extras.avatarUrl : undefined) ?? base.avatarUrl ?? null,
+      coverUrl:
+        base.coverUrl ?? extras.coverUrl ?? PROFILE_COVER_PRESETS[0].url,
       isActive: base.isActive ?? true,
       isOnline: true,
       createdAt: base.createdAt ?? '2025-02-10T07:00:00.000Z',
@@ -374,7 +388,7 @@ class ProfilePreviewStore {
 
   saveMyExtras(
     payload: UpdateExtendedProfilePayload,
-    updatedCoreUser?: UserProfile,
+    updatedCoreUser?: UserProfile | PublicUserProfile,
     isPreviewFallback: boolean = false,
   ): PublicUserProfile {
     const currentExtras = this.readExtras();
@@ -393,28 +407,58 @@ class ProfilePreviewStore {
     };
     this.writeExtras(nextExtras);
 
-    const storedUser = updatedCoreUser ?? resolveCurrentBaseUser();
-    const syncedUser: UserProfile = {
-      ...storedUser,
-      fullName: updatedCoreUser?.fullName ?? nextExtras.fullName ?? storedUser.fullName,
+    const baseUser = resolveCurrentBaseUser();
+    const storedUser: UserProfile = {
+      ...baseUser,
+      id: updatedCoreUser?.id ?? baseUser.id,
+      email: updatedCoreUser?.email ?? baseUser.email,
+      fullName: updatedCoreUser?.fullName ?? nextExtras.fullName ?? baseUser.fullName,
+      role: updatedCoreUser?.role ?? baseUser.role,
       phoneNumber:
         updatedCoreUser?.phoneNumber !== undefined
           ? updatedCoreUser.phoneNumber
-          : nextExtras.phoneNumber ?? storedUser.phoneNumber,
-      bio: updatedCoreUser?.bio !== undefined ? updatedCoreUser.bio : nextExtras.bio ?? storedUser.bio,
+          : nextExtras.phoneNumber ?? baseUser.phoneNumber,
+      bio:
+        updatedCoreUser?.bio !== undefined
+          ? updatedCoreUser.bio
+          : nextExtras.bio ?? baseUser.bio,
       location:
         updatedCoreUser?.location !== undefined
           ? updatedCoreUser.location
-          : nextExtras.location ?? storedUser.location,
+          : nextExtras.location ?? baseUser.location,
+      hometown:
+        updatedCoreUser?.hometown !== undefined
+          ? updatedCoreUser.hometown
+          : nextExtras.hometown ?? baseUser.hometown,
+      workplace:
+        updatedCoreUser?.workplace !== undefined
+          ? updatedCoreUser.workplace
+          : nextExtras.workplace ?? baseUser.workplace,
+      education:
+        updatedCoreUser?.education !== undefined
+          ? updatedCoreUser.education
+          : nextExtras.education ?? baseUser.education,
+      website:
+        updatedCoreUser?.website !== undefined
+          ? updatedCoreUser.website
+          : nextExtras.website ?? baseUser.website,
       avatarUrl:
-        nextExtras.avatarUrl !== undefined ? nextExtras.avatarUrl : storedUser.avatarUrl,
+        nextExtras.avatarUrl !== undefined
+          ? nextExtras.avatarUrl
+          : updatedCoreUser?.avatarUrl ?? baseUser.avatarUrl,
+      coverUrl:
+        updatedCoreUser?.coverUrl !== undefined
+          ? updatedCoreUser.coverUrl
+          : nextExtras.coverUrl ?? baseUser.coverUrl,
+      isActive: updatedCoreUser?.isActive ?? baseUser.isActive,
+      createdAt: updatedCoreUser?.createdAt ?? baseUser.createdAt,
     };
 
     if (TokenStorage.getUser()) {
-      TokenStorage.setUser(syncedUser);
+      TokenStorage.setUser(storedUser);
     }
 
-    return this.getMyProfile(syncedUser, isPreviewFallback);
+    return this.getMyProfile(storedUser, isPreviewFallback);
   }
 
   getProfileById(userId: string): PublicUserProfile | null {

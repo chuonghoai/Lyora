@@ -58,6 +58,7 @@ export interface PostsQueryParams {
   limit?: number;
   search?: string;
   filter?: PostsFeedFilter;
+  authorId?: string;
   visibility?: PostVisibility;
 }
 

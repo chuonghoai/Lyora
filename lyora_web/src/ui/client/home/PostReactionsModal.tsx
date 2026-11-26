@@ -3,12 +3,12 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { Button, LoadingSpinner } from '@/core';
 import { getReactionMeta, REACTION_OPTIONS } from '@/features/posts';
-import type { HomeController } from './home.controller';
+import type { PostFeedController } from './post-feed.controller';
 import { ChatBubbleOutlineIcon, CloseIcon, ReactionIcon } from './ClientIcons';
 import { PostAvatarChip } from './PostCard';
 
 export interface PostReactionsModalProps {
-  controller: HomeController;
+  controller: PostFeedController;
 }
 
 export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controller }) => {
@@ -128,7 +128,11 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controll
                   key={item.id}
                   className="flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 hover:bg-background transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => controller.handleOpenUserProfile(item.user.id)}
+                    className="group flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
                     <div className="relative shrink-0">
                       <PostAvatarChip
                         name={item.user.fullName}
@@ -137,19 +141,19 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controll
                       />
                       <span
                         title={meta.label}
-                        className="absolute -bottom-0.5 -right-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-card ring-2 ring-card shadow-sm"
+                        className="absolute -bottom-0.5 -right-0.5 inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-card ring-2 ring-card shadow-sm"
                       >
-                        <ReactionIcon type={meta.type} className="w-4 h-4" />
+                        <ReactionIcon type={meta.type} className="w-4.5 h-4.5" />
                       </span>
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
                         {item.user.fullName}
                       </p>
                       <p className="text-xs text-muted">{meta.label}</p>
                     </div>
-                  </div>
+                  </button>
 
                   <div className="shrink-0">
                     {isSelf ? (
@@ -173,7 +177,7 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controll
                       <span
                         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${meta.activeBgClass} ${meta.activeTextClass}`}
                       >
-                        <ReactionIcon type={meta.type} className="w-4 h-4" />
+                        <ReactionIcon type={meta.type} className="w-4.5 h-4.5" />
                         <span>{meta.label}</span>
                       </span>
                     )}

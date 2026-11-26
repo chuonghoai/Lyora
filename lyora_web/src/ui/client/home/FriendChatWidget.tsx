@@ -327,12 +327,19 @@ const ChatMessageRow: React.FC<{
       className={`group flex items-end gap-2 ${msg.isMine ? 'justify-end' : 'justify-start'}`}
     >
       {!msg.isMine && (
-        <FriendAvatar
-          name={friendName}
-          avatarUrl={friendAvatar}
-          sizeClass="h-6 w-6 text-[10px]"
-          showOnline={false}
-        />
+        <button
+          type="button"
+          onClick={() => controller.handleOpenUserProfile(friendId)}
+          aria-label={`Xem hồ sơ của ${friendName}`}
+          className="shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <FriendAvatar
+            name={friendName}
+            avatarUrl={friendAvatar}
+            sizeClass="h-6 w-6 text-[10px]"
+            showOnline={false}
+          />
+        </button>
       )}
 
       {msg.isMine && !msg.isRecalled && renderActionButtons('mine')}
@@ -388,11 +395,11 @@ const ChatMessageRow: React.FC<{
             onClick={() => controller.handleReactChatMessage(friendId, msg.id, msg.reaction!)}
             title="Nhấn để gỡ cảm xúc"
             aria-label={`Gỡ cảm xúc ${getReactionMeta(msg.reaction).label}`}
-            className={`-mt-2 relative z-10 inline-flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card shadow-sm cursor-pointer ${
+            className={`-mt-2 relative z-10 inline-flex h-5.5 w-5.5 items-center justify-center rounded-full border border-border bg-card shadow-sm cursor-pointer ${
               msg.isMine ? 'mr-1' : 'ml-1'
             }`}
           >
-            <ReactionIcon type={msg.reaction} className="w-4 h-4" />
+            <ReactionIcon key={msg.reaction} type={msg.reaction} className="w-4.5 h-4.5 animate-emote-pop" />
           </button>
         )}
       </div>
@@ -493,7 +500,7 @@ const ChatMessageRow: React.FC<{
               ...(emotePos.top !== undefined ? { top: `${emotePos.top}px` } : {}),
               ...(emotePos.bottom !== undefined ? { bottom: `${emotePos.bottom}px` } : {}),
             }}
-            className="fixed z-50 flex items-center gap-0.5 rounded-full border border-border bg-card px-2 py-1 shadow-md"
+            className="fixed z-50 flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 shadow-md animate-emote-dock-in"
           >
             {REACTION_OPTIONS.map((option) => (
               <button
@@ -505,11 +512,11 @@ const ChatMessageRow: React.FC<{
                   setIsEmoteOpen(false);
                   controller.handleReactChatMessage(friendId, msg.id, option.type);
                 }}
-                className={`inline-flex h-7 w-7 items-center justify-center rounded-full hover:scale-125 transition-transform cursor-pointer ${
-                  msg.reaction === option.type ? 'bg-secondary' : ''
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-full hover:scale-125 hover:-translate-y-1 transition-all cursor-pointer ${
+                  msg.reaction === option.type ? 'bg-secondary scale-110' : ''
                 }`}
               >
-                <ReactionIcon type={option.type} className="w-6 h-6" />
+                <ReactionIcon type={option.type} className="w-7 h-7" />
               </button>
             ))}
           </div>,
@@ -577,15 +584,20 @@ const SingleChatWindow: React.FC<{
     >
       {/* Header kiểu Messenger */}
       <header className="shrink-0 flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-2.5">
-        <div className="flex items-center gap-2.5 min-w-0">
+        <button
+          type="button"
+          onClick={() => controller.handleOpenUserProfile(friend.id)}
+          title={`Xem trang cá nhân của ${friend.fullName}`}
+          className="group flex items-center gap-2.5 min-w-0 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
           <FriendAvatar name={friend.fullName} avatarUrl={friend.avatarUrl} />
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-foreground truncate">
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
               {friend.fullName}
             </h3>
             <p className="text-[11px] text-success font-medium">Đang hoạt động</p>
           </div>
-        </div>
+        </button>
 
         <div className="flex items-center gap-0.5 shrink-0">
           <button

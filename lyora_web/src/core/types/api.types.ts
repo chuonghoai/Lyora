@@ -42,7 +42,12 @@ export interface UserProfile {
   phoneNumber?: string | null;
   bio?: string | null;
   location?: string | null;
+  hometown?: string | null;
+  workplace?: string | null;
+  education?: string | null;
+  website?: string | null;
   avatarUrl?: string | null;
+  coverUrl?: string | null;
   isActive?: boolean;
   createdAt?: string;
 }

@@ -15,7 +15,7 @@ import {
   type PostMediaItem,
   type PostVisibility,
 } from '@/features/posts';
-import type { HomeController } from './home.controller';
+import type { PostFeedController } from './post-feed.controller';
 import {
   BookmarkIcon,
   CloseIcon,
@@ -61,7 +61,7 @@ export const PostVisibilityBadge: React.FC<{ visibility: PostVisibility }> = ({ 
 
 export interface PostCardProps {
   post: Post;
-  controller: HomeController;
+  controller: PostFeedController;
 }
 
 const CONTENT_COLLAPSE_THRESHOLD = 280;
@@ -393,7 +393,7 @@ const PostVisualGallery: React.FC<{
 
 export const PostInteractionsBlock: React.FC<{
   post: Post;
-  controller: HomeController;
+  controller: PostFeedController;
   onCommentClick: () => void;
   onStatsCommentsClick: () => void;
 }> = ({ post, controller, onCommentClick, onStatsCommentsClick }) => {
@@ -427,7 +427,7 @@ export const PostInteractionsBlock: React.FC<{
     const updateDockPosition = () => {
       if (!likeTriggerRef.current) return;
       const rect = likeTriggerRef.current.getBoundingClientRect();
-      const dockWidth = 284;
+      const dockWidth = 316;
       const left = Math.max(8, Math.min(rect.left, window.innerWidth - dockWidth - 8));
       const openUpward = rect.top >= 72;
       setDockPos(
@@ -489,9 +489,9 @@ export const PostInteractionsBlock: React.FC<{
                 {topReactions.map((item) => (
                   <span
                     key={item.type}
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-card ring-2 ring-card"
+                    className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-card ring-2 ring-card"
                   >
-                    <ReactionIcon type={item.type} className="w-4 h-4" />
+                    <ReactionIcon type={item.type} className="w-4.5 h-4.5" />
                   </span>
                 ))}
               </span>
@@ -539,7 +539,11 @@ export const PostInteractionsBlock: React.FC<{
           >
             {activeReaction ? (
               <>
-                <ReactionIcon type={activeReaction.type} className="w-5 h-5" />
+                <ReactionIcon
+                  key={activeReaction.type}
+                  type={activeReaction.type}
+                  className="w-5 h-5 animate-emote-pop"
+                />
                 <span className="truncate">{activeReaction.label}</span>
               </>
             ) : (
@@ -600,7 +604,7 @@ export const PostInteractionsBlock: React.FC<{
               ...(dockPos.top !== undefined ? { top: `${dockPos.top}px` } : {}),
               ...(dockPos.bottom !== undefined ? { bottom: `${dockPos.bottom}px` } : {}),
             }}
-            className="fixed z-[60] flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1.5 shadow-md"
+            className="fixed z-[60] flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1.5 shadow-md animate-emote-dock-in"
           >
             {REACTION_OPTIONS.map((option) => (
               <button
@@ -612,12 +616,12 @@ export const PostInteractionsBlock: React.FC<{
                   setIsReactionDockOpen(false);
                   void controller.handleReactPost(post.id, option.type);
                 }}
-                className={`group relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:scale-125 hover:-translate-y-1 hover:bg-background transition-all duration-150 cursor-pointer ${
+                className={`group relative inline-flex h-11 w-11 items-center justify-center rounded-full hover:scale-125 hover:-translate-y-2 focus-visible:scale-125 focus-visible:-translate-y-2 hover:bg-background transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   post.userReaction === option.type ? 'bg-secondary scale-110' : ''
                 }`}
               >
-                <ReactionIcon type={option.type} className="w-8 h-8" />
-                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground px-2 py-0.5 text-[10px] font-medium text-card opacity-0 group-hover:opacity-100 transition-opacity">
+                <ReactionIcon type={option.type} className="w-9 h-9" />
+                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground px-2 py-0.5 text-[10px] font-medium text-card opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
                   {option.label}
                 </span>
               </button>
@@ -633,7 +637,7 @@ export const PostCommentForm: React.FC<{
   postId: string;
   inputSuffix: 'feed' | 'modal';
   placeholder?: string;
-  controller: HomeController;
+  controller: PostFeedController;
 }> = ({
   postId,
   inputSuffix,
@@ -753,7 +757,7 @@ export const PostCommentForm: React.FC<{
 
 export const PostCommentsList: React.FC<{
   comments: Post['comments'];
-  controller: HomeController;
+  controller: PostFeedController;
 }> = ({ comments, controller }) => {
   if (comments.length === 0) return null;
 
@@ -761,16 +765,27 @@ export const PostCommentsList: React.FC<{
     <ul className="space-y-2.5">
       {comments.map((comment) => (
         <li key={comment.id} className="flex items-start gap-2.5">
-          <PostAvatarChip
-            name={comment.author.fullName}
-            avatarUrl={comment.author.avatarUrl}
-            sizeClass="h-8 w-8 text-xs mt-0.5"
-          />
+          <button
+            type="button"
+            onClick={() => controller.handleOpenUserProfile(comment.author.id)}
+            aria-label={`Xem hồ sơ của ${comment.author.fullName}`}
+            className="mt-0.5 shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <PostAvatarChip
+              name={comment.author.fullName}
+              avatarUrl={comment.author.avatarUrl}
+              sizeClass="h-8 w-8 text-xs"
+            />
+          </button>
           <div className="min-w-0 flex-1">
             <div className="inline-block max-w-full rounded-2xl bg-card border border-border px-3.5 py-2">
-              <p className="text-xs font-semibold text-foreground">
+              <button
+                type="button"
+                onClick={() => controller.handleOpenUserProfile(comment.author.id)}
+                className="text-xs font-semibold text-foreground hover:text-primary hover:underline cursor-pointer text-left block"
+              >
                 {comment.author.fullName}
-              </p>
+              </button>
               {comment.content && (
                 <p className="text-xs sm:text-sm text-foreground break-words mt-0.5">
                   {comment.content}
@@ -872,13 +887,20 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
       {/* Header Tác giả */}
       <header className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
         <div className="flex items-center gap-3 min-w-0">
-          <PostAvatarChip name={post.author.fullName} avatarUrl={post.author.avatarUrl} />
+          <button
+            type="button"
+            onClick={() => controller.handleOpenUserProfile(post.author.id)}
+            aria-label={`Xem hồ sơ của ${post.author.fullName}`}
+            className="shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <PostAvatarChip name={post.author.fullName} avatarUrl={post.author.avatarUrl} />
+          </button>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
-                onClick={() => controller.handleOpenPostDetail(post.id)}
+                onClick={() => controller.handleOpenUserProfile(post.author.id)}
                 className="text-sm sm:text-base font-semibold text-foreground hover:text-primary hover:underline truncate cursor-pointer text-left"
               >
                 {post.author.fullName}

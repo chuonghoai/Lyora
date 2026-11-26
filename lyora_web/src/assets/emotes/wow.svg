@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="wow-face" cx="38%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="#FFF59D" />
+      <stop offset="52%" stop-color="#FFC93C" />
+      <stop offset="100%" stop-color="#D97706" />
+    </radialGradient>
+    <radialGradient id="wow-mouth-grad" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#4A1D0D" />
+      <stop offset="78%" stop-color="#6B2710" />
+      <stop offset="100%" stop-color="#9A3412" />
+    </radialGradient>
+    <style><![CDATA[
+      .wow-head {
+        transform-origin: 64px 72px;
+        animation: wowGasp 1.85s ease-in-out infinite;
+      }
+      .wow-brows {
+        animation: wowBrows 1.85s ease-in-out infinite;
+      }
+      .wow-eyes {
+        transform-origin: 64px 56px;
+        animation: wowEyes 1.85s ease-in-out infinite;
+      }
+      .wow-mouth {
+        transform-origin: 64px 86px;
+        animation: wowMouth 1.85s ease-in-out infinite;
+      }
+      .wow-glint {
+        transform-origin: 103px 26px;
+        animation: wowGlint 1.85s ease-in-out infinite;
+      }
+      @keyframes wowGasp {
+        0%, 100% { transform: translateY(1px) scale(0.99); }
+        36%, 62% { transform: translateY(-4px) scale(1.03); }
+      }
+      @keyframes wowBrows {
+        0%, 100% { transform: translateY(2px); }
+        36%, 62% { transform: translateY(-6px); }
+      }
+      @keyframes wowEyes {
+        0%, 100% { transform: scale(0.96); }
+        36%, 62% { transform: scale(1.1); }
+      }
+      @keyframes wowMouth {
+        0%, 100% { transform: scale(0.84, 0.8); }
+        36%, 62% { transform: scale(1.1, 1.15); }
+      }
+      @keyframes wowGlint {
+        0%, 18%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+        46% { transform: scale(1.08) rotate(18deg); opacity: 1; }
+        74% { transform: scale(0) rotate(36deg); opacity: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .wow-head, .wow-brows, .wow-eyes, .wow-mouth, .wow-glint {
+          animation: none !important;
+        }
+        .wow-glint { opacity: 0.8; transform: scale(0.85); }
+      }
+    ]]></style>
+  </defs>
+
+  <ellipse cx="64" cy="117" rx="33" ry="5.5" fill="#92400E" opacity="0.16" />
+
+  <g class="wow-head">
+    <circle cx="64" cy="67" r="46" fill="url(#wow-face)" stroke="#F59E0B" stroke-opacity="0.4" stroke-width="1.5" />
+    <ellipse cx="48" cy="36" rx="21" ry="10" transform="rotate(-16 48 36)" fill="#FFFFFF" opacity="0.34" />
+
+    <!-- Soft blush -->
+    <ellipse cx="32" cy="74" rx="7.5" ry="4.5" fill="#FB7185" opacity="0.28" />
+    <ellipse cx="96" cy="74" rx="7.5" ry="4.5" fill="#FB7185" opacity="0.28" />
+
+    <!-- Surprised high arched eyebrows -->
+    <g class="wow-brows" fill="none" stroke="#4A1D0D" stroke-width="5.2" stroke-linecap="round">
+      <path d="M34 39 Q44 28 55 37" />
+      <path d="M73 37 Q84 28 94 39" />
+    </g>
+
+    <!-- Big sparkling wide eyes -->
+    <g class="wow-eyes">
+      <ellipse cx="46" cy="57" rx="8.2" ry="11" fill="#3B1709" />
+      <ellipse cx="43.5" cy="52.8" rx="3.2" ry="3.8" fill="#FFFFFF" />
+      <circle cx="48.5" cy="60.5" r="1.5" fill="#FFFFFF" opacity="0.85" />
+
+      <ellipse cx="82" cy="57" rx="8.2" ry="11" fill="#3B1709" />
+      <ellipse cx="79.5" cy="52.8" rx="3.2" ry="3.8" fill="#FFFFFF" />
+      <circle cx="84.5" cy="60.5" r="1.5" fill="#FFFFFF" opacity="0.85" />
+    </g>
+
+    <!-- Open O mouth -->
+    <g class="wow-mouth">
+      <ellipse cx="64" cy="87" rx="11.5" ry="15" fill="url(#wow-mouth-grad)" />
+      <ellipse cx="64" cy="96" rx="6.5" ry="4" fill="#FB7185" opacity="0.45" />
+    </g>
+  </g>
+
+  <path class="wow-glint" fill="#FEF08A" stroke="#F59E0B" stroke-width="1" d="M103 16 L105.4 23.6 L113 26 L105.4 28.4 L103 36 L100.6 28.4 L93 26 L100.6 23.6 Z" />
+</svg>

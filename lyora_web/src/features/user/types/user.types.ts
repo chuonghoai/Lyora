@@ -36,9 +36,16 @@ export type ProfileFriendshipStatus =
   | 'REQUEST_RECEIVED'
   | 'NONE';
 
-export type ProfileTabKey = 'overview' | 'about' | 'friends';
+export type ProfileTabKey = 'overview' | 'about' | 'friends' | 'activity';
 
 export type ProfileActivityTabKey = 'tagged' | 'reacted' | 'saved' | 'authored';
+
+export interface ProfileMediaUploadResult {
+  url: string;
+  publicId: string;
+  format?: string;
+  size: number;
+}
 
 export type ProfileActivityKind =
   | 'TAGGED'

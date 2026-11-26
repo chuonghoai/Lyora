@@ -49,6 +49,7 @@ export const ConversationInfoPanel: React.FC<ConversationInfoPanelProps> = ({
       currentUserId={currentUserId}
       conversations={conversations}
       onOpenGroupModal={onOpenGroupModal}
+      onOpenUserProfile={controller?.handleOpenUserProfile}
     />
   );
 };

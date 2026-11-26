@@ -1,9 +1,9 @@
 import React, { Suspense, lazy } from 'react';
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router-dom';
 import { ClientLayout } from '@/ui/client/ClientLayout';
 import { AdminLayout } from '@/ui/admin/AdminLayout';
-import { RoleRoute, GuestRoute, LoadingSpinner } from '@/core';
-import { ROUTES } from './paths';
+import { RoleRoute, GuestRoute, LoadingSpinner, useAuthStore } from '@/core';
+import { getClientProfilePath, ROUTES } from './paths';
 
 const ClientHomeView = lazy(
   () => import('@/ui/client/home/HomeView'),
@@ -32,6 +32,12 @@ const PageLoader: React.FC = () => (
     <LoadingSpinner size="lg" />
   </div>
 );
+
+const LegacyProfileRedirect: React.FC = () => {
+  const { userId } = useParams<{ userId?: string }>();
+  const currentUser = useAuthStore((s) => s.user);
+  return <Navigate to={getClientProfilePath(userId, currentUser?.id)} replace />;
+};
 
 export const router = createBrowserRouter([
   {
@@ -101,14 +107,14 @@ export const router = createBrowserRouter([
           },
           {
             path: 'profile',
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <ProfileView />
-              </Suspense>
-            ),
+            element: <LegacyProfileRedirect />,
           },
           {
             path: 'profile/:userId',
+            element: <LegacyProfileRedirect />,
+          },
+          {
+            path: ':userId',
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ProfileView />
@@ -148,6 +154,6 @@ export const router = createBrowserRouter([
   },
 ]);
 
-export const AppRoutes: React.FC = () => {
+export function AppRoutes() {
   return <RouterProvider router={router} />;
-};
+}
