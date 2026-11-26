@@ -212,9 +212,31 @@ export class GeminiProvider implements IAiProvider {
     request: AiStructuredRequest,
     signal?: AbortSignal,
   ): Promise<T> {
+    const activeMediaParts = this.filterMediaPartsForModel(
+      model,
+      request.mediaParts,
+    );
+    const contents =
+      activeMediaParts.length > 0
+        ? [
+            {
+              role: 'user',
+              parts: [
+                { text: request.userPrompt },
+                ...activeMediaParts.map((part) => ({
+                  inlineData: {
+                    mimeType: part.mimeType,
+                    data: part.data.toString('base64'),
+                  },
+                })),
+              ],
+            },
+          ]
+        : request.userPrompt;
+
     const response = await this.client!.models.generateContent({
       model,
-      contents: request.userPrompt,
+      contents,
       config: {
         systemInstruction: request.systemInstruction,
         responseMimeType: 'application/json',
@@ -258,6 +280,29 @@ export class GeminiProvider implements IAiProvider {
           : 'Invalid JSON payload returned from Gemini';
       throw new AiProviderError('INVALID_RESPONSE', detail);
     }
+  }
+
+  private filterMediaPartsForModel(
+    model: string,
+    mediaParts?: AiStructuredRequest['mediaParts'],
+  ): NonNullable<AiStructuredRequest['mediaParts']> {
+    if (!mediaParts || mediaParts.length === 0) {
+      return [];
+    }
+
+    if (model.toLowerCase().includes('gemma')) {
+      const imageOnly = mediaParts.filter((part) =>
+        part.mimeType.startsWith('image/'),
+      );
+      if (imageOnly.length < mediaParts.length) {
+        this.logger.warn(
+          `Model ${model} only supports image multimodal input; omitted ${mediaParts.length - imageOnly.length} non-image media part(s) during fallback`,
+        );
+      }
+      return imageOnly;
+    }
+
+    return mediaParts;
   }
 
   private shouldFallbackOnError(error: unknown): boolean {

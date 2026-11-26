@@ -72,6 +72,36 @@ export class PostRepository implements IPostRepository {
   async suggestContent(
     payload: SuggestPostContentPayload,
   ): Promise<ApiResponse<PostSuggestionsResult>> {
+    if (payload.mediaFiles && payload.mediaFiles.length > 0) {
+      const formData = new FormData();
+      formData.append('tone', payload.tone);
+      if (payload.topic) formData.append('topic', payload.topic);
+      if (payload.currentContent) {
+        formData.append('currentContent', payload.currentContent);
+      }
+      if (payload.visibility) {
+        formData.append('visibility', payload.visibility);
+      }
+      if (payload.taggedUserNames && payload.taggedUserNames.length > 0) {
+        formData.append(
+          'taggedUserNames',
+          JSON.stringify(payload.taggedUserNames),
+        );
+      }
+      if (payload.mediaItems && payload.mediaItems.length > 0) {
+        formData.append('mediaItems', JSON.stringify(payload.mediaItems));
+      }
+      payload.mediaFiles.forEach((file) => formData.append('files', file));
+
+      return apiClient.post<
+        ApiResponse<PostSuggestionsResult>,
+        ApiResponse<PostSuggestionsResult>
+      >(`${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/ai-suggestions`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000,
+      });
+    }
+
     return apiClient.post<
       ApiResponse<PostSuggestionsResult>,
       ApiResponse<PostSuggestionsResult>

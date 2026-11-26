@@ -164,6 +164,7 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'aiTopic'
       | 'aiTone'
       | 'aiSuggestions'
+      | 'aiContextInfo'
       | 'isGeneratingAi'
       | 'aiError'
       | 'canUndoAiApply'

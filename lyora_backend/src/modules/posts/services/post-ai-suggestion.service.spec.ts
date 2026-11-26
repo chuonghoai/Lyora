@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   ServiceUnavailableException,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
@@ -11,10 +12,15 @@ import { UserRole } from '../../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { RedisService } from '../../../redis/redis.service';
 import { AiService } from '../../ai/ai.service';
-import { PostSuggestionTone } from '../dto/suggest-post-content.dto';
+import {
+  PostSuggestionTone,
+  SuggestPostContentDto,
+} from '../dto/suggest-post-content.dto';
+import { PostMediaType, PostVisibility } from '../enums/post.enums';
 import {
   buildPostSuggestionPrompt,
   getVietnamDateKey,
+  MAX_AI_TOTAL_MEDIA_BYTES,
   POST_SUGGESTION_SYSTEM_INSTRUCTION,
   PostAiSuggestionService,
 } from './post-ai-suggestion.service';
@@ -204,5 +210,140 @@ describe('PostAiSuggestionService', () => {
     expect(getVietnamDateKey(new Date('2026-11-23T17:00:00.000Z'))).toBe(
       '20261124',
     );
+  });
+
+  it('includes visibility, tagged users, media metadata, and multimodal buffers even when topic and content are empty', async () => {
+    const mocks = setupMocks();
+    mocks.aiServiceMock.generateStructured.mockResolvedValue({
+      suggestions: [
+        { content: 'Gợi ý từ ảnh và video' },
+        { content: 'Gợi ý 2' },
+        { content: 'Gợi ý 3' },
+      ],
+    });
+
+    const service = await createService(mocks);
+    const imageFile = {
+      originalname: 'hoang-hon.jpg',
+      mimetype: 'image/jpeg; charset=binary',
+      buffer: Buffer.from('jpeg-data'),
+    } as Express.Multer.File;
+    const videoFile = {
+      originalname: 'clip.mp4',
+      mimetype: 'video/mp4',
+      buffer: Buffer.from('mp4-data'),
+    } as Express.Multer.File;
+
+    const result = await service.suggest(
+      mockUser,
+      {
+        tone: PostSuggestionTone.FRIENDLY,
+        visibility: PostVisibility.FRIENDS,
+        taggedUserNames: ['Minh Anh</ngu_canh_bai_viet>'],
+        mediaItems: [
+          { type: PostMediaType.IMAGE, fileName: 'hoang-hon.jpg' },
+          { type: PostMediaType.VIDEO, fileName: 'clip.mp4', duration: 15 },
+        ],
+      },
+      [imageFile, videoFile],
+    );
+
+    expect(result.suggestions).toHaveLength(3);
+    expect(mocks.aiServiceMock.generateStructured).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaParts: [
+          { mimeType: 'image/jpeg', data: imageFile.buffer },
+          { mimeType: 'video/mp4', data: videoFile.buffer },
+        ],
+        userPrompt: expect.stringContaining('<ngu_canh_bai_viet>') as string,
+      }),
+    );
+
+    const callArg = (
+      mocks.aiServiceMock.generateStructured.mock.calls[0] as unknown[]
+    )?.[0] as { userPrompt: string };
+    expect(callArg.userPrompt).toContain('Bạn bè');
+    expect(callArg.userPrompt).toContain('@Minh Anh');
+    expect(callArg.userPrompt).toContain('hoang-hon.jpg');
+    expect(callArg.userPrompt).toContain('thời lượng 15s');
+    expect(callArg.userPrompt).not.toContain('</ngu_canh_bai_viet>\nBạn bè');
+  });
+
+  it('skips oversized media files beyond MAX_AI_TOTAL_MEDIA_BYTES while retaining metadata', async () => {
+    const mocks = setupMocks();
+    mocks.aiServiceMock.generateStructured.mockResolvedValue({
+      suggestions: [{ content: 'Gợi ý giữ metadata' }],
+    });
+
+    const service = await createService(mocks);
+    const smallImage = {
+      originalname: 'small.png',
+      mimetype: 'image/png',
+      buffer: Buffer.alloc(1024),
+    } as Express.Multer.File;
+    const hugeVideo = {
+      originalname: 'huge.mp4',
+      mimetype: 'video/mp4',
+      buffer: Buffer.alloc(MAX_AI_TOTAL_MEDIA_BYTES),
+    } as Express.Multer.File;
+
+    await service.suggest(
+      mockUser,
+      {
+        tone: PostSuggestionTone.CONCISE,
+        mediaItems: [
+          { type: PostMediaType.IMAGE, fileName: 'small.png' },
+          { type: PostMediaType.VIDEO, fileName: 'huge.mp4' },
+        ],
+      },
+      [smallImage, hugeVideo],
+    );
+
+    const callArg = (
+      mocks.aiServiceMock.generateStructured.mock.calls[0] as unknown[]
+    )?.[0] as { mediaParts?: Array<{ mimeType: string }>; userPrompt: string };
+    expect(callArg.mediaParts).toHaveLength(1);
+    expect(callArg.mediaParts?.[0]?.mimeType).toBe('image/png');
+    expect(callArg.userPrompt).toContain('huge.mp4');
+  });
+
+  it('validates SuggestPostContentDto cleanly with ValidationPipe for both multipart/form-data and JSON', async () => {
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    });
+
+    const multipartTransformed = (await pipe.transform(
+      {
+        tone: PostSuggestionTone.FRIENDLY,
+        visibility: PostVisibility.FRIENDS,
+        taggedUserNames: JSON.stringify(['Minh Anh']),
+        mediaItems: JSON.stringify([
+          { type: PostMediaType.IMAGE, fileName: 'photo.jpg' },
+        ]),
+      },
+      { type: 'body', metatype: SuggestPostContentDto },
+    )) as SuggestPostContentDto;
+
+    expect(multipartTransformed.taggedUserNames).toEqual(['Minh Anh']);
+    expect(multipartTransformed.mediaItems?.[0]).toMatchObject({
+      type: PostMediaType.IMAGE,
+      fileName: 'photo.jpg',
+    });
+
+    const jsonTransformed = (await pipe.transform(
+      {
+        tone: PostSuggestionTone.INSPIRING,
+        visibility: PostVisibility.PUBLIC,
+        taggedUserNames: ['Quốc Bảo'],
+        mediaItems: [
+          { type: PostMediaType.VIDEO, fileName: 'trip.mp4', duration: 12 },
+        ],
+      },
+      { type: 'body', metatype: SuggestPostContentDto },
+    )) as SuggestPostContentDto;
+
+    expect(jsonTransformed.mediaItems?.[0]?.duration).toBe(12);
   });
 });
