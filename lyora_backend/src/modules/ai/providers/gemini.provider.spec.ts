@@ -172,4 +172,103 @@ describe('GeminiProvider', () => {
     });
     expect(mockGenerateContent).toHaveBeenCalledTimes(1);
   });
+
+  it('sends multimodal image and audio inlineData parts to Gemini primary model', async () => {
+    mockGenerateContent.mockResolvedValueOnce({
+      text: JSON.stringify({
+        suggestions: [{ content: 'Gợi ý theo ảnh & âm thanh' }],
+      }),
+    });
+
+    const provider = createProvider();
+    const imageBuf = Buffer.from('fake-png-bytes');
+    const audioBuf = Buffer.from('fake-audio-bytes');
+
+    const result = await provider.generateStructured<{
+      suggestions: Array<{ content: string }>;
+    }>({
+      ...sampleRequest,
+      mediaParts: [
+        { mimeType: 'image/png', data: imageBuf },
+        { mimeType: 'audio/webm', data: audioBuf },
+      ],
+    });
+
+    expect(result).toEqual({
+      suggestions: [{ content: 'Gợi ý theo ảnh & âm thanh' }],
+    });
+    expect(mockGenerateContent.mock.calls[0]?.[0]).toMatchObject({
+      model: 'gemini-3.5-flash-lite',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: 'User prompt' },
+            {
+              inlineData: {
+                mimeType: 'image/png',
+                data: imageBuf.toString('base64'),
+              },
+            },
+            {
+              inlineData: {
+                mimeType: 'audio/webm',
+                data: audioBuf.toString('base64'),
+              },
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('keeps only image inlineData parts when falling back to gemma-4-31b-it', async () => {
+    const unavailableError = Object.assign(new Error('503 UNAVAILABLE'), {
+      status: 503,
+    });
+    mockGenerateContent
+      .mockRejectedValueOnce(unavailableError)
+      .mockRejectedValueOnce(unavailableError)
+      .mockResolvedValueOnce({
+        text: JSON.stringify({
+          suggestions: [{ content: 'Fallback Gemma giữ ảnh' }],
+        }),
+      });
+
+    const provider = createProvider();
+    const imageBuf = Buffer.from('fake-jpg');
+    const videoBuf = Buffer.from('fake-mp4');
+
+    const result = await provider.generateStructured<{
+      suggestions: Array<{ content: string }>;
+    }>({
+      ...sampleRequest,
+      mediaParts: [
+        { mimeType: 'image/jpeg', data: imageBuf },
+        { mimeType: 'video/mp4', data: videoBuf },
+      ],
+    });
+
+    expect(result).toEqual({
+      suggestions: [{ content: 'Fallback Gemma giữ ảnh' }],
+    });
+    expect(mockGenerateContent).toHaveBeenCalledTimes(3);
+    expect(mockGenerateContent.mock.calls[2]?.[0]).toMatchObject({
+      model: 'gemma-4-31b-it',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: 'User prompt' },
+            {
+              inlineData: {
+                mimeType: 'image/jpeg',
+                data: imageBuf.toString('base64'),
+              },
+            },
+          ],
+        },
+      ],
+    });
+  });
 });

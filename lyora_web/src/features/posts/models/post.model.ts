@@ -109,9 +109,16 @@ export const POST_SUGGESTION_TONES: readonly PostSuggestionToneOption[] = [
   { value: 'CONCISE', label: 'Ngắn gọn' },
 ] as const;
 
+export const suggestPostMediaContextSchema = z.object({
+  type: z.enum(['IMAGE', 'VIDEO', 'AUDIO']),
+  fileName: z.string().trim().max(255).optional(),
+  alt: z.string().trim().max(255).optional(),
+  duration: z.number().nonnegative().max(3600).optional(),
+});
+
 export const suggestPostContentSchema = z
   .object({
-    topic: z.string().trim().max(500, 'Ý chính tối đa 500 ký tự').optional(),
+    topic: z.string().trim().max(2000, 'Ý chính tối đa 2.000 ký tự').optional(),
     currentContent: z
       .string()
       .trim()
@@ -120,10 +127,25 @@ export const suggestPostContentSchema = z
     tone: z.enum(['FRIENDLY', 'FUNNY', 'PROFESSIONAL', 'INSPIRING', 'CONCISE'], {
       message: 'Giọng điệu không hợp lệ',
     }),
+    visibility: z.enum(['PUBLIC', 'FRIENDS', 'PRIVATE']).optional(),
+    taggedUserNames: z.array(z.string().trim().max(120)).max(20).optional(),
+    mediaItems: z.array(suggestPostMediaContextSchema).max(8).optional(),
+    mediaFiles: z.array(z.custom<File>()).max(8).optional(),
   })
-  .refine((data) => Boolean(data.topic?.length || data.currentContent?.length), {
-    message: 'Vui lòng nhập ý chính hoặc viết vài dòng để AI gợi ý',
-    path: ['topic'],
-  });
+  .refine(
+    (data) =>
+      Boolean(
+        data.topic?.length ||
+          data.currentContent?.length ||
+          data.mediaItems?.length ||
+          data.mediaFiles?.length ||
+          data.taggedUserNames?.length,
+      ),
+    {
+      message:
+        'Vui lòng nhập ý chính, viết vài dòng hoặc đính kèm ảnh/video/ghi âm để AI gợi ý',
+      path: ['topic'],
+    },
+  );
 
 export type SuggestPostContentFormValues = z.infer<typeof suggestPostContentSchema>;
