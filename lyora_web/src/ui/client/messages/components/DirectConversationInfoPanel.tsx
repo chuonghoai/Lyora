@@ -20,6 +20,7 @@ export interface DirectConversationInfoPanelProps {
   currentUserId?: string;
   conversations?: ConversationSummary[];
   onOpenGroupModal?: () => void;
+  onOpenUserProfile?: (userId: string) => void;
 }
 
 export const DirectConversationInfoPanel: React.FC<
@@ -29,6 +30,7 @@ export const DirectConversationInfoPanel: React.FC<
   onClose,
   currentUserId,
   onOpenGroupModal,
+  onOpenUserProfile,
 }) => {
   // Trích xuất thông tin người bạn đối thoại từ members hoặc directParticipant
   const partner = useMemo(() => {
@@ -41,6 +43,11 @@ export const DirectConversationInfoPanel: React.FC<
     }
     return null;
   }, [conversation.members, currentUserId]);
+
+  const partnerId =
+    partner?.id ??
+    conversation.members?.find((m) => m.userId !== currentUserId)?.userId ??
+    conversation.members?.[0]?.userId;
 
   const displayName = partner?.fullName || conversation.title || 'Người dùng';
   const displayAvatar = partner?.avatarUrl || conversation.avatarUrl;
@@ -74,27 +81,59 @@ export const DirectConversationInfoPanel: React.FC<
       <div className="flex-1 overflow-y-auto min-h-0">
         {/* B. Profile summary */}
         <div className="flex flex-col items-center text-center p-5 border-b border-border/70">
-          <div className="relative">
-            {displayAvatar ? (
-              <img
-                src={displayAvatar}
-                alt={displayName}
-                className="h-20 w-20 rounded-full object-cover border border-border shadow-xs"
-              />
-            ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-secondary font-bold text-2xl text-primary shadow-xs">
-                {initial}
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 flex items-center justify-center gap-1.5 max-w-full px-2">
-            <h4
-              title={displayName}
-              className="truncate max-w-[220px] text-base font-bold text-foreground"
+          {onOpenUserProfile && partnerId ? (
+            <button
+              type="button"
+              onClick={() => onOpenUserProfile(partnerId)}
+              title={`Xem hồ sơ của ${displayName}`}
+              className="group flex flex-col items-center cursor-pointer rounded-xl px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              {displayName}
-            </h4>
+              <div className="relative">
+                {displayAvatar ? (
+                  <img
+                    src={displayAvatar}
+                    alt={displayName}
+                    className="h-20 w-20 rounded-full object-cover border border-border shadow-xs"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-secondary font-bold text-2xl text-primary shadow-xs">
+                    {initial}
+                  </div>
+                )}
+              </div>
+
+              <span
+                title={displayName}
+                className="mt-3 truncate max-w-[220px] text-base font-bold text-foreground group-hover:text-primary group-hover:underline"
+              >
+                {displayName}
+              </span>
+            </button>
+          ) : (
+            <div className="relative">
+              {displayAvatar ? (
+                <img
+                  src={displayAvatar}
+                  alt={displayName}
+                  className="h-20 w-20 rounded-full object-cover border border-border shadow-xs"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-secondary font-bold text-2xl text-primary shadow-xs">
+                  {initial}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-1 flex items-center justify-center gap-1.5 max-w-full px-2">
+            {(!onOpenUserProfile || !partnerId) && (
+              <h4
+                title={displayName}
+                className="truncate max-w-[220px] text-base font-bold text-foreground"
+              >
+                {displayName}
+              </h4>
+            )}
             <button
               type="button"
               onClick={() => handlePreviewAction('Chỉnh sửa biệt danh')}

@@ -2,8 +2,8 @@ export const ROUTES = {
   CLIENT: {
     ROOT: '/',
     MESSAGES: '/messages',
-    PROFILE: '/profile',
-    PROFILE_DETAIL: '/profile/:userId',
+    PROFILE: '/me',
+    PROFILE_DETAIL: '/:userId',
   },
   ADMIN: {
     ROOT: '/admin',
@@ -16,10 +16,32 @@ export const ROUTES = {
   },
 } as const;
 
-export function getClientProfilePath(userId?: string): string {
+export function getClientProfilePath(userId?: string, selfId?: string): string {
   const trimmed = userId?.trim();
-  if (!trimmed || trimmed === 'me') {
-    return ROUTES.CLIENT.PROFILE;
+  if (trimmed && trimmed !== 'me') {
+    return `/${encodeURIComponent(trimmed)}`;
   }
-  return `/profile/${encodeURIComponent(trimmed)}`;
+
+  const normalizedSelfId = selfId?.trim();
+  if (normalizedSelfId && normalizedSelfId !== 'me') {
+    return `/${encodeURIComponent(normalizedSelfId)}`;
+  }
+
+  return ROUTES.CLIENT.PROFILE;
+}
+
+const RESERVED_TOP_LEVEL_PATHS = new Set<string>([
+  ROUTES.CLIENT.ROOT,
+  ROUTES.CLIENT.MESSAGES,
+  ROUTES.ADMIN.ROOT,
+  ROUTES.AUTH.LOGIN,
+  ROUTES.AUTH.REGISTER,
+  ROUTES.AUTH.FORGOT_PASSWORD,
+]);
+
+export function isClientProfilePathname(pathname: string): boolean {
+  if (RESERVED_TOP_LEVEL_PATHS.has(pathname) || pathname.startsWith(`${ROUTES.ADMIN.ROOT}/`)) {
+    return false;
+  }
+  return /^\/[^/]+$/.test(pathname) || /^\/profile(\/[^/]+)?$/.test(pathname);
 }

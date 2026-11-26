@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="angry-face" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#DC2626" />
+      <stop offset="48%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#FBBF24" />
+    </linearGradient>
+    <style><![CDATA[
+      .angry-head {
+        transform-origin: 64px 70px;
+        animation: angryShake 1.45s ease-in-out infinite;
+      }
+      .angry-brows {
+        transform-origin: 64px 50px;
+        animation: angryBrows 1.45s ease-in-out infinite;
+      }
+      .steam-l {
+        transform-origin: 33px 27px;
+        animation: steamPuffL 1.45s ease-out infinite;
+      }
+      .steam-r {
+        transform-origin: 95px 27px;
+        animation: steamPuffR 1.45s ease-out 0.14s infinite;
+      }
+      @keyframes angryShake {
+        0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+        16% { transform: translate(-2.5px, -1px) rotate(-3deg) scale(1.04); }
+        24% { transform: translate(2.5px, 0) rotate(3deg) scale(1.05); }
+        32% { transform: translate(-2.5px, -1px) rotate(-3deg) scale(1.05); }
+        40% { transform: translate(2.5px, 0) rotate(3deg) scale(1.04); }
+        48% { transform: translate(-1.5px, 1px) rotate(-1.5deg) scale(1.02); }
+        60% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      }
+      @keyframes angryBrows {
+        0%, 100% { transform: translateY(0); }
+        25%, 45% { transform: translateY(3px); }
+      }
+      @keyframes steamPuffL {
+        0%, 12% { transform: translate(0, 7px) scale(0.3); opacity: 0; }
+        38% { transform: translate(-4px, -3px) scale(1); opacity: 0.95; }
+        82%, 100% { transform: translate(-8px, -11px) scale(1.1); opacity: 0; }
+      }
+      @keyframes steamPuffR {
+        0%, 12% { transform: translate(0, 7px) scale(0.3); opacity: 0; }
+        38% { transform: translate(4px, -3px) scale(1); opacity: 0.95; }
+        82%, 100% { transform: translate(8px, -11px) scale(1.1); opacity: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .angry-head, .angry-brows, .steam-l, .steam-r {
+          animation: none !important;
+        }
+        .steam-l, .steam-r { opacity: 0.85; transform: translate(0, -3px) scale(0.9); }
+      }
+    ]]></style>
+  </defs>
+
+  <ellipse cx="64" cy="117" rx="34" ry="5.5" fill="#991B1B" opacity="0.18" />
+
+  <g class="angry-head">
+    <circle cx="64" cy="67" r="46" fill="url(#angry-face)" stroke="#EF4444" stroke-opacity="0.45" stroke-width="1.5" />
+    <ellipse cx="48" cy="36" rx="20" ry="9" transform="rotate(-15 48 36)" fill="#FFFFFF" opacity="0.26" />
+
+    <!-- Heated cheek glow -->
+    <ellipse cx="32" cy="73" rx="8" ry="5" fill="#EF4444" opacity="0.35" />
+    <ellipse cx="96" cy="73" rx="8" ry="5" fill="#EF4444" opacity="0.35" />
+
+    <!-- Intense eyes peeking beneath brows -->
+    <ellipse cx="46" cy="62" rx="6.8" ry="6.2" fill="#3F0A0A" />
+    <circle cx="44" cy="60.5" r="2" fill="#FFFFFF" />
+
+    <ellipse cx="82" cy="62" rx="6.8" ry="6.2" fill="#3F0A0A" />
+    <circle cx="80" cy="60.5" r="2" fill="#FFFFFF" />
+
+    <!-- Sharp scowling eyebrows -->
+    <g class="angry-brows" fill="none" stroke="#450A0A" stroke-width="6.5" stroke-linecap="round">
+      <path d="M31 46 L55 56" />
+      <path d="M97 46 L73 56" />
+    </g>
+
+    <!-- Tense frowning mouth -->
+    <path
+      d="M44 89 Q64 78 84 89"
+      fill="none"
+      stroke="#450A0A"
+      stroke-width="6"
+      stroke-linecap="round"
+    />
+  </g>
+
+  <!-- Cartoon steam puffs -->
+  <g class="steam-l">
+    <path fill="#FFFFFF" stroke="#FECACA" stroke-width="1.2" d="M27 31 C24 31 22 28.8 22 26.2 C22 23.9 23.8 22 26 21.7 C26.8 19.3 29.1 17.6 31.8 17.6 C35 17.6 37.6 20 37.9 23.1 C39.7 23.7 41 25.4 41 27.4 C41 29.9 39 31.9 36.5 31.9 H27 Z" />
+  </g>
+  <g class="steam-r">
+    <path fill="#FFFFFF" stroke="#FECACA" stroke-width="1.2" d="M91.5 31.9 C89 31.9 87 29.9 87 27.4 C87 25.4 88.3 23.7 90.1 23.1 C90.4 20 93 17.6 96.2 17.6 C98.9 17.6 101.2 19.3 102 21.7 C104.2 22 106 23.9 106 26.2 C106 28.8 104 31 101 31 H91.5 Z" />
+  </g>
+</svg>

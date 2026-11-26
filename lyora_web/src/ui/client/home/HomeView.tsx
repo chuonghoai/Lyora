@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AppImage, Button, Input, LoadingSpinner, formatDate } from '@/core';
-import { ROUTES } from '@/routes/paths';
+import { getClientProfilePath } from '@/routes/paths';
 import { useHomeController } from './home.controller';
 import { PostComposer } from './PostComposer';
 import { PostCard } from './PostCard';
@@ -9,13 +9,11 @@ import { PostDetailModal } from './PostDetailModal';
 import { PostReactionsModal } from './PostReactionsModal';
 import { AllFriendsModal } from './AllFriendsModal';
 import { FriendChatWidget } from './FriendChatWidget';
+import { MediaLightboxModal } from './MediaLightboxModal';
 import {
   BookmarkIcon,
   CalendarIcon,
   ChatBubbleOutlineIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CloseIcon,
   EditIcon,
   GlobeIcon,
   ICON_SCALE_ANIMATION,
@@ -55,7 +53,10 @@ export default function HomeView(): React.ReactElement {
       <aside className="hidden lg:block sticky top-20 space-y-4">
         {/* Card 1: Ảnh đại diện, giới thiệu & Thông số hồ sơ */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3.5">
-          <div className="flex items-center gap-3">
+          <Link
+            to={getClientProfilePath(profileUser?.id)}
+            className="group flex items-center gap-3 rounded-xl p-1 -m-1 hover:bg-background/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
             {profileUser?.avatarUrl ? (
               <AppImage
                 src={profileUser.avatarUrl}
@@ -69,14 +70,16 @@ export default function HomeView(): React.ReactElement {
               </span>
             )}
             <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
+              <p className="text-sm font-bold text-foreground group-hover:text-primary group-hover:underline truncate">
+                {displayName}
+              </p>
               <p className="text-xs text-muted truncate">{profileUser?.email}</p>
               <span className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-medium text-success">
                 <span className="h-1.5 w-1.5 rounded-full bg-success" />
                 Đang hoạt động
               </span>
             </div>
-          </div>
+          </Link>
 
           {profileUser?.bio && (
             <p className="text-xs text-muted leading-relaxed border-t border-border pt-2.5">
@@ -106,7 +109,7 @@ export default function HomeView(): React.ReactElement {
           </div>
 
           <Link
-            to={ROUTES.CLIENT.PROFILE}
+            to={getClientProfilePath(profileUser?.id)}
             className="block w-full rounded-xl border border-border bg-background py-2 text-center text-xs font-semibold text-primary hover:bg-secondary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             Mở trang cá nhân
@@ -278,11 +281,9 @@ export default function HomeView(): React.ReactElement {
           <div className="flex flex-wrap items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                {controller.activeTab === 'mine'
-                  ? 'Bài viết của tôi'
-                  : controller.activeTab === 'saved'
-                    ? 'Bài viết đã lưu'
-                    : 'Bảng tin cộng đồng'}
+                {controller.activeTab === 'saved'
+                  ? 'Bài viết đã lưu'
+                  : 'Bảng tin cộng đồng'}
               </h1>
               {controller.isPreviewFallback && (
                 <span className="inline-flex items-center rounded-full border border-secondary-strong bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
@@ -449,8 +450,9 @@ export default function HomeView(): React.ReactElement {
                     <div className="w-full flex items-center justify-between gap-2.5 rounded-xl px-2 py-1.5 hover:bg-background transition-colors">
                       <button
                         type="button"
-                        onClick={() => controller.handleOpenChatWithFriend(friend.id)}
-                        className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer"
+                        onClick={() => controller.handleOpenUserProfile(friend.id)}
+                        title={`Xem hồ sơ của ${friend.fullName}`}
+                        className="group flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         <span className="relative shrink-0">
                           {friend.avatarUrl ? (
@@ -469,7 +471,7 @@ export default function HomeView(): React.ReactElement {
                             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-card" />
                           )}
                         </span>
-                        <span className="text-xs font-semibold text-foreground truncate">
+                        <span className="text-xs font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
                           {friend.fullName}
                         </span>
                       </button>
@@ -532,66 +534,7 @@ export default function HomeView(): React.ReactElement {
       <FriendChatWidget controller={controller} />
 
       {/* Lightbox xem ảnh phóng to */}
-      {controller.lightbox && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Xem ảnh phóng to"
-          onClick={controller.handleCloseLightbox}
-          className="fixed inset-0 z-[65] bg-foreground/85 backdrop-blur-sm flex items-center justify-center p-4"
-        >
-          <button
-            type="button"
-            onClick={controller.handleCloseLightbox}
-            aria-label="Đóng xem ảnh"
-            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-card text-foreground shadow-md hover:bg-background cursor-pointer"
-          >
-            <CloseIcon className="w-5 h-5" />
-          </button>
-
-          {controller.lightbox.items.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                controller.handlePrevLightbox();
-              }}
-              aria-label="Ảnh trước"
-              className="absolute left-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-card text-foreground shadow-md hover:bg-background cursor-pointer"
-            >
-              <ChevronLeftIcon className="w-5 h-5" />
-            </button>
-          )}
-
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-4xl max-h-[85vh] flex flex-col items-center gap-3"
-          >
-            <AppImage
-              src={controller.lightbox.items[controller.lightbox.index]?.url}
-              alt={controller.lightbox.items[controller.lightbox.index]?.alt || 'Ảnh bài viết'}
-              className="max-h-[78vh] w-auto max-w-full rounded-xl object-contain bg-card"
-            />
-            <span className="rounded-full bg-card/90 px-3 py-1 text-xs font-medium text-foreground tabular-nums">
-              {controller.lightbox.index + 1} / {controller.lightbox.items.length}
-            </span>
-          </div>
-
-          {controller.lightbox.items.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                controller.handleNextLightbox();
-              }}
-              aria-label="Ảnh tiếp theo"
-              className="absolute right-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-card text-foreground shadow-md hover:bg-background cursor-pointer"
-            >
-              <ChevronRightIcon className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      )}
+      <MediaLightboxModal controller={controller} />
     </div>
   );
 }

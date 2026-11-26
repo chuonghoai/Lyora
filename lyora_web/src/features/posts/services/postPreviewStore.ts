@@ -471,10 +471,10 @@ const EXTRA_REACTOR_PROFILES: PostAuthor[] = [
   AUTHORS.thaoVy,
   AUTHORS.quocBao,
   AUTHORS.giaHan,
-  { id: 'react-u-6', fullName: 'Đặng Xuân Huy', avatarUrl: makeAvatarSvg('XH', '#E0E7FF', '#3730A3') },
+  { id: 'preview-user-6', fullName: 'Đặng Xuân Huy', avatarUrl: makeAvatarSvg('XH', '#DBEAFE', '#1D4ED8') },
   { id: 'react-u-7', fullName: 'Hoàng Đình Vũ', avatarUrl: makeAvatarSvg('ĐV', '#DCFCE7', '#166534') },
-  { id: 'react-u-8', fullName: 'Bùi Thanh Trúc', avatarUrl: makeAvatarSvg('TT', '#FCE7F3', '#9D174D') },
-  { id: 'react-u-9', fullName: 'Ngô Minh Khôi', avatarUrl: makeAvatarSvg('MK', '#FEF3C7', '#92400E') },
+  { id: 'preview-user-7', fullName: 'Bùi Thanh Trúc', avatarUrl: makeAvatarSvg('TT', '#FCE7F3', '#9D174D') },
+  { id: 'preview-user-8', fullName: 'Ngô Minh Khôi', avatarUrl: makeAvatarSvg('MK', '#FEF3C7', '#92400E') },
   { id: 'react-u-10', fullName: 'Lý Ngọc Diệp', avatarUrl: makeAvatarSvg('ND', '#DBEAFE', '#1D4ED8') },
   { id: 'react-u-11', fullName: 'Trương Tuấn Kiệt', avatarUrl: makeAvatarSvg('TK', '#F3E8FF', '#6B21A8') },
   { id: 'react-u-12', fullName: 'Đỗ Phương Linh', avatarUrl: makeAvatarSvg('PL', '#FFE4E6', '#BE123C') },
@@ -502,6 +502,7 @@ class PostPreviewStore {
     const limit = Math.max(1, params.limit ?? 5);
     const search = params.search?.trim().toLowerCase() ?? '';
     const filter = params.filter ?? 'all';
+    const targetAuthorId = params.authorId?.trim();
     const currentUser = resolveCurrentAuthor();
 
     let filtered = this.posts.filter((post) => {
@@ -511,8 +512,8 @@ class PostPreviewStore {
 
       const isMine =
         post.author.id === currentUser.id ||
-        post.author.email === currentUser.email ||
-        (post.id === 'post-preview-7' && filter === 'mine');
+        (Boolean(currentUser.email) && post.author.email === currentUser.email) ||
+        (post.id === 'post-preview-7' && (filter === 'mine' || targetAuthorId === currentUser.id));
 
       if (post.visibility === 'PRIVATE' && !isMine) {
         return false;
@@ -520,6 +521,14 @@ class PostPreviewStore {
 
       if (filter === 'mine' && !isMine) {
         return false;
+      }
+
+      if (targetAuthorId) {
+        const isTargetSelf =
+          targetAuthorId === 'me' || targetAuthorId === currentUser.id;
+        if (isTargetSelf ? !isMine : post.author.id !== targetAuthorId) {
+          return false;
+        }
       }
 
       if (filter === 'saved' && !post.isBookmarked) {
@@ -732,7 +741,7 @@ class PostPreviewStore {
             id: `${postId}-react-${rType}-${globalIdx}`,
             user: {
               ...baseProfile,
-              id: `${baseProfile.id}-${cycle}`,
+              id: cycle === 0 ? baseProfile.id : `${baseProfile.id}-${cycle}`,
               fullName: displayName,
             },
             reactionType: rType,

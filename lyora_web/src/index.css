@@ -134,6 +134,52 @@ code {
   animation: lyora-slide-up 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Hiệu ứng mở thanh chọn emote động & phản hồi khi nhấn chọn cảm xúc */
+@keyframes lyora-emote-dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes lyora-emote-pop {
+  0% {
+    transform: scale(0.72);
+  }
+  55% {
+    transform: scale(1.24) rotate(-6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-emote-dock-in {
+  animation: lyora-emote-dock-in 170ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-emote-pop {
+  animation: lyora-emote-pop 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.motion-reduce .animate-slide-up,
+html.motion-reduce .animate-emote-dock-in,
+html.motion-reduce .animate-emote-pop {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up,
+  .animate-emote-dock-in,
+  .animate-emote-pop {
+    animation: none !important;
+  }
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--mut);
 }

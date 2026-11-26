@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <radialGradient id="sad-face" cx="38%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="#FEF08A" />
+      <stop offset="55%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#D97706" />
+    </radialGradient>
+    <linearGradient id="sad-tear" x1="25%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#F0F9FF" />
+      <stop offset="45%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <style><![CDATA[
+      .sad-head {
+        transform-origin: 64px 70px;
+        animation: sadSway 2.3s ease-in-out infinite;
+      }
+      .sad-brows {
+        transform-origin: 64px 44px;
+        animation: sadBrows 2.3s ease-in-out infinite;
+      }
+      .sad-drop {
+        transform-origin: 86px 69px;
+        animation: sadTearDrop 2.3s ease-in infinite;
+      }
+      .sad-mouth {
+        transform-origin: 64px 86px;
+        animation: sadMouth 2.3s ease-in-out infinite;
+      }
+      @keyframes sadSway {
+        0%, 100% { transform: translateY(0) rotate(-2.5deg); }
+        50% { transform: translateY(3.5px) rotate(2.5deg); }
+      }
+      @keyframes sadBrows {
+        0%, 100% { transform: translateY(0); }
+        45% { transform: translateY(-2.5px); }
+      }
+      @keyframes sadTearDrop {
+        0% { transform: translate(0, 0) scale(0.35); opacity: 0; }
+        24% { transform: translate(1px, 3px) scale(1); opacity: 1; }
+        68% { transform: translate(2px, 21px) scale(1.05); opacity: 0.95; }
+        90%, 100% { transform: translate(2px, 28px) scale(0.6); opacity: 0; }
+      }
+      @keyframes sadMouth {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(0.95, 1.08); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sad-head, .sad-brows, .sad-drop, .sad-mouth {
+          animation: none !important;
+        }
+        .sad-drop { transform: translate(1px, 10px) scale(0.95); opacity: 1; }
+      }
+    ]]></style>
+  </defs>
+
+  <ellipse cx="64" cy="116" rx="34" ry="5.5" fill="#92400E" opacity="0.16" />
+
+  <g class="sad-head">
+    <circle cx="64" cy="64" r="47" fill="url(#sad-face)" stroke="#D97706" stroke-opacity="0.35" stroke-width="1.5" />
+    <ellipse cx="48" cy="34" rx="21" ry="10" transform="rotate(-16 48 34)" fill="#FFFFFF" opacity="0.34" />
+
+    <!-- Soft worried drooping eyebrows -->
+    <g class="sad-brows" fill="none" stroke="#4A1D0D" stroke-width="5" stroke-linecap="round">
+      <path d="M32 50 Q43 48 53 39" />
+      <path d="M96 50 Q85 48 75 39" />
+    </g>
+
+    <!-- Glistening pleading eyes -->
+    <circle cx="46" cy="60" r="7.5" fill="#3B1709" />
+    <circle cx="43.5" cy="57" r="2.7" fill="#FFFFFF" />
+    <path d="M40.5 64.5 Q46 67 51.5 64.5" fill="none" stroke="#BAE6FD" stroke-width="2" stroke-linecap="round" opacity="0.85" />
+
+    <circle cx="82" cy="60" r="7.5" fill="#3B1709" />
+    <circle cx="79.5" cy="57" r="2.7" fill="#FFFFFF" />
+    <path d="M76.5 64.5 Q82 67 87.5 64.5" fill="none" stroke="#BAE6FD" stroke-width="2" stroke-linecap="round" opacity="0.85" />
+
+    <!-- Downturned mouth -->
+    <path
+      class="sad-mouth"
+      d="M47 88 Q64 76 81 88"
+      fill="none"
+      stroke="#4A1D0D"
+      stroke-width="5.5"
+      stroke-linecap="round"
+    />
+
+    <!-- Rolling crystal teardrop -->
+    <g class="sad-drop">
+      <path
+        fill="url(#sad-tear)"
+        stroke="#FFFFFF"
+        stroke-opacity="0.6"
+        stroke-width="1"
+        d="M87 63 C87 63 80 71.5 80 76.2 C80 80.1 83.1 83 87 83 C90.9 83 94 80.1 94 76.2 C94 71.5 87 63 87 63 Z"
+      />
+      <circle cx="84.5" cy="76" r="2" fill="#FFFFFF" opacity="0.9" />
+    </g>
+  </g>
+</svg>
