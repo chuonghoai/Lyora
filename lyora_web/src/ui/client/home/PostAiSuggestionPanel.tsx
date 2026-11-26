@@ -54,23 +54,72 @@ export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({
       </div>
 
       <div className="space-y-1.5">
-        <label
-          htmlFor="lyora-ai-topic-input"
-          className="block text-xs font-medium text-foreground"
-        >
-          Ý chính của bài viết
-        </label>
-        <input
+        <div className="flex items-center justify-between gap-2">
+          <label
+            htmlFor="lyora-ai-topic-input"
+            className="block text-xs font-medium text-foreground"
+          >
+            Ý chính / mô tả chi tiết cho bài viết
+          </label>
+          <span className="text-[11px] tabular-nums text-muted">
+            {controller.aiTopic.length}/2.000
+          </span>
+        </div>
+        <textarea
           id="lyora-ai-topic-input"
-          type="text"
-          maxLength={500}
+          rows={4}
+          maxLength={2000}
           value={controller.aiTopic}
           onChange={controller.handleAiTopicChange}
           onKeyDown={controller.handleAiTopicKeyDown}
           disabled={controller.isGeneratingAi}
-          placeholder="Ví dụ: Cuối tuần đi cà phê cùng bạn thân..."
-          className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:bg-background disabled:text-muted/60 disabled:cursor-not-allowed"
+          placeholder="Ví dụ: Cuối tuần đi phượt Đà Lạt cùng nhóm bạn thân, dừng chân uống cà phê ngắm sương sớm và chụp được nhiều ảnh đẹp..."
+          className="min-h-[96px] w-full resize-y rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:bg-background disabled:text-muted/60 disabled:cursor-not-allowed"
         />
+        <p className="text-[11px] text-muted">
+          Viết thoải mái nhiều dòng (có thể bỏ trống nếu đã đính kèm ảnh, video hoặc ghi âm) · Nhấn Ctrl+Enter để tạo nhanh
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <span className="block text-xs font-medium text-foreground">
+          Ngữ cảnh đang đưa vào AI
+        </span>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] font-medium text-foreground">
+            Hiển thị: {controller.aiContextInfo.visibilityLabel}
+          </span>
+          {controller.aiContextInfo.hasComposerContent && (
+            <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
+              Nội dung đang soạn
+            </span>
+          )}
+          {controller.aiContextInfo.imageCount > 0 && (
+            <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
+              {controller.aiContextInfo.imageCount} ảnh
+            </span>
+          )}
+          {controller.aiContextInfo.videoCount > 0 && (
+            <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
+              {controller.aiContextInfo.videoCount} video
+            </span>
+          )}
+          {controller.aiContextInfo.audioCount > 0 && (
+            <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
+              {controller.aiContextInfo.audioCount} bản ghi âm
+            </span>
+          )}
+          {controller.aiContextInfo.taggedUserNames.length > 0 && (
+            <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
+              Gắn thẻ {controller.aiContextInfo.taggedUserNames.length} bạn bè
+            </span>
+          )}
+        </div>
+        {controller.aiContextInfo.oversizedMediaCount > 0 && (
+          <p className="text-[11px] text-warning">
+            Có {controller.aiContextInfo.oversizedMediaCount} tệp quá dung lượng gửi trực tiếp (&gt; 18 MB) nên AI chỉ sử dụng tên tệp/thông tin mô tả của tệp đó.
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -118,12 +167,6 @@ export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({
             {controller.aiSuggestions.length > 0 ? 'Tạo lại gợi ý' : 'Tạo gợi ý'}
           </span>
         </Button>
-
-        {controller.composerContent.trim().length > 0 && (
-          <span className="text-xs text-muted">
-            Sẽ kết hợp với nội dung bạn đang soạn
-          </span>
-        )}
       </div>
 
       {controller.aiError && (
@@ -184,7 +227,7 @@ export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({
       )}
 
       <p className="text-xs text-muted">
-        Nội dung do AI tạo, hãy kiểm tra lại trước khi đăng. Văn bản bạn nhập sẽ được gửi tới dịch vụ AI để tạo gợi ý.
+        Nội dung do AI tạo, hãy kiểm tra lại trước khi đăng. Văn bản, bạn bè gắn thẻ và tệp đính kèm (ảnh, video, ghi âm) trong bài viết sẽ được gửi tới dịch vụ AI để tạo gợi ý.
       </p>
     </section>
   );

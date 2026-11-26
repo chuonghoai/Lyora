@@ -1,7 +1,13 @@
+export interface AiMediaPart {
+  mimeType: string;
+  data: Buffer;
+}
+
 export interface AiStructuredRequest {
   systemInstruction: string;
   userPrompt: string;
   responseSchema: Record<string, unknown>;
+  mediaParts?: AiMediaPart[];
   maxOutputTokens?: number;
   temperature?: number;
 }

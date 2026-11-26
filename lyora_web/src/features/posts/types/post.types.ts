@@ -112,10 +112,21 @@ export type PostSuggestionTone =
   | 'INSPIRING'
   | 'CONCISE';
 
+export interface SuggestPostMediaContextItem {
+  type: PostMediaType;
+  fileName?: string;
+  alt?: string;
+  duration?: number;
+}
+
 export interface SuggestPostContentPayload {
   topic?: string;
   currentContent?: string;
   tone: PostSuggestionTone;
+  visibility?: PostVisibility;
+  taggedUserNames?: string[];
+  mediaItems?: SuggestPostMediaContextItem[];
+  mediaFiles?: File[];
 }
 
 export interface PostContentSuggestion {
