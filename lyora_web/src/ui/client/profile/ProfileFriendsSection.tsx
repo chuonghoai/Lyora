@@ -150,7 +150,7 @@ export const ProfileFriendsSection: React.FC<ProfileFriendsSectionProps> = ({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {controller.filteredFriendsList.map((friend) => {
             const initial = friend.fullName.charAt(0).toUpperCase();
             const isSelfCard = controller.currentUser?.id === friend.id;
@@ -210,7 +210,9 @@ export const ProfileFriendsSection: React.FC<ProfileFriendsSectionProps> = ({
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={() => controller.handleOpenUserProfile('me')}
+                      onClick={() =>
+                        controller.handleOpenUserProfile(controller.currentUser?.id ?? 'me')
+                      }
                       className="h-8 px-3 py-1 text-xs"
                     >
                       Hồ sơ của bạn

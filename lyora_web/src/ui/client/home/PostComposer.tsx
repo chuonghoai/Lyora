@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppImage, Button } from '@/core';
-import { MAX_AUDIO_RECORDING_SECONDS, type HomeController } from './home.controller';
+import { MAX_AUDIO_RECORDING_SECONDS, type PostFeedController } from './post-feed.controller';
 import {
   AtSignIcon,
   CloseIcon,
@@ -19,7 +19,7 @@ import { PostAiSuggestionPanel } from './PostAiSuggestionPanel';
 import { PostAudioPlayer, PostMediaGallery } from './PostCard';
 
 export interface PostComposerProps {
-  controller: HomeController;
+  controller: PostFeedController;
 }
 
 const RECORDING_WAVE_BARS = 28;

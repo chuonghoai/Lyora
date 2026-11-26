@@ -382,6 +382,29 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
               <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />
             )}
           </button>
+
+          <button
+            type="button"
+            onClick={() => controller.handleSelectTab('activity')}
+            aria-current={controller.activeTab === 'activity' ? 'page' : undefined}
+            className={`relative shrink-0 inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors cursor-pointer ${
+              controller.activeTab === 'activity'
+                ? 'text-primary'
+                : 'text-muted hover:text-foreground hover:bg-background rounded-t-lg'
+            }`}
+          >
+            <span>
+              {controller.isOwnProfile ? 'Dấu ấn & Đã lưu' : 'Được gắn thẻ'}
+            </span>
+            <span className="rounded-full bg-background border border-border px-2 py-0.5 text-xs font-semibold text-foreground tabular-nums">
+              {controller.isOwnProfile
+                ? controller.activityCounts.totalGrouped
+                : controller.activityCounts.tagged}
+            </span>
+            {controller.activeTab === 'activity' && (
+              <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />
+            )}
+          </button>
         </nav>
       </div>
     </section>

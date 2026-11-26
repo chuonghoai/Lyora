@@ -1,11 +1,11 @@
 import React from 'react';
 import { Button } from '@/core';
 import { POST_SUGGESTION_TONES } from '@/features/posts';
-import type { HomeController } from './home.controller';
+import type { PostFeedController } from './post-feed.controller';
 import { CloseIcon, SparklesIcon, UndoIcon } from './ClientIcons';
 
 export interface PostAiSuggestionPanelProps {
-  controller: HomeController;
+  controller: PostFeedController;
 }
 
 export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({

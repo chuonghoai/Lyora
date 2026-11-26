@@ -1,7 +1,11 @@
 import React from 'react';
 import { Button } from '@/core';
 import { ArrowLeftIcon } from '../home/ClientIcons';
+import { MediaLightboxModal } from '../home/MediaLightboxModal';
+import { PostDetailModal } from '../home/PostDetailModal';
+import { PostReactionsModal } from '../home/PostReactionsModal';
 import { ProfileAboutSection } from './ProfileAboutSection';
+import { ProfileActivitySection } from './ProfileActivitySection';
 import { ProfileEditModal } from './ProfileEditModal';
 import { ProfileFriendsSection } from './ProfileFriendsSection';
 import { ProfileHeader } from './ProfileHeader';
@@ -86,7 +90,9 @@ export const ProfileView: React.FC = () => {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => controller.handleOpenUserProfile('me')}
+              onClick={() =>
+                controller.handleOpenUserProfile(controller.currentUser?.id ?? 'me')
+              }
               className="h-8 px-3 py-1 text-xs text-primary"
             >
               Về hồ sơ của tôi
@@ -113,9 +119,15 @@ export const ProfileView: React.FC = () => {
       {controller.activeTab === 'friends' && (
         <ProfileFriendsSection controller={controller} />
       )}
+      {controller.activeTab === 'activity' && (
+        <ProfileActivitySection controller={controller} />
+      )}
 
-      {/* Modal Chỉnh sửa Hồ sơ cá nhân */}
+      {/* Modal Chỉnh sửa Hồ sơ cá nhân & Các Modal Tương tác Bài viết */}
       <ProfileEditModal controller={controller} />
+      <PostDetailModal controller={controller} />
+      <PostReactionsModal controller={controller} />
+      <MediaLightboxModal controller={controller} />
     </div>
   );
 };

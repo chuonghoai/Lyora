@@ -19,11 +19,15 @@ import type {
 } from '../types/post.types';
 import { postKeys } from './post.keys';
 
-export function useInfinitePostsQuery(params: Omit<PostsQueryParams, 'page'> = {}) {
+export function useInfinitePostsQuery(
+  params: Omit<PostsQueryParams, 'page'> = {},
+  options?: { enabled?: boolean },
+) {
   const normalizedParams: Omit<PostsQueryParams, 'page'> = {
     limit: params.limit ?? 5,
     search: params.search?.trim() || undefined,
     filter: params.filter ?? 'all',
+    authorId: params.authorId?.trim() || undefined,
     visibility: params.visibility,
   };
 
@@ -37,6 +41,7 @@ export function useInfinitePostsQuery(params: Omit<PostsQueryParams, 'page'> = {
       }),
     getNextPageParam: (lastPage) =>
       lastPage.meta.hasNextPage ? lastPage.meta.page + 1 : undefined,
+    enabled: options?.enabled ?? true,
     staleTime: 10 * 60 * 1000,
   });
 }

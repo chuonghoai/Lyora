@@ -36,6 +36,10 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
 
   const isGroup = conversation.type === 'GROUP';
   const initial = (conversation.title || 'L').charAt(0).toUpperCase();
+  const directPartnerId = !isGroup
+    ? conversation.members?.find((m) => m.userId !== controller.currentUser?.id)?.userId ??
+      conversation.members?.[0]?.userId
+    : undefined;
 
   return (
     <div className="flex h-full flex-1 flex-col bg-background min-w-0">
@@ -52,42 +56,74 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
             <ArrowLeftIcon className="h-6 w-6" />
           </button>
 
-          {/* Avatar */}
-          <div className="relative shrink-0">
-            {conversation.avatarUrl ? (
-              <img
-                src={conversation.avatarUrl}
-                alt={conversation.title}
-                className="h-10 w-10 rounded-full object-cover border border-border"
-              />
-            ) : (
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full border border-border font-bold text-sm ${
-                  isGroup
-                    ? 'bg-secondary text-primary'
-                    : 'bg-background text-foreground'
-                }`}
-              >
-                {isGroup ? (
-                  <UsersIcon className="h-5 w-5" />
+          {!isGroup && directPartnerId ? (
+            <button
+              type="button"
+              onClick={() => controller.handleOpenUserProfile(directPartnerId)}
+              title={`Xem hồ sơ của ${conversation.title}`}
+              className="group flex items-center gap-3 min-w-0 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <div className="relative shrink-0">
+                {conversation.avatarUrl ? (
+                  <img
+                    src={conversation.avatarUrl}
+                    alt={conversation.title}
+                    className="h-10 w-10 rounded-full object-cover border border-border"
+                  />
                 ) : (
-                  <span>{initial}</span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border font-bold text-sm bg-background text-foreground">
+                    <span>{initial}</span>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* Title & Status */}
-          <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold text-foreground leading-tight">
-              {conversation.title}
-            </h2>
-            <p className="text-xs text-muted">
-              {isGroup
-                ? `${conversation.members?.length ?? 0} thành viên`
-                : 'Hội thoại trực tiếp'}
-            </p>
-          </div>
+              <div className="min-w-0">
+                <h2 className="truncate text-base font-semibold text-foreground group-hover:text-primary group-hover:underline leading-tight">
+                  {conversation.title}
+                </h2>
+                <p className="text-xs text-muted">Hội thoại trực tiếp</p>
+              </div>
+            </button>
+          ) : (
+            <>
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                {conversation.avatarUrl ? (
+                  <img
+                    src={conversation.avatarUrl}
+                    alt={conversation.title}
+                    className="h-10 w-10 rounded-full object-cover border border-border"
+                  />
+                ) : (
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full border border-border font-bold text-sm ${
+                      isGroup
+                        ? 'bg-secondary text-primary'
+                        : 'bg-background text-foreground'
+                    }`}
+                  >
+                    {isGroup ? (
+                      <UsersIcon className="h-5 w-5" />
+                    ) : (
+                      <span>{initial}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Title & Status */}
+              <div className="min-w-0">
+                <h2 className="truncate text-base font-semibold text-foreground leading-tight">
+                  {conversation.title}
+                </h2>
+                <p className="text-xs text-muted">
+                  {isGroup
+                    ? `${conversation.members?.length ?? 0} thành viên`
+                    : 'Hội thoại trực tiếp'}
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right Action: Toggle Info Panel */}
@@ -114,6 +150,7 @@ export const ConversationWorkspace: React.FC<ConversationWorkspaceProps> = ({
         messages={controller.activeMessages}
         conversation={conversation}
         currentUserId={controller.currentUser?.id}
+        onOpenUserProfile={controller.handleOpenUserProfile}
       />
 
       {/* Bottom Area: Chat Composer */}

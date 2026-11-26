@@ -191,7 +191,12 @@ export const GroupConversationInfoPanel: React.FC<
                     key={member.id}
                     className="flex items-center justify-between rounded-lg p-2 hover:bg-background/80 transition-colors"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => controller?.handleOpenUserProfile(member.userId)}
+                      title={`Xem hồ sơ của ${member.user?.fullName || 'thành viên'}`}
+                      className="group flex items-center gap-2.5 min-w-0 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
                       <div className="relative shrink-0">
                         {member.user?.avatarUrl ? (
                           <img
@@ -209,7 +214,7 @@ export const GroupConversationInfoPanel: React.FC<
                       <div className="min-w-0">
                         <p
                           title={member.user?.fullName}
-                          className="truncate max-w-[140px] text-xs font-medium text-foreground"
+                          className="truncate max-w-[140px] text-xs font-medium text-foreground group-hover:text-primary group-hover:underline"
                         >
                           {member.user?.fullName}
                           {isMe && (
@@ -222,7 +227,7 @@ export const GroupConversationInfoPanel: React.FC<
                           {isOwner ? 'Trưởng nhóm' : 'Thành viên'}
                         </span>
                       </div>
-                    </div>
+                    </button>
 
                     {/* Role Badge & Actions */}
                     <div className="flex items-center gap-1.5 shrink-0">

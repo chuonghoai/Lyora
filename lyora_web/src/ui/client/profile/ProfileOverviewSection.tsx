@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppImage, Button, formatDate, formatDateTime, formatRelativeTime } from '@/core';
+import { AppImage, Button, formatDate, LoadingSpinner } from '@/core';
 import {
   AcademicCapIcon,
   AtSignIcon,
@@ -7,26 +7,43 @@ import {
   BriefcaseIcon,
   CalendarIcon,
   ChevronRightIcon,
-  CommentIcon,
   EditIcon,
   GlobeIcon,
   HeartIcon,
   HomePinIcon,
   LinkIcon,
+  LockIcon,
   MailIcon,
   MapPinIcon,
   PhoneIcon,
-  ShareIcon,
-  ThumbUpIcon,
+  RefreshIcon,
   UserCheckIcon,
   UserPlusIcon,
   UsersIcon,
 } from '../home/ClientIcons';
+import { PostCard } from '../home/PostCard';
+import { PostComposer } from '../home/PostComposer';
 import type { ProfileController } from './profile.controller';
 
 export interface ProfileOverviewSectionProps {
   controller: ProfileController;
 }
+
+const ProfilePostSkeletonCard: React.FC = () => (
+  <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 rounded-full bg-secondary/50 animate-pulse" />
+      <div className="space-y-2 flex-1">
+        <div className="h-3.5 w-36 rounded-lg bg-secondary/50 animate-pulse" />
+        <div className="h-3 w-24 rounded-lg bg-border/70 animate-pulse" />
+      </div>
+    </div>
+    <div className="space-y-2">
+      <div className="h-3.5 w-full rounded-lg bg-border/70 animate-pulse" />
+      <div className="h-3.5 w-5/6 rounded-lg bg-border/70 animate-pulse" />
+    </div>
+  </div>
+);
 
 export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
   controller,
@@ -36,7 +53,7 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[310px_minmax(0,1fr)] xl:grid-cols-[310px_minmax(0,1fr)_330px] 2xl:grid-cols-[330px_minmax(0,1fr)_350px] gap-5 items-start">
-      {/* CỘT TRÁI: Giới thiệu bản thân & Thông số hồ sơ */}
+      {/* CỘT TRÁI: Giới thiệu bản thân, Thông số kết nối & Cụm 3 nút Dấu ấn gộp 1 chỗ */}
       <aside className="space-y-4">
         <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between gap-2">
@@ -166,289 +183,248 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
             </p>
           </div>
         </section>
-      </aside>
 
-      {/* CỘT GIỮA: Dấu ấn tương tác & Bài viết liên quan (1 thanh 3 nút tách biệt với tab Của tôi) */}
-      <section
-        aria-label="Hoạt động bài viết liên quan"
-        className="min-w-0 space-y-4"
-      >
-        <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* Gôm 3 nút (Được chia sẻ / gắn thẻ, Yêu thích, Đã lưu bookmark) vào 1 chỗ */}
+        <section
+          aria-label={
+            controller.isOwnProfile
+              ? 'Dấu ấn cá nhân và bài viết đã lưu'
+              : 'Bài viết được gắn thẻ'
+          }
+          className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3"
+        >
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-semibold text-foreground">
-                {controller.isOwnProfile
-                  ? 'Dấu ấn tương tác & chia sẻ'
-                  : `Hoạt động của ${profile.fullName}`}
+              <h2 className="text-sm font-semibold text-foreground">
+                {controller.isOwnProfile ? 'Dấu ấn & Đã lưu' : 'Hoạt động được gắn thẻ'}
               </h2>
-              <p className="text-xs text-muted">
+              <p className="text-[11px] text-muted">
                 {controller.isOwnProfile
-                  ? 'Các bài viết gắn thẻ bạn, bạn đã thích hoặc đã lưu. Bài do bạn đăng nằm tại mục Của tôi.'
-                  : 'Bài viết công khai và nội dung thành viên này được gắn thẻ.'}
+                  ? 'Chia sẻ/gắn thẻ, bài viết yêu thích và đã lưu'
+                  : `Các bài công khai có gắn thẻ ${profile.fullName}`}
               </p>
             </div>
-
-            {controller.isOwnProfile && (
-              <button
-                type="button"
-                onClick={controller.handleNavigateToMyPosts}
-                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-secondary/60 transition-colors cursor-pointer"
-              >
-                <span>Bài viết Của tôi</span>
-                <ChevronRightIcon className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
 
-          {/* Thanh 1 tab gồm 3 nút (Hồ sơ cá nhân) hoặc 2 nút công khai (Hồ sơ người khác) */}
           {controller.isOwnProfile ? (
             <div
-              role="tablist"
-              aria-label="Lọc dấu ấn bài viết trên hồ sơ"
-              className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-background p-1"
+              role="group"
+              aria-label="Truy cập nhanh dấu ấn và lưu trữ"
+              className="rounded-xl border border-border bg-background/50 divide-y divide-border overflow-hidden"
             >
               <button
                 type="button"
-                role="tab"
-                aria-selected={controller.activityTab === 'tagged'}
-                onClick={() => controller.handleSelectActivityTab('tagged')}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  controller.activityTab === 'tagged'
-                    ? 'bg-card text-primary shadow-sm'
-                    : 'text-muted hover:text-foreground'
-                }`}
+                onClick={() => controller.handleOpenActivityTab('tagged')}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-card hover:text-primary transition-colors cursor-pointer"
               >
-                <AtSignIcon className="w-4 h-4 shrink-0" />
-                <span className="truncate">Gắn thẻ & Chia sẻ</span>
-                <span className="hidden sm:inline text-[11px] font-medium text-muted tabular-nums">
-                  ({controller.activityCounts.tagged})
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <AtSignIcon className="w-4 h-4 text-primary shrink-0" />
+                  <span className="truncate">Được chia sẻ / Gắn thẻ</span>
+                </span>
+                <span className="inline-flex items-center gap-1 shrink-0 text-muted tabular-nums">
+                  <span>{controller.activityCounts.tagged}</span>
+                  <ChevronRightIcon className="w-3.5 h-3.5" />
                 </span>
               </button>
 
               <button
                 type="button"
-                role="tab"
-                aria-selected={controller.activityTab === 'reacted'}
-                onClick={() => controller.handleSelectActivityTab('reacted')}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  controller.activityTab === 'reacted'
-                    ? 'bg-card text-accent shadow-sm'
-                    : 'text-muted hover:text-foreground'
-                }`}
+                onClick={() => controller.handleOpenActivityTab('reacted')}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-card hover:text-accent transition-colors cursor-pointer"
               >
-                <HeartIcon
-                  className="w-4 h-4 shrink-0"
-                  filled={controller.activityTab === 'reacted'}
-                />
-                <span className="truncate">Đã thích</span>
-                <span className="hidden sm:inline text-[11px] font-medium text-muted tabular-nums">
-                  ({controller.activityCounts.reacted})
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <HeartIcon className="w-4 h-4 text-accent shrink-0" />
+                  <span className="truncate">Bài viết yêu thích</span>
+                </span>
+                <span className="inline-flex items-center gap-1 shrink-0 text-muted tabular-nums">
+                  <span>{controller.activityCounts.reacted}</span>
+                  <ChevronRightIcon className="w-3.5 h-3.5" />
                 </span>
               </button>
 
               <button
                 type="button"
-                role="tab"
-                aria-selected={controller.activityTab === 'saved'}
-                onClick={() => controller.handleSelectActivityTab('saved')}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  controller.activityTab === 'saved'
-                    ? 'bg-card text-primary shadow-sm'
-                    : 'text-muted hover:text-foreground'
-                }`}
+                onClick={() => controller.handleOpenActivityTab('saved')}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-card hover:text-primary transition-colors cursor-pointer"
               >
-                <BookmarkIcon
-                  className="w-4 h-4 shrink-0"
-                  filled={controller.activityTab === 'saved'}
-                />
-                <span className="truncate">Đã lưu</span>
-                <span className="hidden sm:inline text-[11px] font-medium text-muted tabular-nums">
-                  ({controller.activityCounts.saved})
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <BookmarkIcon className="w-4 h-4 text-primary shrink-0" />
+                  <span className="truncate">Đã lưu bookmark</span>
+                </span>
+                <span className="inline-flex items-center gap-1 shrink-0 text-muted tabular-nums">
+                  <span>{controller.activityCounts.saved}</span>
+                  <ChevronRightIcon className="w-3.5 h-3.5" />
                 </span>
               </button>
             </div>
           ) : (
-            <div
-              role="tablist"
-              aria-label="Lọc bài viết công khai trên hồ sơ thành viên"
-              className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-background p-1"
+            <button
+              type="button"
+              onClick={() => controller.handleOpenActivityTab('tagged')}
+              className="w-full flex items-center justify-between gap-2 rounded-xl border border-border bg-background/50 px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-card hover:text-primary transition-colors cursor-pointer"
             >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={controller.activityTab === 'authored'}
-                onClick={() => controller.handleSelectActivityTab('authored')}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  controller.activityTab === 'authored'
-                    ? 'bg-card text-primary shadow-sm'
-                    : 'text-muted hover:text-foreground'
-                }`}
-              >
-                <GlobeIcon className="w-4 h-4 shrink-0" />
-                <span>Bài viết công khai</span>
-                <span className="text-[11px] font-medium text-muted tabular-nums">
-                  ({controller.activityCounts.authored})
-                </span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={controller.activityTab === 'tagged'}
-                onClick={() => controller.handleSelectActivityTab('tagged')}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                  controller.activityTab === 'tagged'
-                    ? 'bg-card text-primary shadow-sm'
-                    : 'text-muted hover:text-foreground'
-                }`}
-              >
-                <AtSignIcon className="w-4 h-4 shrink-0" />
-                <span>Được gắn thẻ</span>
-                <span className="text-[11px] font-medium text-muted tabular-nums">
-                  ({controller.activityCounts.tagged})
-                </span>
-              </button>
-            </div>
+              <span className="inline-flex items-center gap-2 min-w-0">
+                <AtSignIcon className="w-4 h-4 text-primary shrink-0" />
+                <span className="truncate">Xem bài được gắn thẻ</span>
+              </span>
+              <span className="inline-flex items-center gap-1 shrink-0 text-muted tabular-nums">
+                <span>{controller.activityCounts.tagged}</span>
+                <ChevronRightIcon className="w-3.5 h-3.5" />
+              </span>
+            </button>
           )}
+        </section>
+      </aside>
+
+      {/* VÙNG GIỮA CHÍNH: Nơi viết bài viết (với hồ sơ của mình) & Danh sách bài viết đã đăng */}
+      <section aria-label="Bài viết trên trang cá nhân" className="min-w-0 space-y-4">
+        {controller.isOwnProfile && <PostComposer controller={controller} />}
+
+        {/* Thanh đầu mục & lọc quyền riêng tư bài viết */}
+        <div className="rounded-2xl border border-border bg-card p-4 sm:px-5 shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-base font-semibold text-foreground">
+              {controller.isOwnProfile
+                ? 'Bài viết của tôi'
+                : `Bài viết của ${profile.fullName}`}
+            </h2>
+            <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-primary-active tabular-nums">
+              {controller.totalItems}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => controller.handleSelectProfileVisibilityFilter('ALL')}
+              className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer ${
+                controller.profileVisibilityFilter === 'ALL'
+                  ? 'border-primary bg-secondary text-primary-active font-semibold'
+                  : 'border-border bg-card text-muted hover:text-foreground'
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              type="button"
+              onClick={() => controller.handleSelectProfileVisibilityFilter('PUBLIC')}
+              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer ${
+                controller.profileVisibilityFilter === 'PUBLIC'
+                  ? 'border-primary bg-secondary text-primary-active font-semibold'
+                  : 'border-border bg-card text-muted hover:text-foreground'
+              }`}
+            >
+              <GlobeIcon className="w-3.5 h-3.5" />
+              <span>Công khai</span>
+            </button>
+            {controller.isOwnProfile && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => controller.handleSelectProfileVisibilityFilter('FRIENDS')}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer ${
+                    controller.profileVisibilityFilter === 'FRIENDS'
+                      ? 'border-primary bg-secondary text-primary-active font-semibold'
+                      : 'border-border bg-card text-muted hover:text-foreground'
+                  }`}
+                >
+                  <UsersIcon className="w-3.5 h-3.5" />
+                  <span>Bạn bè</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => controller.handleSelectProfileVisibilityFilter('PRIVATE')}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer ${
+                    controller.profileVisibilityFilter === 'PRIVATE'
+                      ? 'border-primary bg-secondary text-primary-active font-semibold'
+                      : 'border-border bg-card text-muted hover:text-foreground'
+                  }`}
+                >
+                  <LockIcon className="w-3.5 h-3.5" />
+                  <span>Riêng tư</span>
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={() => void controller.handleRefreshFeed()}
+              disabled={controller.isFeedRefetching}
+              aria-label="Làm mới bài viết"
+              title="Làm mới"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted hover:bg-background hover:text-primary transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <RefreshIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
-        {/* Danh sách bài viết trong tab đang chọn */}
-        {controller.isLoadingActivity ? (
-          <div className="space-y-4">
-            <div className="h-44 rounded-2xl border border-border bg-card animate-pulse" />
-            <div className="h-44 rounded-2xl border border-border bg-card animate-pulse" />
+        {/* Danh sách bài viết đã đăng */}
+        {controller.isFeedLoading ? (
+          <div className="space-y-4" aria-label="Đang tải bài viết hồ sơ">
+            <ProfilePostSkeletonCard />
+            <ProfilePostSkeletonCard />
           </div>
-        ) : controller.activityItems.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-2">
+        ) : controller.isFeedError ? (
+          <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
+            <p className="text-base font-semibold text-foreground">
+              Không thể tải danh sách bài viết
+            </p>
+            <p className="text-xs sm:text-sm text-muted">
+              Vui lòng kiểm tra kết nối máy chủ hoặc thử tải lại trang.
+            </p>
+            <Button variant="primary" onClick={() => void controller.handleRefreshFeed()}>
+              Thử lại
+            </Button>
+          </div>
+        ) : controller.posts.length === 0 ? (
+          <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
             <p className="text-sm font-semibold text-foreground">
-              Chưa có bài viết nào trong mục này
+              {controller.isOwnProfile
+                ? controller.profileVisibilityFilter !== 'ALL'
+                  ? 'Không có bài viết nào ở chế độ hiển thị này'
+                  : 'Bạn chưa có bài viết nào trên trang cá nhân'
+                : `${profile.fullName} chưa có bài viết công khai nào`}
             </p>
             <p className="text-xs text-muted">
-              {controller.activityTab === 'tagged'
-                ? 'Các bài viết bạn được gắn thẻ hoặc chia sẻ tới bạn sẽ xuất hiện tại đây.'
-                : controller.activityTab === 'reacted'
-                  ? 'Những bài viết bạn bày tỏ cảm xúc trên bảng tin sẽ hiển thị ở đây.'
-                  : controller.activityTab === 'saved'
-                    ? 'Các bài viết bạn đánh dấu lưu sẽ tập hợp tại đây để xem lại nhanh.'
-                    : 'Thành viên này chưa có bài viết công khai nào.'}
+              {controller.isOwnProfile
+                ? 'Hãy chia sẻ suy nghĩ, hình ảnh hoặc khoảnh khắc mới ngay bằng khung viết bài ở trên.'
+                : 'Các bài viết mới của thành viên này sẽ xuất hiện tại đây.'}
             </p>
+            {controller.isOwnProfile && controller.profileVisibilityFilter === 'ALL' && (
+              <div className="pt-1">
+                <Button variant="primary" onClick={controller.handleExpandComposer}>
+                  Viết bài đầu tiên
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
-            {controller.activityItems.map((item) => {
-              const authorInitial = item.author.fullName.charAt(0).toUpperCase();
-              return (
-                <article
-                  key={item.id}
-                  className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-3"
+            {controller.posts.map((post) => (
+              <PostCard key={post.id} post={post} controller={controller} />
+            ))}
+
+            <div ref={controller.loadMoreSentinelRef} className="py-3 text-center">
+              {controller.isFetchingNextPage ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted shadow-sm">
+                  <LoadingSpinner size="sm" />
+                  <span>Đang tải thêm bài viết...</span>
+                </div>
+              ) : controller.hasNextPage ? (
+                <Button
+                  variant="outline"
+                  onClick={controller.handleLoadMore}
+                  className="text-xs"
                 >
-                  {/* Ngữ cảnh nguồn bài viết */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-border">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                        item.kind === 'REACTED'
-                          ? 'bg-accent/10 text-accent'
-                          : 'bg-secondary text-primary-active'
-                      }`}
-                    >
-                      {item.kind === 'REACTED' ? (
-                        <HeartIcon className="w-3 h-3" filled />
-                      ) : item.kind === 'SAVED' ? (
-                        <BookmarkIcon className="w-3 h-3" filled />
-                      ) : item.kind === 'SHARED_TO_ME' ? (
-                        <ShareIcon className="w-3 h-3" />
-                      ) : (
-                        <AtSignIcon className="w-3 h-3" />
-                      )}
-                      <span>{item.contextLabel}</span>
-                    </span>
-
-                    <span className="inline-flex items-center gap-1 text-[11px] text-muted">
-                      {item.visibility === 'FRIENDS' ? (
-                        <>
-                          <UsersIcon className="w-3.5 h-3.5 text-info" />
-                          <span>Bạn bè</span>
-                        </>
-                      ) : (
-                        <>
-                          <GlobeIcon className="w-3.5 h-3.5" />
-                          <span>Công khai</span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* Tác giả bài viết (nhấn vào mở hồ sơ tác giả) */}
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => controller.handleOpenUserProfile(item.author.id)}
-                      className="shrink-0 cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    >
-                      {item.author.avatarUrl ? (
-                        <AppImage
-                          src={item.author.avatarUrl}
-                          alt={item.author.fullName}
-                          rounded
-                          className="h-10 w-10 border border-border"
-                        />
-                      ) : (
-                        <span className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active border border-border">
-                          {authorInitial}
-                        </span>
-                      )}
-                    </button>
-
-                    <div className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => controller.handleOpenUserProfile(item.author.id)}
-                        className="text-sm font-semibold text-foreground hover:text-primary hover:underline truncate cursor-pointer block text-left"
-                      >
-                        {item.author.fullName}
-                      </button>
-                      <time
-                        dateTime={item.createdAt}
-                        title={formatDateTime(item.createdAt)}
-                        className="text-xs text-muted block"
-                      >
-                        {formatRelativeTime(item.createdAt)}
-                      </time>
-                    </div>
-                  </div>
-
-                  {/* Nội dung bài */}
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">
-                    {item.content}
-                  </p>
-
-                  {item.mediaPreviewUrl && (
-                    <div className="overflow-hidden rounded-xl border border-border bg-background">
-                      <AppImage
-                        src={item.mediaPreviewUrl}
-                        alt={item.mediaPreviewAlt || 'Hình ảnh bài viết'}
-                        className="w-full max-h-64 rounded-none object-cover"
-                      />
-                    </div>
-                  )}
-
-                  {/* Tóm tắt số liệu tương tác (chỉ đọc) */}
-                  <div className="pt-2.5 border-t border-border flex items-center justify-between text-xs text-muted tabular-nums">
-                    <span className="inline-flex items-center gap-1.5">
-                      <ThumbUpIcon className="w-3.5 h-3.5 text-primary" />
-                      <span>{item.reactionCount} cảm xúc</span>
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex items-center gap-1">
-                        <CommentIcon className="w-3.5 h-3.5" />
-                        <span>{item.commentCount} bình luận</span>
-                      </span>
-                      <span>{item.shareCount} chia sẻ</span>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+                  Tải thêm bài viết
+                </Button>
+              ) : (
+                <p className="text-xs text-muted">
+                  Đã hiển thị toàn bộ bài viết hiện có.
+                </p>
+              )}
+            </div>
           </div>
         )}
       </section>
@@ -512,7 +488,7 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
                         </span>
 
                         <span className="min-w-0 flex-1">
-                          <span className="block text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary truncate">
+                          <span className="block text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
                             {friend.fullName}
                           </span>
                           <span className="block text-[11px] text-muted truncate tabular-nums">
@@ -578,7 +554,7 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
                         </span>
                       )}
                       <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary truncate">
+                        <p className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
                           {person.fullName}
                         </p>
                         <p className="text-[11px] text-muted truncate tabular-nums">
@@ -638,7 +614,7 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
                         </span>
                       )}
                       <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary truncate">
+                        <p className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
                           {person.fullName}
                         </p>
                         <p className="text-[11px] text-muted truncate tabular-nums">

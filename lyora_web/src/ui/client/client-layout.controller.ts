@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { localStorageService, toast, useAuthStore, useClickOutside } from '@/core';
 import { useLogoutMutation, useRefreshSessionMutation } from '@/features/auth';
 import type { PostsFeedFilter } from '@/features/posts';
-import { ROUTES } from '@/routes/paths';
+import { getClientProfilePath, isClientProfilePathname, ROUTES } from '@/routes/paths';
 
 export type AccountMenuPanel = 'main' | 'accessibility' | 'settings' | 'help';
 export type FontScalePreference = 'normal' | 'large';
@@ -15,6 +15,7 @@ export interface ClientNotificationItem {
   timeLabel: string;
   isRead: boolean;
   targetTab?: PostsFeedFilter;
+  targetRoute?: 'profile';
 }
 
 const INITIAL_NOTIFICATIONS: ClientNotificationItem[] = [
@@ -50,7 +51,7 @@ const INITIAL_NOTIFICATIONS: ClientNotificationItem[] = [
       'Kiểm tra và cập nhật số điện thoại cá nhân trong hồ sơ để đồng bộ thông tin liên hệ nhanh chóng.',
     timeLabel: '2 giờ trước',
     isRead: true,
-    targetTab: 'mine',
+    targetRoute: 'profile',
   },
   {
     id: 'notif-5',
@@ -123,7 +124,7 @@ export function useClientLayoutController() {
 
   const activeTabParam = searchParams.get('tab');
   const activeTab: PostsFeedFilter =
-    activeTabParam === 'mine' || activeTabParam === 'saved' ? activeTabParam : 'all';
+    activeTabParam === 'saved' ? 'saved' : 'all';
 
   // Áp dụng tùy chọn Màn hình & Trợ năng lên root document
   useEffect(() => {
@@ -235,9 +236,13 @@ export function useClientLayoutController() {
   const handleOpenComposer = () => {
     if (activeTab !== 'all') {
       handleSelectTab('all');
+    } else if (location.pathname !== ROUTES.CLIENT.ROOT) {
+      navigate(ROUTES.CLIENT.ROOT);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const composerTrigger = document.getElementById('lyora-post-composer-trigger');
+    const composerTrigger =
+      document.getElementById('lyora-post-composer-input') ??
+      document.getElementById('lyora-post-composer-btn');
     composerTrigger?.focus();
   };
 
@@ -257,16 +262,15 @@ export function useClientLayoutController() {
 
   const isMessagesRoute = location.pathname === ROUTES.CLIENT.MESSAGES;
   const isHomeRoute = location.pathname === ROUTES.CLIENT.ROOT;
-  const isProfileRoute =
-    location.pathname === ROUTES.CLIENT.PROFILE ||
-    location.pathname.startsWith(`${ROUTES.CLIENT.PROFILE}/`);
+  const isProfileRoute = isClientProfilePathname(location.pathname);
 
   const handleOpenProfile = () => {
     setIsAccountMenuOpen(false);
     setAccountMenuPanel('main');
     setIsNotificationOpen(false);
-    if (location.pathname !== ROUTES.CLIENT.PROFILE) {
-      navigate(ROUTES.CLIENT.PROFILE);
+    const targetPath = getClientProfilePath(user?.id);
+    if (location.pathname !== targetPath) {
+      navigate(targetPath);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
