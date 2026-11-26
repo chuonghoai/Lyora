@@ -87,11 +87,30 @@ export class PostsController {
   @Throttle({ default: { limit: 6, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Tạo gợi ý nội dung thành công')
+  @UseInterceptors(
+    FilesInterceptor('files', MAX_UPLOAD_FILES, {
+      storage: memoryStorage(),
+      limits: { fileSize: MAX_UPLOAD_FILE_SIZE, files: MAX_UPLOAD_FILES },
+      fileFilter: (_req, file, callback) => {
+        if (!isAllowedMimeType(file.mimetype)) {
+          callback(
+            new BadRequestException(
+              'Chỉ hỗ trợ ảnh (JPG, PNG, WEBP, GIF), video (MP4, WEBM) và âm thanh (WEBM, MP3, WAV, OGG)',
+            ),
+            false,
+          );
+          return;
+        }
+        callback(null, true);
+      },
+    }),
+  )
   async suggestContent(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() dto: SuggestPostContentDto,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.postAiSuggestionService.suggest(currentUser, dto);
+    return this.postAiSuggestionService.suggest(currentUser, dto, files);
   }
 
   @Get(':id')

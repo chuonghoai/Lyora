@@ -149,6 +149,65 @@ export function useHomeController() {
   });
   const [profileFormError, setProfileFormError] = useState<string | null>(null);
 
+  // Composer State (Drag & Drop local media upload)
+  const [isComposerExpanded, setIsComposerExpanded] = useState(false);
+  const [composerContent, setComposerContent] = useState('');
+  const [composerVisibility, setComposerVisibility] = useState<PostVisibility>('PUBLIC');
+  const [composerMedia, setComposerMedia] = useState<PostMediaItem[]>([]);
+  const [composerError, setComposerError] = useState<string | null>(null);
+  const [isDraggingComposerMedia, setIsDraggingComposerMedia] = useState(false);
+  const composerDragDepthRef = useRef(0);
+  const composerPendingFilesRef = useRef<Map<string, File>>(new Map());
+  const createdBlobUrlsRef = useRef<Set<string>>(new Set());
+  const [composerTaggedUsers, setComposerTaggedUsers] = useState<ComposerTaggedUser[]>([]);
+  const [isMentionPickerOpen, setIsMentionPickerOpen] = useState(false);
+  const [isComposerPreviewOpen, setIsComposerPreviewOpen] = useState(false);
+  const [hasSavedDraft, setHasSavedDraft] = useState(
+    () => (localStorageService.getItem<ComposerDraft>(COMPOSER_DRAFT_KEY)?.content ?? '').trim().length > 0,
+  );
+
+  const getComposerMediaFiles = useCallback((): File[] => {
+    const files: File[] = [];
+    for (const item of composerMedia) {
+      if (!item.id) continue;
+      const pending = composerPendingFilesRef.current.get(item.id);
+      if (pending) {
+        files.push(pending);
+      }
+    }
+    return files;
+  }, [composerMedia]);
+
+  const { clearAiUndo, resetAiAssistant, ...aiAssistant } = usePostAiAssistant({
+    composerContent,
+    composerVisibility,
+    composerMedia,
+    composerTaggedUsers,
+    getComposerMediaFiles,
+    setComposerContent,
+    onClearComposerError: () => setComposerError(null),
+  });
+
+  // Trạng thái thu âm giọng nói
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [audioRecordingDuration, setAudioRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioTimerRef = useRef<number | null>(null);
+  const audioDurationRef = useRef(0);
+  const isRecordingCancelledRef = useRef(false);
+
+  // Comment, Hide, Detail Modal, Reactions Modal, All Friends Modal & Lightbox State
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [commentMediaDrafts, setCommentMediaDrafts] = useState<
+    Record<string, PostMediaItem | null>
+  >({});
+  const [commentErrors, setCommentErrors] = useState<Record<string, string>>({});
+  const [expandedCommentsMap, setExpandedCommentsMap] = useState<Record<string, boolean>>({});
+  const [temporarilyHiddenIds, setTemporarilyHiddenIds] = useState<Record<string, boolean>>({});
+  const [detailPostId, setDetailPostId] = useState<string | null>(null);
+  const [reactionsPopover, setReactionsPopover] = useState<ReactionsPopoverState | null>(null);
   const [isAllFriendsModalOpen, setIsAllFriendsModalOpen] = useState(false);
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
 

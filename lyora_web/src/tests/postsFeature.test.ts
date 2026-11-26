@@ -322,7 +322,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     expect(top.map((r) => r.type)).toEqual(['LIKE', 'LOVE']);
   });
 
-  it('validates suggestPostContentSchema with Vietnamese errors', () => {
+  it('validates suggestPostContentSchema with Vietnamese errors and full post context', () => {
     const emptyInput = suggestPostContentSchema.safeParse({
       topic: '   ',
       currentContent: '',
@@ -331,15 +331,21 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     expect(emptyInput.success).toBe(false);
     if (!emptyInput.success) {
       expect(emptyInput.error.issues[0]?.message).toBe(
-        'Vui lòng nhập ý chính hoặc viết vài dòng để AI gợi ý',
+        'Vui lòng nhập ý chính, viết vài dòng hoặc đính kèm ảnh/video/ghi âm để AI gợi ý',
       );
     }
 
     const tooLongTopic = suggestPostContentSchema.safeParse({
-      topic: 'a'.repeat(501),
+      topic: 'a'.repeat(2001),
       tone: 'CONCISE',
     });
     expect(tooLongTopic.success).toBe(false);
+
+    const longTopicOk = suggestPostContentSchema.safeParse({
+      topic: 'a'.repeat(2000),
+      tone: 'CONCISE',
+    });
+    expect(longTopicOk.success).toBe(true);
 
     const topicOnly = suggestPostContentSchema.safeParse({
       topic: '  Đi Đà Lạt cuối tuần  ',
@@ -352,9 +358,17 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       tone: 'INSPIRING',
     });
     expect(contentOnly.success).toBe(true);
+
+    const mediaOnly = suggestPostContentSchema.safeParse({
+      topic: '',
+      currentContent: '',
+      tone: 'FRIENDLY',
+      mediaItems: [{ type: 'IMAGE', fileName: 'hoang-hon.jpg' }],
+    });
+    expect(mediaOnly.success).toBe(true);
   });
 
-  it('PostService.suggestContent validates, trims, unwraps data, and does not fallback on 404', async () => {
+  it('PostService.suggestContent validates, trims, forwards full context, and does not fallback on 404', async () => {
     const suggestionResult = {
       tone: 'FRIENDLY' as const,
       suggestions: [
@@ -384,9 +398,27 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     });
     expect(data).toEqual(suggestionResult);
 
+    const photo = new File(['img-bytes'], 'da-lat.jpg', { type: 'image/jpeg' });
+    await service.suggestContent({
+      tone: 'INSPIRING',
+      visibility: 'FRIENDS',
+      taggedUserNames: ['  Minh Anh ', ''],
+      mediaItems: [{ type: 'IMAGE', fileName: 'da-lat.jpg' }],
+      mediaFiles: [photo],
+    });
+    expect(mockRepo.suggestContent).toHaveBeenLastCalledWith({
+      tone: 'INSPIRING',
+      visibility: 'FRIENDS',
+      taggedUserNames: ['Minh Anh'],
+      mediaItems: [{ type: 'IMAGE', fileName: 'da-lat.jpg' }],
+      mediaFiles: [photo],
+    });
+
     await expect(
       service.suggestContent({ topic: '', currentContent: '', tone: 'FRIENDLY' }),
-    ).rejects.toThrow('Vui lòng nhập ý chính hoặc viết vài dòng để AI gợi ý');
+    ).rejects.toThrow(
+      'Vui lòng nhập ý chính, viết vài dòng hoặc đính kèm ảnh/video/ghi âm để AI gợi ý',
+    );
 
     const notFoundError: ApiError = {
       statusCode: 404,
