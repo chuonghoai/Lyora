@@ -35,7 +35,14 @@ export class AiService {
       );
     }
 
-    const timeoutMs = this.configService.get<number>('ai.timeoutMs', 20000);
+    const configuredTimeoutMs = this.configService.get<number>(
+      'ai.timeoutMs',
+      20000,
+    );
+    const timeoutMs =
+      request.mediaParts && request.mediaParts.length > 0
+        ? Math.max(configuredTimeoutMs, 45000)
+        : configuredTimeoutMs;
     const abortController = new AbortController();
     const timer = setTimeout(() => abortController.abort(), timeoutMs);
     const startedAt = Date.now();
