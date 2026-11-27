@@ -139,8 +139,24 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     () => (localStorageService.getItem<ComposerDraft>(draftStorageKey)?.content ?? '').trim().length > 0,
   );
 
+  const getComposerMediaFiles = useCallback((): File[] => {
+    const files: File[] = [];
+    for (const item of composerMedia) {
+      if (!item.id) continue;
+      const pending = composerPendingFilesRef.current.get(item.id);
+      if (pending) {
+        files.push(pending);
+      }
+    }
+    return files;
+  }, [composerMedia]);
+
   const { clearAiUndo, resetAiAssistant, ...aiAssistant } = usePostAiAssistant({
     composerContent,
+    composerVisibility,
+    composerMedia,
+    composerTaggedUsers,
+    getComposerMediaFiles,
     setComposerContent,
     onClearComposerError: () => setComposerError(null),
   });
