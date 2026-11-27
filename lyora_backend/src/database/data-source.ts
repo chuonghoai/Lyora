@@ -6,6 +6,7 @@ import { ConversationMember } from '../modules/conversations/entities/conversati
 import { Conversation } from '../modules/conversations/entities/conversation.entity';
 import { IdempotencyRecord } from '../modules/conversations/entities/idempotency-record.entity';
 import { Friendship } from '../modules/friends/entities/friendship.entity';
+import { Notification } from '../modules/notifications/entities/notification.entity';
 import { User } from '../modules/users/entities/user.entity';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
@@ -22,6 +23,7 @@ export const AppDataSource = new DataSource({
   entities: [
     User,
     Friendship,
+    Notification,
     Conversation,
     ConversationMember,
     IdempotencyRecord,

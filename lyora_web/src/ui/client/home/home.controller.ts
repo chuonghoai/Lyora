@@ -4,14 +4,13 @@ import {
   isApiError,
   toast,
   useAuthStore,
-  useDebounce,
 } from '@/core';
 import {
-  useFriendsQuery,
   type PostsFeedFilter,
   type PostVisibility,
   type ReactionType,
 } from '@/features/posts';
+import { useAcceptedFriendsQuery } from '@/features/friends';
 import {
   useUpdateUserProfileMutation,
   useUserProfileQuery,
@@ -122,15 +121,15 @@ export function useHomeController() {
   const currentUser = useAuthStore((s) => s.user);
   const appTitle = import.meta.env.VITE_APP_TITLE || 'Lyora';
 
-  const searchQuery = searchParams.get('q') ?? '';
-  const debouncedSearch = useDebounce(searchQuery, 350);
+  const searchQuery = '';
+  const debouncedSearch = '';
 
   const tabParam = searchParams.get('tab');
   const activeTab: PostsFeedFilter = tabParam === 'saved' ? 'saved' : 'all';
 
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilterOption>('ALL');
 
-  const friendsQuery = useFriendsQuery();
+  const friendsQuery = useAcceptedFriendsQuery();
   const userProfileQuery = useUserProfileQuery({
     enabled: Boolean(currentUser),
     retry: false,
@@ -168,11 +167,11 @@ export function useHomeController() {
 
   const friends = useMemo<FriendContactItem[]>(() => {
     const rawFriends = friendsQuery.data ?? [];
-    return rawFriends.map((author) => ({
-      id: author.id,
-      fullName: author.fullName,
-      avatarUrl: author.avatarUrl,
-      isOnline: true,
+    return rawFriends.map((friend) => ({
+      id: friend.id,
+      fullName: friend.fullName,
+      avatarUrl: friend.avatarUrl,
+      isOnline: friend.isOnline ?? false,
     }));
   }, [friendsQuery.data]);
 

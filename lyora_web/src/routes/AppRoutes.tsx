@@ -14,6 +14,12 @@ const ProfileView = lazy(
 const MessagesPage = lazy(
   () => import('@/ui/client/messages/MessagesPage'),
 );
+const FriendsView = lazy(
+  () => import('@/ui/client/friends/FriendsView'),
+);
+const SearchResultsView = lazy(
+  () => import('@/ui/client/search/SearchResultsView'),
+);
 const AdminDashboardView = lazy(
   () => import('@/ui/admin/dashboard/DashboardView'),
 );
@@ -104,6 +110,18 @@ export const router = createBrowserRouter([
                 <MessagesPage />
               </Suspense>
             ),
+          },
+          {
+            path: 'friends',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <FriendsView />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'search',
+            element: <Suspense fallback={<PageLoader />}><SearchResultsView /></Suspense>,
           },
           {
             path: 'profile',

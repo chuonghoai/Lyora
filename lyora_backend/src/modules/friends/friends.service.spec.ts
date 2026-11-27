@@ -4,23 +4,40 @@ import { User } from '../users/entities/user.entity';
 import { Friendship } from './entities/friendship.entity';
 import { FriendshipStatus } from './enums/friendship-status.enum';
 import { FriendsService } from './friends.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('FriendsService', () => {
   let service: FriendsService;
   let friendshipRepo: jest.Mocked<Partial<Repository<Friendship>>>;
   let userRepo: jest.Mocked<Partial<Repository<User>>>;
+  let notificationsService: jest.Mocked<
+    Pick<
+      NotificationsService,
+      'createFriendRequest' | 'createFriendRequestAccepted'
+    >
+  >;
 
   beforeEach(() => {
     friendshipRepo = {
       createQueryBuilder: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
     };
     userRepo = {
       find: jest.fn(),
+      findOne: jest.fn(),
+    };
+    notificationsService = {
+      createFriendRequest: jest.fn(),
+      createFriendRequestAccepted: jest.fn(),
     };
 
     service = new FriendsService(
       friendshipRepo as Repository<Friendship>,
       userRepo as Repository<User>,
+      notificationsService as NotificationsService,
     );
   });
 
@@ -91,6 +108,8 @@ describe('FriendsService', () => {
           id: 'user-2',
           fullName: 'Nguyễn Văn An',
           avatarUrl: 'https://avatar.com/an.png',
+          workplace: 'Lyora',
+          location: 'TP. Hồ Chí Minh',
           email: 'friend1@gmail.com',
           isActive: true,
         },
@@ -104,6 +123,9 @@ describe('FriendsService', () => {
         id: 'user-2',
         fullName: 'Nguyễn Văn An',
         avatarUrl: 'https://avatar.com/an.png',
+        workplace: 'Lyora',
+        location: 'TP. Hồ Chí Minh',
+        friendshipStatus: 'FRIEND',
         isOnline: false,
       });
       expect(result[0]).not.toHaveProperty('email');
@@ -168,6 +190,81 @@ describe('FriendsService', () => {
       await expect(
         service.validateAllAreFriends('user-1', ['friend-1', 'friend-2']),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('friend request actions', () => {
+    it('tạo lời mời PENDING cho thành viên hợp lệ', async () => {
+      (userRepo.findOne as jest.Mock)
+        .mockResolvedValueOnce({ id: 'user-2', role: 'CLIENT' })
+        .mockResolvedValueOnce({ id: 'user-1', fullName: 'Người gửi' });
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      (friendshipRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+      const pendingRequest = {
+        userId: 'user-1',
+        friendId: 'user-2',
+        status: FriendshipStatus.PENDING,
+      };
+      (friendshipRepo.create as jest.Mock).mockReturnValue(pendingRequest);
+
+      await service.sendRequest('user-1', 'user-2');
+
+      expect(friendshipRepo.create).toHaveBeenCalledWith(pendingRequest);
+      expect(friendshipRepo.save).toHaveBeenCalledWith(pendingRequest);
+      expect(notificationsService.createFriendRequest).toHaveBeenCalledWith(
+        'user-2',
+        'Người gửi',
+        'user-1',
+      );
+    });
+
+    it('chỉ chấp nhận lời mời PENDING gửi đến người dùng hiện tại', async () => {
+      const request = {
+        userId: 'user-2',
+        friendId: 'user-1',
+        status: FriendshipStatus.PENDING,
+      } as Friendship;
+      (friendshipRepo.findOne as jest.Mock).mockResolvedValue(request);
+      (userRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'user-1',
+        fullName: 'Người chấp nhận',
+      });
+
+      await service.acceptRequest('user-1', 'user-2');
+
+      expect(request.status).toBe(FriendshipStatus.ACCEPTED);
+      expect(friendshipRepo.save).toHaveBeenCalledWith(request);
+      expect(
+        notificationsService.createFriendRequestAccepted,
+      ).toHaveBeenCalledWith('user-2', 'Người chấp nhận', 'user-1');
+    });
+
+    it('vẫn hoàn tất lời mời khi lưu thông báo thất bại', async () => {
+      (userRepo.findOne as jest.Mock)
+        .mockResolvedValueOnce({ id: 'user-2', role: 'CLIENT' })
+        .mockResolvedValueOnce({ id: 'user-1', fullName: 'Người gửi' });
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      (friendshipRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+      const pendingRequest = {
+        userId: 'user-1',
+        friendId: 'user-2',
+        status: FriendshipStatus.PENDING,
+      };
+      (friendshipRepo.create as jest.Mock).mockReturnValue(pendingRequest);
+      (notificationsService.createFriendRequest as jest.Mock).mockRejectedValue(
+        new Error('notifications table is unavailable'),
+      );
+
+      await expect(
+        service.sendRequest('user-1', 'user-2'),
+      ).resolves.toBeUndefined();
+      expect(friendshipRepo.save).toHaveBeenCalledWith(pendingRequest);
     });
   });
 });
