@@ -376,7 +376,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
           >
             <span>Bạn bè</span>
             <span className="rounded-full bg-background border border-border px-2 py-0.5 text-xs font-semibold text-foreground tabular-nums">
-              {profile.friendsCount}
+              {controller.isOwnProfile ? controller.friendsTabCounts.all : profile.friendsCount}
             </span>
             {controller.activeTab === 'friends' && (
               <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />
