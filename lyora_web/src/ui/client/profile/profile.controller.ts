@@ -1,17 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { isApiError, toast, useAuthStore, useClickOutside } from '@/core';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { isApiError, toast, useAuthStore, useClickOutside } from "@/core";
 import {
   PROFILE_COVER_PRESETS,
   updateExtendedProfileSchema,
-  useAcceptFriendRequestMutation,
-  useCancelFriendRequestMutation,
   useProfileActivityQuery,
-  useProfileFriendsDirectoryQuery,
   useProfilePageQuery,
-  useRejectFriendRequestMutation,
-  useSendFriendRequestMutation,
-  useUnfriendMutation,
   useUpdateExtendedProfileMutation,
   useUploadProfileImageMutation,
   type ProfileActivityItem,
@@ -20,13 +14,22 @@ import {
   type ProfileFriendSummary,
   type ProfileTabKey,
   type PublicUserProfile,
-} from '@/features/user';
-import { getClientProfilePath, ROUTES } from '@/routes/paths';
+} from "@/features/user";
+import {
+  useAcceptFriendRequestMutation,
+  useAcceptedFriendsQuery,
+  useReceivedFriendRequestsQuery,
+  useRemoveFriendRequestMutation,
+  useSendFriendRequestMutation,
+  useUnfriendMutation,
+  type FriendDiscoveryItem,
+} from "@/features/friends";
+import { getClientProfilePath, ROUTES } from "@/routes/paths";
 import {
   usePostFeedController,
   type FriendContactItem,
-} from '../home/post-feed.controller';
-import type { VisibilityFilterOption } from '../home/home.controller';
+} from "../home/post-feed.controller";
+import type { VisibilityFilterOption } from "../home/home.controller";
 
 export interface ProfileEditModalFormState {
   fullName: string;
@@ -48,16 +51,18 @@ export interface UnfriendTargetState {
 
 const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
 
-function buildEditFormState(profile?: PublicUserProfile | null): ProfileEditModalFormState {
+function buildEditFormState(
+  profile?: PublicUserProfile | null,
+): ProfileEditModalFormState {
   return {
-    fullName: profile?.fullName ?? '',
-    phoneNumber: profile?.phoneNumber ?? '',
-    bio: profile?.bio ?? '',
-    location: profile?.location ?? '',
-    hometown: profile?.hometown ?? '',
-    workplace: profile?.workplace ?? '',
-    education: profile?.education ?? '',
-    website: profile?.website ?? '',
+    fullName: profile?.fullName ?? "",
+    phoneNumber: profile?.phoneNumber ?? "",
+    bio: profile?.bio ?? "",
+    location: profile?.location ?? "",
+    hometown: profile?.hometown ?? "",
+    workplace: profile?.workplace ?? "",
+    education: profile?.education ?? "",
+    website: profile?.website ?? "",
     avatarUrl: profile?.avatarUrl ?? null,
     coverUrl: profile?.coverUrl ?? PROFILE_COVER_PRESETS[0].url,
   };
@@ -70,34 +75,36 @@ export function useProfileController() {
   const currentUser = useAuthStore((s) => s.user);
 
   const profileQuery = useProfilePageQuery(userId);
-  const directoryQuery = useProfileFriendsDirectoryQuery();
+  const acceptedFriendsQuery = useAcceptedFriendsQuery();
+  const receivedRequestsQuery = useReceivedFriendRequestsQuery();
   const activityQuery = useProfileActivityQuery(userId);
 
   const updateProfileMutation = useUpdateExtendedProfileMutation();
   const uploadProfileImageMutation = useUploadProfileImageMutation();
   const sendRequestMutation = useSendFriendRequestMutation();
-  const cancelRequestMutation = useCancelFriendRequestMutation();
+  const removeRequestMutation = useRemoveFriendRequestMutation();
   const acceptRequestMutation = useAcceptFriendRequestMutation();
-  const rejectRequestMutation = useRejectFriendRequestMutation();
   const unfriendMutation = useUnfriendMutation();
 
-  const tabParam = searchParams.get('tab');
+  const tabParam = searchParams.get("tab");
   const activeTab: ProfileTabKey =
-    tabParam === 'about' || tabParam === 'friends' || tabParam === 'activity'
+    tabParam === "about" || tabParam === "friends" || tabParam === "activity"
       ? tabParam
-      : 'overview';
+      : "overview";
 
   const [profileVisibilityFilter, setProfileVisibilityFilter] =
-    useState<VisibilityFilterOption>('ALL');
-  const [friendsFilter, setFriendsFilter] = useState<ProfileFriendsFilter>('ALL');
-  const [friendSearchQuery, setFriendSearchQuery] = useState('');
+    useState<VisibilityFilterOption>("ALL");
+  const [friendsFilter, setFriendsFilter] =
+    useState<ProfileFriendsFilter>("ALL");
+  const [friendSearchQuery, setFriendSearchQuery] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<ProfileEditModalFormState>(() =>
     buildEditFormState(profileQuery.data),
   );
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
-  const [unfriendTarget, setUnfriendTarget] = useState<UnfriendTargetState | null>(null);
+  const [unfriendTarget, setUnfriendTarget] =
+    useState<UnfriendTargetState | null>(null);
 
   const pendingAvatarFileRef = useRef<File | null>(null);
   const pendingCoverFileRef = useRef<File | null>(null);
@@ -105,18 +112,33 @@ export function useProfileController() {
   const friendMenuRef = useRef<HTMLDivElement>(null);
   useClickOutside(friendMenuRef, () => setIsFriendMenuOpen(false));
 
-  const profile = profileQuery.data ?? null;
+  const profile = useMemo(() => {
+    const profileFromQuery = profileQuery.data ?? null;
+    if (!profileFromQuery || profileFromQuery.friendshipStatus === "SELF") {
+      return profileFromQuery;
+    }
+
+    const isAcceptedFriend = (acceptedFriendsQuery.data ?? []).some(
+      (friend) => friend.id === profileFromQuery.id,
+    );
+    return isAcceptedFriend
+      ? { ...profileFromQuery, friendshipStatus: "FRIEND" as const }
+      : profileFromQuery;
+  }, [acceptedFriendsQuery.data, profileQuery.data]);
   const isOwnProfile = Boolean(
     profile
-      ? profile.friendshipStatus === 'SELF'
-      : !userId || userId === 'me' || (currentUser?.id && userId === currentUser.id),
+      ? profile.friendshipStatus === "SELF"
+      : !userId ||
+          userId === "me" ||
+          (currentUser?.id && userId === currentUser.id),
   );
 
-  const [activityTab, setActivityTab] = useState<ProfileActivityTabKey>('tagged');
+  const [activityTab, setActivityTab] =
+    useState<ProfileActivityTabKey>("tagged");
 
   // Chuyển URL /me về /{userId} mặc định khi đã xác định user hiện tại
   useEffect(() => {
-    if (userId === 'me' && currentUser?.id) {
+    if (userId === "me" && currentUser?.id) {
       navigate(getClientProfilePath(currentUser.id), { replace: true });
     }
   }, [userId, currentUser?.id, navigate]);
@@ -137,9 +159,9 @@ export function useProfileController() {
 
   // Reset bộ lọc & modal khi chuyển giữa các hồ sơ khác nhau
   useEffect(() => {
-    setProfileVisibilityFilter('ALL');
-    setFriendsFilter('ALL');
-    setFriendSearchQuery('');
+    setProfileVisibilityFilter("ALL");
+    setFriendsFilter("ALL");
+    setFriendSearchQuery("");
     setIsEditModalOpen(false);
     setIsFriendMenuOpen(false);
     setUnfriendTarget(null);
@@ -147,12 +169,12 @@ export function useProfileController() {
   }, [userId]);
 
   useEffect(() => {
-    setActivityTab('tagged');
+    setActivityTab("tagged");
   }, [userId, isOwnProfile]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
+      if (event.key !== "Escape") return;
       if (unfriendTarget) {
         setUnfriendTarget(null);
       } else if (isEditModalOpen) {
@@ -161,52 +183,67 @@ export function useProfileController() {
         setIsFriendMenuOpen(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [unfriendTarget, isEditModalOpen, isFriendMenuOpen]);
 
-  const directory = useMemo(
-    () =>
-      directoryQuery.data ?? {
-        friends: [],
-        incomingRequests: [],
-        sentRequests: [],
-        suggestions: [],
-      },
-    [directoryQuery.data],
+  const toProfileFriendSummary = (
+    friend: FriendDiscoveryItem,
+  ): ProfileFriendSummary => ({
+    id: friend.id,
+    fullName: friend.fullName,
+    avatarUrl: friend.avatarUrl,
+    headline: friend.workplace,
+    location: friend.location,
+    mutualFriendsCount: 0,
+    friendshipStatus: friend.friendshipStatus,
+    isOnline: friend.isOnline ?? false,
+  });
+
+  const acceptedFriends = useMemo(
+    () => (acceptedFriendsQuery.data ?? []).map(toProfileFriendSummary),
+    [acceptedFriendsQuery.data],
+  );
+  const receivedRequests = useMemo(
+    () => (receivedRequestsQuery.data ?? []).map(toProfileFriendSummary),
+    [receivedRequestsQuery.data],
   );
 
   const overviewFriends = useMemo<ProfileFriendSummary[]>(() => {
-    const list = isOwnProfile ? directory.friends : (profile?.friendsPreview ?? []);
+    const list = isOwnProfile
+      ? acceptedFriends
+      : (profile?.friendsPreview ?? []);
     return list.slice(0, 6);
-  }, [isOwnProfile, directory.friends, profile?.friendsPreview]);
+  }, [isOwnProfile, acceptedFriends, profile?.friendsPreview]);
 
   const friendsForFeed = useMemo<FriendContactItem[]>(() => {
-    const list = isOwnProfile ? directory.friends : (profile?.friendsPreview ?? []);
+    const list = isOwnProfile
+      ? acceptedFriends
+      : (profile?.friendsPreview ?? []);
     return list.map((friend) => ({
       id: friend.id,
       fullName: friend.fullName,
       avatarUrl: friend.avatarUrl,
       isOnline: Boolean(friend.isOnline),
     }));
-  }, [isOwnProfile, directory.friends, profile?.friendsPreview]);
+  }, [isOwnProfile, acceptedFriends, profile?.friendsPreview]);
 
   const handleOpenUserProfile = (targetUserId: string) => {
     setIsFriendMenuOpen(false);
     navigate(getClientProfilePath(targetUserId, currentUser?.id));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const resolvedTargetAuthorId = isOwnProfile
-    ? profile?.id ?? currentUser?.id
-    : profile?.id ?? userId;
+    ? (profile?.id ?? currentUser?.id)
+    : (profile?.id ?? userId);
 
   const postFeed = usePostFeedController({
     limit: 10,
-    filter: isOwnProfile ? 'mine' : 'all',
+    filter: isOwnProfile ? "mine" : "all",
     authorId: resolvedTargetAuthorId,
     visibility:
-      profileVisibilityFilter === 'ALL' ? undefined : profileVisibilityFilter,
+      profileVisibilityFilter === "ALL" ? undefined : profileVisibilityFilter,
     enabled: Boolean(resolvedTargetAuthorId),
     friends: friendsForFeed,
     profileUser: profile ?? currentUser,
@@ -217,17 +254,19 @@ export function useProfileController() {
   const friendsTabCounts = useMemo(() => {
     if (isOwnProfile) {
       return {
-        all: directory.friends.length,
+        all: acceptedFriends.length,
         mutual: 0,
-        requests: directory.incomingRequests.length + directory.sentRequests.length,
-        incomingRequests: directory.incomingRequests.length,
-        sentRequests: directory.sentRequests.length,
-        suggestions: directory.suggestions.length,
+        requests: receivedRequests.length,
+        incomingRequests: receivedRequests.length,
+        sentRequests: 0,
+        suggestions: 0,
       };
     }
 
     const otherFriends = profile?.friendsPreview ?? [];
-    const mutualList = otherFriends.filter((item) => item.mutualFriendsCount > 0);
+    const mutualList = otherFriends.filter(
+      (item) => item.mutualFriendsCount > 0,
+    );
     return {
       all: otherFriends.length,
       mutual: mutualList.length,
@@ -236,23 +275,28 @@ export function useProfileController() {
       sentRequests: 0,
       suggestions: 0,
     };
-  }, [isOwnProfile, directory, profile?.friendsPreview]);
+  }, [
+    isOwnProfile,
+    acceptedFriends,
+    receivedRequests,
+    profile?.friendsPreview,
+  ]);
 
   const filteredFriendsList = useMemo<ProfileFriendSummary[]>(() => {
     let source: ProfileFriendSummary[] = [];
 
     if (isOwnProfile) {
-      if (friendsFilter === 'REQUESTS') {
-        source = [...directory.incomingRequests, ...directory.sentRequests];
-      } else if (friendsFilter === 'SUGGESTIONS') {
-        source = directory.suggestions;
+      if (friendsFilter === "REQUESTS") {
+        source = receivedRequests;
+      } else if (friendsFilter === "SUGGESTIONS") {
+        source = [];
       } else {
-        source = directory.friends;
+        source = acceptedFriends;
       }
     } else {
       const otherFriends = profile?.friendsPreview ?? [];
       source =
-        friendsFilter === 'MUTUAL'
+        friendsFilter === "MUTUAL"
           ? otherFriends.filter((item) => item.mutualFriendsCount > 0)
           : otherFriends;
     }
@@ -261,27 +305,35 @@ export function useProfileController() {
     if (!keyword) return source;
     return source.filter((item) => {
       const matchName = item.fullName.toLowerCase().includes(keyword);
-      const matchLocation = item.location?.toLowerCase().includes(keyword) ?? false;
-      const matchHeadline = item.headline?.toLowerCase().includes(keyword) ?? false;
+      const matchLocation =
+        item.location?.toLowerCase().includes(keyword) ?? false;
+      const matchHeadline =
+        item.headline?.toLowerCase().includes(keyword) ?? false;
       return matchName || matchLocation || matchHeadline;
     });
-  }, [isOwnProfile, friendsFilter, directory, profile?.friendsPreview, friendSearchQuery]);
+  }, [
+    isOwnProfile,
+    friendsFilter,
+    acceptedFriends,
+    receivedRequests,
+    profile?.friendsPreview,
+    friendSearchQuery,
+  ]);
 
   const isFriendshipMutating =
     sendRequestMutation.isPending ||
-    cancelRequestMutation.isPending ||
+    removeRequestMutation.isPending ||
     acceptRequestMutation.isPending ||
-    rejectRequestMutation.isPending ||
     unfriendMutation.isPending;
 
   const handleSelectTab = (tab: ProfileTabKey) => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        if (tab === 'overview') {
-          next.delete('tab');
+        if (tab === "overview") {
+          next.delete("tab");
         } else {
-          next.set('tab', tab);
+          next.set("tab", tab);
         }
         return next;
       },
@@ -289,7 +341,9 @@ export function useProfileController() {
     );
   };
 
-  const handleSelectProfileVisibilityFilter = (filter: VisibilityFilterOption) => {
+  const handleSelectProfileVisibilityFilter = (
+    filter: VisibilityFilterOption,
+  ) => {
     setProfileVisibilityFilter(filter);
   };
 
@@ -302,7 +356,7 @@ export function useProfileController() {
   };
 
   const handleClearFriendSearch = () => {
-    setFriendSearchQuery('');
+    setFriendSearchQuery("");
   };
 
   const handleNavigateBackToFeed = () => {
@@ -322,9 +376,9 @@ export function useProfileController() {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl);
       }
-      toast.success('Đã sao chép liên kết trang cá nhân.');
+      toast.success("Đã sao chép liên kết trang cá nhân.");
     } catch {
-      toast.info('Không thể truy cập bộ nhớ tạm trên trình duyệt.');
+      toast.info("Không thể truy cập bộ nhớ tạm trên trình duyệt.");
     }
   };
 
@@ -336,7 +390,8 @@ export function useProfileController() {
   };
 
   const handleCloseEditModal = () => {
-    if (updateProfileMutation.isPending || uploadProfileImageMutation.isPending) return;
+    if (updateProfileMutation.isPending || uploadProfileImageMutation.isPending)
+      return;
     releasePendingMediaPreviews();
     setIsEditModalOpen(false);
     setEditErrors({});
@@ -364,15 +419,15 @@ export function useProfileController() {
 
   const handlePickAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = '';
+    e.target.value = "";
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.warning('Vui lòng chọn tệp hình ảnh hợp lệ cho ảnh đại diện.');
+    if (!file.type.startsWith("image/")) {
+      toast.warning("Vui lòng chọn tệp hình ảnh hợp lệ cho ảnh đại diện.");
       return;
     }
     if (file.size > MAX_IMAGE_FILE_SIZE) {
-      toast.warning('Ảnh đại diện có dung lượng tối đa 5MB.');
+      toast.warning("Ảnh đại diện có dung lượng tối đa 5MB.");
       return;
     }
 
@@ -384,15 +439,15 @@ export function useProfileController() {
 
   const handlePickCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = '';
+    e.target.value = "";
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.warning('Vui lòng chọn tệp hình ảnh hợp lệ cho ảnh bìa.');
+    if (!file.type.startsWith("image/")) {
+      toast.warning("Vui lòng chọn tệp hình ảnh hợp lệ cho ảnh bìa.");
       return;
     }
     if (file.size > MAX_IMAGE_FILE_SIZE) {
-      toast.warning('Ảnh bìa có dung lượng tối đa 5MB.');
+      toast.warning("Ảnh bìa có dung lượng tối đa 5MB.");
       return;
     }
 
@@ -423,7 +478,7 @@ export function useProfileController() {
     if (!parsed.success) {
       const nextErrors: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
-        const field = String(issue.path[0] ?? '_form');
+        const field = String(issue.path[0] ?? "_form");
         if (!nextErrors[field]) {
           nextErrors[field] = issue.message;
         }
@@ -462,13 +517,13 @@ export function useProfileController() {
       releasePendingMediaPreviews();
       setIsEditModalOpen(false);
       setEditErrors({});
-      toast.success('Đã cập nhật hồ sơ cá nhân.');
+      toast.success("Đã cập nhật hồ sơ cá nhân.");
     } catch (err) {
       const message = isApiError(err)
         ? err.message
         : err instanceof Error
           ? err.message
-          : 'Không thể cập nhật hồ sơ cá nhân lúc này.';
+          : "Không thể cập nhật hồ sơ cá nhân lúc này.";
       setEditErrors({ _form: message });
     }
   };
@@ -477,59 +532,86 @@ export function useProfileController() {
     setIsFriendMenuOpen((prev) => !prev);
   };
 
-  const handleSendFriendRequest = async (targetUserId: string, targetName?: string) => {
+  const handleSendFriendRequest = async (
+    targetUserId: string,
+    targetName?: string,
+  ) => {
     try {
       await sendRequestMutation.mutateAsync(targetUserId);
       toast.success(
         targetName
           ? `Đã gửi lời mời kết bạn tới ${targetName}.`
-          : 'Đã gửi lời mời kết bạn.',
+          : "Đã gửi lời mời kết bạn.",
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không thể gửi lời mời kết bạn.');
+      toast.error(
+        err instanceof Error ? err.message : "Không thể gửi lời mời kết bạn.",
+      );
     }
   };
 
-  const handleCancelFriendRequest = async (targetUserId: string, targetName?: string) => {
+  const handleCancelFriendRequest = async (
+    targetUserId: string,
+    targetName?: string,
+  ) => {
     try {
-      await cancelRequestMutation.mutateAsync(targetUserId);
+      await removeRequestMutation.mutateAsync(targetUserId);
       toast.info(
         targetName
           ? `Đã hủy lời mời kết bạn với ${targetName}.`
-          : 'Đã hủy lời mời kết bạn.',
+          : "Đã hủy lời mời kết bạn.",
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không thể hủy lời mời kết bạn.');
+      toast.error(
+        err instanceof Error ? err.message : "Không thể hủy lời mời kết bạn.",
+      );
     }
   };
 
-  const handleAcceptFriendRequest = async (targetUserId: string, targetName?: string) => {
+  const handleAcceptFriendRequest = async (
+    targetUserId: string,
+    targetName?: string,
+  ) => {
     try {
       await acceptRequestMutation.mutateAsync(targetUserId);
       toast.success(
         targetName
           ? `Bạn và ${targetName} đã trở thành bạn bè.`
-          : 'Đã chấp nhận lời mời kết bạn.',
+          : "Đã chấp nhận lời mời kết bạn.",
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không thể chấp nhận lời mời kết bạn.');
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Không thể chấp nhận lời mời kết bạn.",
+      );
     }
   };
 
-  const handleRejectFriendRequest = async (targetUserId: string, targetName?: string) => {
+  const handleRejectFriendRequest = async (
+    targetUserId: string,
+    targetName?: string,
+  ) => {
     try {
-      await rejectRequestMutation.mutateAsync(targetUserId);
+      await removeRequestMutation.mutateAsync(targetUserId);
       toast.info(
         targetName
           ? `Đã từ chối lời mời kết bạn của ${targetName}.`
-          : 'Đã từ chối lời mời kết bạn.',
+          : "Đã từ chối lời mời kết bạn.",
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không thể từ chối lời mời kết bạn.');
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Không thể từ chối lời mời kết bạn.",
+      );
     }
   };
 
-  const handleRequestUnfriend = (targetUserId: string, targetFullName: string) => {
+  const handleRequestUnfriend = (
+    targetUserId: string,
+    targetFullName: string,
+  ) => {
     setIsFriendMenuOpen(false);
     setUnfriendTarget({ id: targetUserId, fullName: targetFullName });
   };
@@ -547,7 +629,9 @@ export function useProfileController() {
       setUnfriendTarget(null);
       toast.info(`Đã hủy kết bạn với ${target.fullName}.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không thể hủy kết bạn lúc này.');
+      toast.error(
+        err instanceof Error ? err.message : "Không thể hủy kết bạn lúc này.",
+      );
     }
   };
 
@@ -564,9 +648,11 @@ export function useProfileController() {
 
   const activeActivityTab: ProfileActivityTabKey = useMemo(() => {
     if (isOwnProfile) {
-      return activityTab === 'reacted' || activityTab === 'saved' ? activityTab : 'tagged';
+      return activityTab === "reacted" || activityTab === "saved"
+        ? activityTab
+        : "tagged";
     }
-    return 'tagged';
+    return "tagged";
   }, [isOwnProfile, activityTab]);
 
   const activityItems = useMemo<ProfileActivityItem[]>(() => {
@@ -592,18 +678,19 @@ export function useProfileController() {
 
   const handleOpenActivityTab = (tab: ProfileActivityTabKey) => {
     setActivityTab(tab);
-    handleSelectTab('activity');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    handleSelectTab("activity");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleNavigateToMyPosts = () => {
-    handleSelectTab('overview');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    handleSelectTab("overview");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleRefetchProfile = () => {
     void profileQuery.refetch();
-    void directoryQuery.refetch();
+    void acceptedFriendsQuery.refetch();
+    void receivedRequestsQuery.refetch();
     void activityQuery.refetch();
     void postFeed.handleRefreshFeed();
   };
@@ -626,8 +713,8 @@ export function useProfileController() {
     filteredFriendsList,
     overviewFriends,
     friendsTabCounts,
-    incomingRequests: directory.incomingRequests,
-    suggestedConnections: directory.suggestions,
+    incomingRequests: receivedRequests,
+    suggestedConnections: [] as ProfileFriendSummary[],
     coverPresets: PROFILE_COVER_PRESETS,
     isEditModalOpen,
     editForm,
