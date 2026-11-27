@@ -1,6 +1,8 @@
 export const ROUTES = {
   CLIENT: {
     ROOT: '/',
+    SEARCH: '/search',
+    FRIENDS: '/friends',
     MESSAGES: '/messages',
     PROFILE: '/me',
     PROFILE_DETAIL: '/:userId',
@@ -32,6 +34,8 @@ export function getClientProfilePath(userId?: string, selfId?: string): string {
 
 const RESERVED_TOP_LEVEL_PATHS = new Set<string>([
   ROUTES.CLIENT.ROOT,
+  ROUTES.CLIENT.SEARCH,
+  ROUTES.CLIENT.FRIENDS,
   ROUTES.CLIENT.MESSAGES,
   ROUTES.ADMIN.ROOT,
   ROUTES.AUTH.LOGIN,

@@ -36,6 +36,10 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
+      '/notifications': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
       '/conversations': {
         target: 'http://localhost:3000',
         changeOrigin: true,

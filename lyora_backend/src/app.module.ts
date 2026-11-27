@@ -25,6 +25,7 @@ import { ConversationsModule } from './modules/conversations/conversations.modul
 import { FriendsModule } from './modules/friends/friends.module';
 import { HealthModule } from './modules/health/health.module';
 import { MailModule } from './modules/mail/mail.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -64,6 +65,7 @@ import { RedisModule } from './redis/redis.module';
     MailModule,
     AuthModule,
     FriendsModule,
+    NotificationsModule,
     ConversationsModule,
     PostsModule,
   ],
