@@ -36,7 +36,7 @@ export const AdminLayout: React.FC = () => {
           onLogout={ctrl.handleLogout}
         />
 
-        <main className="flex-1 min-w-0 px-0 py-6">
+        <main className="flex-1 min-w-0 px-2.5 py-5">
           <div className="w-full">
             <Outlet />
           </div>
