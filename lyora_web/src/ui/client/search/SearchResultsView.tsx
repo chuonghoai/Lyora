@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { AppImage, Button, LoadingSpinner } from "@/core";
 import type { FriendDiscoveryItem } from "@/features/friends";
+import type { Post, PostMediaItem } from "@/features/posts";
 import { getClientProfilePath } from "@/routes/paths";
 import { Link } from "react-router-dom";
 import {
@@ -10,6 +11,8 @@ import {
   UserPlusIcon,
   UsersIcon,
 } from "../home/ClientIcons";
+import { MediaLightboxModal } from "../home/MediaLightboxModal";
+import { PostMediaGallery } from "../home/PostCard";
 import {
   useSearchController,
   type SearchController,
@@ -146,8 +149,44 @@ const PersonResultCard: React.FC<PersonResultCardProps> = ({
   );
 };
 
+interface PostResultCardProps {
+  post: Post;
+  onOpenLightbox: (items: PostMediaItem[], index: number) => void;
+}
+
+const PostResultCard: React.FC<PostResultCardProps> = ({
+  post,
+  onOpenLightbox,
+}) => (
+  <article className="rounded-xl border border-border bg-background/40 p-4">
+    <div className="flex items-center gap-2">
+      <span className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
+        {post.author.fullName.charAt(0)}
+      </span>
+      <Link
+        to={getClientProfilePath(post.author.id)}
+        className="text-sm font-semibold text-foreground hover:underline"
+      >
+        {post.author.fullName}
+      </Link>
+    </div>
+    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">
+      {post.content}
+    </p>
+    {post.media.length > 0 && (
+      <div className="mt-3">
+        <PostMediaGallery media={post.media} onOpenLightbox={onOpenLightbox} />
+      </div>
+    )}
+  </article>
+);
+
 export default function SearchResultsView(): React.ReactElement {
   const controller = useSearchController();
+  const [lightbox, setLightbox] = useState<{
+    items: PostMediaItem[];
+    index: number;
+  } | null>(null);
   const showPeople =
     controller.activeTab === "all" || controller.activeTab === "people";
   const showPosts =
@@ -239,25 +278,13 @@ export default function SearchResultsView(): React.ReactElement {
               ) : (
                 <div className="mt-4 space-y-3">
                   {controller.posts.map((post) => (
-                    <article
+                    <PostResultCard
                       key={post.id}
-                      className="rounded-xl border border-border bg-background/40 p-4"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
-                          {post.author.fullName.charAt(0)}
-                        </span>
-                        <Link
-                          to={getClientProfilePath(post.author.id)}
-                          className="text-sm font-semibold text-foreground hover:underline"
-                        >
-                          {post.author.fullName}
-                        </Link>
-                      </div>
-                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">
-                        {post.content}
-                      </p>
-                    </article>
+                      post={post}
+                      onOpenLightbox={(items, index) =>
+                        setLightbox({ items, index })
+                      }
+                    />
                   ))}
                 </div>
               )}
@@ -265,6 +292,32 @@ export default function SearchResultsView(): React.ReactElement {
           )}
         </>
       )}
+      <MediaLightboxModal
+        controller={{
+          lightbox,
+          handleCloseLightbox: () => setLightbox(null),
+          handlePrevLightbox: () =>
+            setLightbox((current) =>
+              current
+                ? {
+                    ...current,
+                    index:
+                      (current.index - 1 + current.items.length) %
+                      current.items.length,
+                  }
+                : null,
+            ),
+          handleNextLightbox: () =>
+            setLightbox((current) =>
+              current
+                ? {
+                    ...current,
+                    index: (current.index + 1) % current.items.length,
+                  }
+                : null,
+            ),
+        }}
+      />
     </div>
   );
 }
