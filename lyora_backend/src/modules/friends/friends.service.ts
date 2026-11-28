@@ -65,6 +65,7 @@ export class FriendsService {
         'workplace',
         'location',
         'isActive',
+        'isOnline',
       ],
     });
 
@@ -75,7 +76,7 @@ export class FriendsService {
       workplace: u.workplace ?? null,
       location: u.location ?? null,
       friendshipStatus: 'FRIEND',
-      isOnline: false, // Chuẩn hóa bảo mật: Không giả định isActive là online; Phase 3 sẽ tích hợp WebSocket Presence
+      isOnline: Boolean(u.isOnline),
     }));
   }
 

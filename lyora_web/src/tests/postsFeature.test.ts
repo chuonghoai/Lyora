@@ -59,6 +59,12 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       'post-1',
       { page: 1, limit: 6 },
     ]);
+    expect(postKeys.shares('post-1', { page: 1, limit: 10 })).toEqual([
+      'posts',
+      'shares',
+      'post-1',
+      { page: 1, limit: 10 },
+    ]);
     expect(postKeys.list({ filter: 'saved', limit: 5 })).toEqual([
       'posts',
       'list',
@@ -121,6 +127,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
       getPostReactions: vi.fn(),
+      getPostShares: vi.fn(),
       toggleBookmark: vi.fn(),
       sharePost: vi.fn(),
       hidePost: vi.fn(),
@@ -158,6 +165,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       uploadMedia: vi.fn(),
       reactPost: vi.fn().mockRejectedValue(notFoundError),
       getPostReactions: vi.fn().mockRejectedValue(notFoundError),
+      getPostShares: vi.fn().mockRejectedValue(notFoundError),
       toggleBookmark: vi.fn().mockRejectedValue(notFoundError),
       sharePost: vi.fn().mockRejectedValue(notFoundError),
       hidePost: vi.fn().mockRejectedValue(notFoundError),
@@ -202,6 +210,9 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     await expect(
       service.getPostReactions('post-1', { page: 1, limit: 6 }),
     ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(
+      service.getPostShares('post-1', { page: 1, limit: 10 }),
+    ).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it('PostService rethrows real non-404 API errors (e.g. 401/500)', async () => {
@@ -218,6 +229,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
       getPostReactions: vi.fn(),
+      getPostShares: vi.fn(),
       toggleBookmark: vi.fn(),
       sharePost: vi.fn(),
       hidePost: vi.fn(),
