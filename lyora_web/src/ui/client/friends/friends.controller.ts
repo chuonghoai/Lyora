@@ -5,6 +5,7 @@ import {
   useAcceptFriendRequestMutation,
   useAcceptedFriendsQuery,
   useFriendSearchQuery,
+  useFriendSuggestionsQuery,
   useReceivedFriendRequestsQuery,
   useRemoveFriendRequestMutation,
   useSendFriendRequestMutation,
@@ -24,6 +25,7 @@ export function useFriendsController() {
   const deferredSearchText = useDeferredValue(searchText);
   const searchQuery = useFriendSearchQuery(deferredSearchText);
   const acceptedFriendsQuery = useAcceptedFriendsQuery();
+  const suggestionsQuery = useFriendSuggestionsQuery();
   const receivedRequestsQuery = useReceivedFriendRequestsQuery();
   const sendRequestMutation = useSendFriendRequestMutation();
   const acceptRequestMutation = useAcceptFriendRequestMutation();
@@ -95,10 +97,13 @@ export function useFriendsController() {
     results: searchQuery.data?.items ?? [],
     totalResults: searchQuery.data?.totalItems ?? 0,
     acceptedFriends: acceptedFriendsQuery.data ?? [],
+    suggestions: suggestionsQuery.data ?? [],
     receivedRequests: receivedRequestsQuery.data ?? [],
     isSearching: searchQuery.isFetching,
     searchError: searchQuery.error,
     requestsError: receivedRequestsQuery.error,
+    suggestionsError: suggestionsQuery.error,
+    isLoadingSuggestions: suggestionsQuery.isLoading,
     isMutating,
     handleSearchChange,
     handleClearSearch,

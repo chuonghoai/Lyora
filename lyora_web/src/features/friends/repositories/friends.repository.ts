@@ -3,6 +3,7 @@ import type { FriendDiscoveryItem, FriendSearchResult } from '../types/friend.ty
 
 export interface IFriendsRepository {
   getAcceptedFriends(): Promise<ApiResponse<FriendDiscoveryItem[]>>;
+  getSuggestions(): Promise<ApiResponse<FriendDiscoveryItem[]>>;
   search(query: string): Promise<ApiResponse<FriendSearchResult>>;
   getReceivedRequests(): Promise<ApiResponse<FriendDiscoveryItem[]>>;
   sendRequest(userId: string): Promise<ApiResponse<void>>;
@@ -15,6 +16,12 @@ export class FriendsRepository implements IFriendsRepository {
   async getAcceptedFriends(): Promise<ApiResponse<FriendDiscoveryItem[]>> {
     return apiClient.get<ApiResponse<FriendDiscoveryItem[]>, ApiResponse<FriendDiscoveryItem[]>>(
       CORE_CONSTANTS.API_ENDPOINTS.FRIENDS,
+    );
+  }
+
+  async getSuggestions(): Promise<ApiResponse<FriendDiscoveryItem[]>> {
+    return apiClient.get<ApiResponse<FriendDiscoveryItem[]>, ApiResponse<FriendDiscoveryItem[]>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.FRIENDS}/suggestions`,
     );
   }
 

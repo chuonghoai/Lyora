@@ -16,6 +16,7 @@ import {
   getSentFriendRequests,
   useReceivedFriendRequestsQuery,
   updateFriendSearchStatus,
+  updateFriendSuggestionStatus,
 } from "@/features/friends";
 import {
   useMarkAllNotificationsReadMutation,
@@ -202,6 +203,7 @@ export function useClientLayoutController() {
     webSocketService.connect();
     const refreshFriendLists = () => {
       void queryClient.invalidateQueries({ queryKey: friendsKeys.accepted() });
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.suggestions() });
       void queryClient.invalidateQueries({
         queryKey: friendsKeys.receivedRequests(),
       });
@@ -241,6 +243,11 @@ export function useClientLayoutController() {
             friendshipStatus === "REQUEST_RECEIVED"
           ) {
             updateFriendSearchStatus(
+              queryClient,
+              event.payload.userId,
+              friendshipStatus,
+            );
+            updateFriendSuggestionStatus(
               queryClient,
               event.payload.userId,
               friendshipStatus,

@@ -77,6 +77,7 @@ export class FriendsService {
       workplace: u.workplace ?? null,
       location: u.location ?? null,
       friendshipStatus: 'FRIEND',
+      mutualFriendsCount: 0,
       isOnline: false, // Chuẩn hóa bảo mật: Không giả định isActive là online; Phase 3 sẽ tích hợp WebSocket Presence
     }));
   }
@@ -136,6 +137,86 @@ export class FriendsService {
         ),
       ),
     };
+  }
+
+  /**
+   * Đề xuất thành viên chưa có quan hệ với người dùng hiện tại.
+   * Ưu tiên người có nhiều bạn chung, sau đó là các thành viên Lyora khác.
+   */
+  async getSuggestions(
+    currentUserId: string,
+  ): Promise<FriendDiscoveryResponseDto[]> {
+    const currentRelationships = await this.friendshipRepository
+      .createQueryBuilder('friendship')
+      .where(
+        '(friendship.userId = :currentUserId OR friendship.friendId = :currentUserId)',
+        { currentUserId },
+      )
+      .getMany();
+
+    const excludedUserIds = new Set<string>([currentUserId]);
+    const acceptedFriendIds = new Set<string>();
+    for (const relationship of currentRelationships) {
+      const otherUserId =
+        relationship.userId === currentUserId
+          ? relationship.friendId
+          : relationship.userId;
+      excludedUserIds.add(otherUserId);
+      if (relationship.status === FriendshipStatus.ACCEPTED) {
+        acceptedFriendIds.add(otherUserId);
+      }
+    }
+
+    const mutualFriendsByUserId = new Map<string, number>();
+    if (acceptedFriendIds.size > 0) {
+      const friendRelationships = await this.friendshipRepository
+        .createQueryBuilder('friendship')
+        .where('friendship.status = :status', {
+          status: FriendshipStatus.ACCEPTED,
+        })
+        .andWhere(
+          '(friendship.userId IN (:...friendIds) OR friendship.friendId IN (:...friendIds))',
+          { friendIds: [...acceptedFriendIds] },
+        )
+        .getMany();
+
+      for (const relationship of friendRelationships) {
+        const otherUserId = acceptedFriendIds.has(relationship.userId)
+          ? relationship.friendId
+          : relationship.userId;
+        if (
+          otherUserId !== currentUserId &&
+          !acceptedFriendIds.has(otherUserId) &&
+          !excludedUserIds.has(otherUserId)
+        ) {
+          mutualFriendsByUserId.set(
+            otherUserId,
+            (mutualFriendsByUserId.get(otherUserId) ?? 0) + 1,
+          );
+        }
+      }
+    }
+
+    const users = await this.userRepository.find({
+      where: { isActive: true, role: UserRole.CLIENT },
+      select: ['id', 'fullName', 'avatarUrl', 'workplace', 'location'],
+    });
+
+    return users
+      .filter((user) => !excludedUserIds.has(user.id))
+      .map((user) =>
+        this.toDiscoveryResponse(
+          user,
+          'NONE',
+          mutualFriendsByUserId.get(user.id) ?? 0,
+        ),
+      )
+      .sort(
+        (first, second) =>
+          second.mutualFriendsCount - first.mutualFriendsCount ||
+          first.fullName.localeCompare(second.fullName, 'vi'),
+      )
+      .slice(0, 12);
   }
 
   async getReceivedRequests(
@@ -406,6 +487,7 @@ export class FriendsService {
   private toDiscoveryResponse(
     user: User,
     friendshipStatus: FriendRelationshipStatus,
+    mutualFriendsCount = 0,
   ): FriendDiscoveryResponseDto {
     return {
       id: user.id,
@@ -414,6 +496,7 @@ export class FriendsService {
       workplace: user.workplace ?? null,
       location: user.location ?? null,
       friendshipStatus,
+      mutualFriendsCount,
     };
   }
 
