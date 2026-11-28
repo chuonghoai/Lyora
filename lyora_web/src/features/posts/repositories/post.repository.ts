@@ -1,5 +1,9 @@
 import { apiClient, CORE_CONSTANTS, type ApiResponse } from '@/core';
 import type {
+  AdminPostDetail,
+  AdminPostItem,
+  AdminPostsQueryParams,
+  AdminPostStatistics,
   CreatePostPayload,
   Post,
   PostAuthor,
@@ -7,6 +11,8 @@ import type {
   PostMediaItem,
   PostReactionUser,
   PostReactionsQueryParams,
+  PostShareUser,
+  PostSharesQueryParams,
   PostsQueryParams,
   PostSuggestionsResult,
   ReactionType,
@@ -26,6 +32,10 @@ export interface IPostRepository {
     postId: string,
     params: PostReactionsQueryParams,
   ): Promise<ApiResponse<PostReactionUser[]>>;
+  getPostShares(
+    postId: string,
+    params: PostSharesQueryParams,
+  ): Promise<ApiResponse<PostShareUser[]>>;
   toggleBookmark(postId: string): Promise<ApiResponse<Post>>;
   sharePost(postId: string): Promise<ApiResponse<Post>>;
   hidePost(postId: string): Promise<ApiResponse<{ hidden: boolean }>>;
@@ -35,6 +45,17 @@ export interface IPostRepository {
     content: string,
     media?: PostMediaItem | null,
   ): Promise<ApiResponse<PostComment>>;
+  getAdminPostStatistics(): Promise<ApiResponse<AdminPostStatistics>>;
+  getAdminPosts(params: AdminPostsQueryParams): Promise<ApiResponse<AdminPostItem[]>>;
+  getAdminPostDetail(postId: string): Promise<ApiResponse<AdminPostDetail>>;
+  hideAdminPost(postId: string, reason: string): Promise<ApiResponse<AdminPostDetail>>;
+  restoreAdminPost(postId: string): Promise<ApiResponse<AdminPostDetail>>;
+  removeAdminPost(postId: string, reason?: string): Promise<ApiResponse<null>>;
+  removeAdminComment(
+    postId: string,
+    commentId: string,
+    reason?: string,
+  ): Promise<ApiResponse<null>>;
 }
 
 export class PostRepository implements IPostRepository {
@@ -127,6 +148,16 @@ export class PostRepository implements IPostRepository {
     );
   }
 
+  async getPostShares(
+    postId: string,
+    params: PostSharesQueryParams,
+  ): Promise<ApiResponse<PostShareUser[]>> {
+    return apiClient.get<ApiResponse<PostShareUser[]>, ApiResponse<PostShareUser[]>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}/shares`,
+      { params },
+    );
+  }
+
   async toggleBookmark(postId: string): Promise<ApiResponse<Post>> {
     return apiClient.post<ApiResponse<Post>, ApiResponse<Post>>(
       `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}/bookmark`,
@@ -159,6 +190,71 @@ export class PostRepository implements IPostRepository {
     return apiClient.post<ApiResponse<PostComment>, ApiResponse<PostComment>>(
       `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}/comments`,
       { content, ...(media ? { media } : {}) },
+    );
+  }
+
+  async getAdminPostStatistics(): Promise<ApiResponse<AdminPostStatistics>> {
+    return apiClient.get<
+      ApiResponse<AdminPostStatistics>,
+      ApiResponse<AdminPostStatistics>
+    >(CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS_STATISTICS);
+  }
+
+  async getAdminPosts(
+    params: AdminPostsQueryParams,
+  ): Promise<ApiResponse<AdminPostItem[]>> {
+    return apiClient.get<
+      ApiResponse<AdminPostItem[]>,
+      ApiResponse<AdminPostItem[]>
+    >(CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS, { params });
+  }
+
+  async getAdminPostDetail(
+    postId: string,
+  ): Promise<ApiResponse<AdminPostDetail>> {
+    return apiClient.get<
+      ApiResponse<AdminPostDetail>,
+      ApiResponse<AdminPostDetail>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}`);
+  }
+
+  async hideAdminPost(
+    postId: string,
+    reason: string,
+  ): Promise<ApiResponse<AdminPostDetail>> {
+    return apiClient.patch<
+      ApiResponse<AdminPostDetail>,
+      ApiResponse<AdminPostDetail>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}/hide`, { reason });
+  }
+
+  async restoreAdminPost(
+    postId: string,
+  ): Promise<ApiResponse<AdminPostDetail>> {
+    return apiClient.patch<
+      ApiResponse<AdminPostDetail>,
+      ApiResponse<AdminPostDetail>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}/restore`);
+  }
+
+  async removeAdminPost(
+    postId: string,
+    reason?: string,
+  ): Promise<ApiResponse<null>> {
+    return apiClient.delete<ApiResponse<null>, ApiResponse<null>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}`,
+      reason ? { data: { reason } } : undefined,
+    );
+  }
+
+  async removeAdminComment(
+    postId: string,
+    commentId: string,
+    reason?: string,
+  ): Promise<ApiResponse<null>> {
+    return apiClient.delete<ApiResponse<null>, ApiResponse<null>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}/comments/${commentId}`,
+      reason ? { data: { reason } } : undefined,
     );
   }
 }

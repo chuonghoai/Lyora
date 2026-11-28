@@ -1,9 +1,10 @@
-import { Controller, Get, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
+import { Controller, Get, Param, Patch } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { VietnameseParseUUIDPipe } from '../../common/pipes/vietnamese-parse-uuid.pipe';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
@@ -29,7 +30,7 @@ export class NotificationsController {
   @ResponseMessage('Đã đánh dấu thông báo là đã đọc')
   markRead(
     @CurrentUser() user: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
   ) {
     return this.notificationsService.markRead(user.id, id);
   }

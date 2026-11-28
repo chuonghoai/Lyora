@@ -28,6 +28,8 @@ export const MessagesPage: React.FC = () => {
           selectedId={controller.selectedConversationId}
           onSelect={controller.handleSelectConversation}
           isLoading={controller.isLoadingConversations}
+          isError={controller.isConversationsError}
+          onRetry={controller.handleRetryConversations}
           filterType={controller.filterType}
           onFilterChange={controller.setFilterType}
           searchQuery={controller.searchQuery}
@@ -68,15 +70,20 @@ export const MessagesPage: React.FC = () => {
         onClose={controller.handleCloseDirectModal}
         friends={controller.friends}
         isLoadingFriends={controller.isLoadingFriends}
+        isFriendsError={controller.isFriendsError}
+        onRetryFriends={controller.handleRetryFriends}
         isCreating={controller.isCreatingDirect}
-        onSelectFriend={controller.handleCreateDirect}
+        onSelectFriend={(friendId) => void controller.handleCreateDirect(friendId)}
       />
 
       <NewGroupChatModal
         isOpen={controller.isNewGroupModalOpen}
         onClose={controller.handleCloseGroupModal}
+        currentUser={controller.currentUser}
         friends={controller.friends}
         isLoadingFriends={controller.isLoadingFriends}
+        isFriendsError={controller.isFriendsError}
+        onRetryFriends={controller.handleRetryFriends}
         isCreating={controller.isCreatingGroup}
         onSubmit={controller.handleCreateGroup}
       />
@@ -95,6 +102,8 @@ export const MessagesPage: React.FC = () => {
         onClose={controller.handleCloseAddGroupMembersModal}
         friends={controller.friends}
         isLoadingFriends={controller.isLoadingFriends}
+        isFriendsError={controller.isFriendsError}
+        onRetryFriends={controller.handleRetryFriends}
         existingMemberUserIds={
           controller.activeConversation?.members?.map((m) => m.userId) || []
         }
@@ -107,6 +116,7 @@ export const MessagesPage: React.FC = () => {
         onClose={controller.handleCloseTransferOwnershipModal}
         members={controller.activeConversation?.members || []}
         currentUserId={controller.currentUser?.id}
+        initialSelectedUserId={controller.transferTargetUserId}
         isTransferring={controller.isTransferringOwnership}
         onSubmit={controller.handleTransferOwnership}
       />

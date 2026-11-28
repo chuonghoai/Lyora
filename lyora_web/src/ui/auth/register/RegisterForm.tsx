@@ -11,7 +11,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ controller }) => {
   if (controller.step === 'OTP') {
     return (
       <form onSubmit={controller.handleVerifyOtp} noValidate className="space-y-5">
-        {controller.apiError && <FormAlert message={controller.apiError.message} />}
+        {controller.apiError && (
+          <FormAlert
+            message={controller.apiError.message || 'Đăng ký không thành công. Vui lòng thử lại!'}
+          />
+        )}
 
         <div className="rounded-xl border border-info/25 bg-info/10 px-4 py-3 text-sm text-foreground">
           <p className="font-semibold text-info">Xác thực địa chỉ email</p>
@@ -44,7 +48,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ controller }) => {
           >
             {controller.cooldown > 0 ? `Gửi lại sau ${controller.cooldown}s` : 'Gửi lại mã OTP'}
           </button>
-          <button type="button" onClick={controller.handleBackToForm} className="text-muted underline-offset-4 hover:text-foreground hover:underline cursor-pointer">
+          <button
+            type="button"
+            onClick={controller.handleBackToForm}
+            disabled={controller.isLoading}
+            className="text-muted underline-offset-4 hover:text-foreground hover:underline disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+          >
             Thay đổi thông tin
           </button>
         </div>
@@ -58,7 +67,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ controller }) => {
 
   return (
     <form onSubmit={controller.handleSubmitStep1} noValidate className="space-y-5">
-      {controller.apiError && <FormAlert message={controller.apiError.message} />}
+      {controller.apiError && (
+        <FormAlert
+          message={controller.apiError.message || 'Gửi mã OTP không thành công. Vui lòng thử lại!'}
+        />
+      )}
 
       <Input
         label="Họ và tên"

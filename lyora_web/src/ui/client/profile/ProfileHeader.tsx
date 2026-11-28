@@ -1,6 +1,5 @@
 import React from 'react';
 import { AppImage, Button, formatDate } from '@/core';
-import { PROFILE_COVER_PRESETS } from '@/features/user';
 import {
   BriefcaseIcon,
   CalendarIcon,
@@ -34,8 +33,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
     .map((part) => part.charAt(0).toUpperCase())
     .join('') || 'L';
 
-  const coverSrc = profile.coverUrl || PROFILE_COVER_PRESETS[0].url;
-
   return (
     <section
       aria-label="Thông tin tổng quan hồ sơ"
@@ -43,11 +40,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
     >
       {/* Ảnh bìa */}
       <div className="relative h-44 sm:h-56 lg:h-64 w-full overflow-hidden rounded-t-2xl bg-secondary border-b border-border">
-        <AppImage
-          src={coverSrc}
-          alt={`Ảnh bìa của ${displayName}`}
-          className="h-full w-full rounded-none object-cover"
-        />
+        {profile.coverUrl && (
+          <AppImage
+            src={profile.coverUrl}
+            alt={`Ảnh bìa của ${displayName}`}
+            className="h-full w-full rounded-none object-cover"
+          />
+        )}
 
         {controller.isOwnProfile && (
           <button
@@ -80,7 +79,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
                 </span>
               )}
 
-              {profile.isOnline && (
+              {!controller.isOwnProfile && profile.isOnline && (
                 <span
                   title="Đang hoạt động"
                   className="absolute bottom-1.5 right-1.5 h-4 w-4 rounded-full bg-success ring-2 ring-card"
@@ -155,7 +154,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
 
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarIcon className="w-4 h-4 text-primary shrink-0" />
-                  <span>Tham gia {formatDate(profile.createdAt)}</span>
+                  <span>Tham gia {profile.createdAt ? formatDate(profile.createdAt) : 'Chưa cập nhật'}</span>
                 </span>
 
                 <button
@@ -204,7 +203,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
                 <Button
                   type="button"
                   variant="primary"
-                  onClick={controller.handleOpenMessages}
+                  disabled={controller.isCreatingDirectChat}
+                  isLoading={controller.isCreatingDirectChat}
+                  onClick={() => void controller.handleOpenMessages()}
                   className="gap-1.5"
                 >
                   <ChatBubbleOutlineIcon className="w-4 h-4" />
@@ -248,30 +249,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
                 </div>
               </>
             ) : profile.friendshipStatus === 'REQUEST_SENT' ? (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={controller.isFriendshipMutating}
-                  onClick={() =>
-                    void controller.handleCancelFriendRequest(profile.id, displayName)
-                  }
-                  className="gap-1.5"
-                >
-                  <ClockIcon className="w-4 h-4 text-info" />
-                  <span>Hủy lời mời kết bạn</span>
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={controller.handleOpenMessages}
-                  className="gap-1.5"
-                >
-                  <ChatBubbleOutlineIcon className="w-4 h-4" />
-                  <span>Nhắn tin</span>
-                </Button>
-              </>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={controller.isFriendshipMutating}
+                onClick={() =>
+                  void controller.handleCancelFriendRequest(profile.id, displayName)
+                }
+                className="gap-1.5"
+              >
+                <ClockIcon className="w-4 h-4 text-info" />
+                <span>Hủy lời mời kết bạn</span>
+              </Button>
             ) : profile.friendshipStatus === 'REQUEST_RECEIVED' ? (
               <>
                 <Button
@@ -299,30 +288,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
                 </Button>
               </>
             ) : (
-              <>
-                <Button
-                  type="button"
-                  variant="primary"
-                  disabled={controller.isFriendshipMutating}
-                  onClick={() =>
-                    void controller.handleSendFriendRequest(profile.id, displayName)
-                  }
-                  className="gap-1.5"
-                >
-                  <UserPlusIcon className="w-4 h-4" />
-                  <span>Thêm bạn bè</span>
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={controller.handleOpenMessages}
-                  className="gap-1.5"
-                >
-                  <ChatBubbleOutlineIcon className="w-4 h-4" />
-                  <span>Nhắn tin</span>
-                </Button>
-              </>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={controller.isFriendshipMutating}
+                onClick={() =>
+                  void controller.handleSendFriendRequest(profile.id, displayName)
+                }
+                className="gap-1.5"
+              >
+                <UserPlusIcon className="w-4 h-4" />
+                <span>Thêm bạn bè</span>
+              </Button>
             )}
           </div>
         </div>
@@ -395,11 +372,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
           >
             <span>
               {controller.isOwnProfile ? 'Dấu ấn & Đã lưu' : 'Được gắn thẻ'}
-            </span>
-            <span className="rounded-full bg-background border border-border px-2 py-0.5 text-xs font-semibold text-foreground tabular-nums">
-              {controller.isOwnProfile
-                ? controller.activityCounts.totalGrouped
-                : controller.activityCounts.tagged}
             </span>
             {controller.activeTab === 'activity' && (
               <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />

@@ -10,7 +10,11 @@ export interface ForgotPasswordFormProps {
 export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ controller }) => {
   return (
     <div className="space-y-5">
-      {controller.apiError && <FormAlert message={controller.apiError.message} />}
+      {controller.apiError && (
+        <FormAlert
+          message={controller.apiError.message || 'Thao tác không thành công. Vui lòng thử lại!'}
+        />
+      )}
 
       {controller.step === 'EMAIL' && (
         <form onSubmit={controller.handleSendOtp} noValidate className="space-y-5">
@@ -67,7 +71,12 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ controll
             >
               {controller.cooldown > 0 ? `Gửi lại sau ${controller.cooldown}s` : 'Gửi lại mã OTP'}
             </button>
-            <button type="button" onClick={controller.handleBackToEmail} className="text-muted underline-offset-4 hover:text-foreground hover:underline cursor-pointer">
+            <button
+              type="button"
+              onClick={controller.handleBackToEmail}
+              disabled={controller.isLoading}
+              className="text-muted underline-offset-4 hover:text-foreground hover:underline disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+            >
               Thay đổi email
             </button>
           </div>
@@ -117,7 +126,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ controll
           />
 
           <Button type="submit" variant="primary" isLoading={controller.isLoading} className="w-full py-3 text-base">
-            Lưu mật khẩu mới &amp; Đăng nhập
+            Lưu mật khẩu mới
           </Button>
         </form>
       )}

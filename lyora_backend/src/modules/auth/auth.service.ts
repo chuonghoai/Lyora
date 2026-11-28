@@ -47,6 +47,7 @@ export interface AuthTokenResponse {
     education?: string | null;
     website?: string | null;
     isActive?: boolean;
+    isOnline?: boolean;
     createdAt?: Date;
   };
 }
@@ -98,9 +99,17 @@ export class AuthService {
     }
 
     if (!user.isActive) {
-      throw new ForbiddenException(
-        'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên',
-      );
+      throw new ForbiddenException({
+        message: 'Tài khoản của bạn đã bị khóa.',
+        error: 'Forbidden',
+        code: 'ACCOUNT_LOCKED',
+        details: {
+          lockReason:
+            user.lockReason?.trim() ||
+            'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
+          lockedAt: user.lockedAt ? user.lockedAt.toISOString() : null,
+        },
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -276,6 +285,19 @@ export class AuthService {
 
     await this.redisService.revokeSession(payload.sub, payload.sessionId);
     const user = await this.usersService.findById(payload.sub);
+    if (!user.isActive) {
+      throw new ForbiddenException({
+        message: 'Tài khoản của bạn đã bị khóa.',
+        error: 'Forbidden',
+        code: 'ACCOUNT_LOCKED',
+        details: {
+          lockReason:
+            user.lockReason?.trim() ||
+            'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
+          lockedAt: user.lockedAt ? user.lockedAt.toISOString() : null,
+        },
+      });
+    }
 
     return this.issueTokens(user);
   }
@@ -300,6 +322,10 @@ export class AuthService {
 
     if (sessionId) {
       tasks.push(this.redisService.revokeSession(userId, sessionId));
+    }
+
+    if (typeof this.usersService.setOnlineStatus === 'function') {
+      tasks.push(this.usersService.setOnlineStatus(userId, false));
     }
 
     if (tasks.length > 0) {
@@ -340,6 +366,10 @@ export class AuthService {
       }),
     ]);
 
+    if (typeof this.usersService.setOnlineStatus === 'function') {
+      await this.usersService.setOnlineStatus(user.id, true);
+    }
+
     await this.redisService.saveSession(
       user.id,
       sessionId,
@@ -365,6 +395,7 @@ export class AuthService {
         education: user.education ?? null,
         website: user.website ?? null,
         isActive: user.isActive,
+        isOnline: true,
         createdAt: user.createdAt,
       },
     };

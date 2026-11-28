@@ -395,7 +395,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
               </label>
 
               <label className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground hover:bg-background transition-colors cursor-pointer">
-                <VideoIcon className="w-4 h-4 text-accent" />
+                <VideoIcon className="w-4 h-4 text-primary" />
                 <span>Video</span>
                 <input
                   type="file"
@@ -488,7 +488,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({ controller }) => {
           </label>
 
           <label className="inline-flex items-center justify-center gap-2 rounded-xl py-2 text-xs sm:text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors cursor-pointer">
-            <VideoIcon className="w-4 h-4 text-accent" />
+            <VideoIcon className="w-4 h-4 text-primary" />
             <span>Video</span>
             <input
               type="file"

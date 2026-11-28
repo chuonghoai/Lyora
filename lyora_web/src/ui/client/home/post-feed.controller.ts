@@ -131,6 +131,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   const [isDraggingComposerMedia, setIsDraggingComposerMedia] = useState(false);
   const composerDragDepthRef = useRef(0);
   const composerPendingFilesRef = useRef<Map<string, File>>(new Map());
+  const commentPendingFilesRef = useRef<Map<string, File>>(new Map());
   const createdBlobUrlsRef = useRef<Set<string>>(new Set());
   const [composerTaggedUsers, setComposerTaggedUsers] = useState<ComposerTaggedUser[]>([]);
   const [isMentionPickerOpen, setIsMentionPickerOpen] = useState(false);
@@ -208,30 +209,6 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
 
   const resolvedProfileUser = options.profileUser ?? currentUser;
   const totalItems = postsQuery.data?.pages[0]?.meta.totalItems ?? posts.length;
-  const isPreviewFallback = Boolean(
-    postsQuery.data?.pages.some((page) => page.isPreviewFallback),
-  );
-
-  const savedPostsCount = useMemo(
-    () => posts.filter((post) => post.isBookmarked).length,
-    [posts],
-  );
-
-  const myPostsCount = useMemo(
-    () =>
-      posts.filter(
-        (post) =>
-          post.author.id === resolvedProfileUser?.id ||
-          (Boolean(resolvedProfileUser?.email) &&
-            post.author.email === resolvedProfileUser?.email),
-      ).length,
-    [posts, resolvedProfileUser],
-  );
-
-  const totalReactionsOnFeed = useMemo(
-    () => posts.reduce((sum, post) => sum + post.reactionCount, 0),
-    [posts],
-  );
 
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = postsQuery;
 
@@ -284,7 +261,11 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
 
   const handleRefreshFeed = useCallback(async () => {
     setTemporarilyHiddenIds({});
-    await postsQuery.refetch();
+    const result = await postsQuery.refetch();
+    if (result.isError) {
+      toast.error('Không thể làm mới danh sách bài viết. Vui lòng thử lại.');
+      return;
+    }
     toast.info('Đã làm mới danh sách bài viết mới nhất.');
   }, [postsQuery]);
 
@@ -295,9 +276,9 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   };
 
   // Composer handlers
-  const handleExpandComposer = () => {
+  const handleExpandComposer = useCallback(() => {
     setIsComposerExpanded(true);
-  };
+  }, []);
 
   const handleCollapseComposer = () => {
     composerDragDepthRef.current = 0;
@@ -867,7 +848,15 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
       return;
     }
 
+    const existingDraft = commentMediaDrafts[postId];
+    if (existingDraft?.url.startsWith('blob:')) {
+      URL.revokeObjectURL(existingDraft.url);
+      createdBlobUrlsRef.current.delete(existingDraft.url);
+    }
+
     const url = URL.createObjectURL(file);
+    createdBlobUrlsRef.current.add(url);
+    commentPendingFilesRef.current.set(postId, file);
     setCommentMediaDrafts((prev) => ({
       ...prev,
       [postId]: {
@@ -891,7 +880,9 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     const existing = commentMediaDrafts[postId];
     if (existing?.url.startsWith('blob:')) {
       URL.revokeObjectURL(existing.url);
+      createdBlobUrlsRef.current.delete(existing.url);
     }
+    commentPendingFilesRef.current.delete(postId);
     setCommentMediaDrafts((prev) => ({ ...prev, [postId]: null }));
   };
 
@@ -926,11 +917,24 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     }
 
     try {
+      let uploadedMedia = parsed.data.media ?? null;
+      const pendingFile = commentPendingFilesRef.current.get(postId);
+      if (uploadedMedia && pendingFile) {
+        const uploaded = await uploadMediaMutation.mutateAsync([pendingFile]);
+        uploadedMedia = uploaded[0] ?? null;
+      }
+
       await createCommentMutation.mutateAsync({
         postId,
         content: parsed.data.content,
-        media: parsed.data.media ?? null,
+        media: uploadedMedia,
       });
+
+      if (mediaItem?.url.startsWith('blob:')) {
+        URL.revokeObjectURL(mediaItem.url);
+        createdBlobUrlsRef.current.delete(mediaItem.url);
+      }
+      commentPendingFilesRef.current.delete(postId);
       setCommentDrafts((prev) => ({ ...prev, [postId]: '' }));
       setCommentMediaDrafts((prev) => ({ ...prev, [postId]: null }));
       setCommentErrors((prev) => {
@@ -968,21 +972,22 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     );
   };
 
+  const handleRetryReactions = () => {
+    void reactionsQuery.refetch();
+  };
+
   return {
     currentUser,
     profileUser: resolvedProfileUser,
     friends: options.friends,
     posts,
     totalItems,
-    myPostsCount,
-    savedPostsCount,
-    totalReactionsOnFeed,
-    isPreviewFallback,
     isFeedLoading: postsQuery.isLoading,
     isFeedError: postsQuery.isError,
     isFeedRefetching: postsQuery.isRefetching && !postsQuery.isFetchingNextPage,
     hasNextPage: Boolean(postsQuery.hasNextPage),
     isFetchingNextPage: postsQuery.isFetchingNextPage,
+    isFetchNextPageError: postsQuery.isFetchNextPageError,
     loadMoreSentinelRef,
 
     // Composer
@@ -1013,12 +1018,14 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     reactionsModalPost,
     reactionsData: reactionsQuery.data ?? null,
     isReactionsLoading: reactionsQuery.isLoading || reactionsQuery.isFetching,
-    isSubmittingComment: createCommentMutation.isPending,
+    isReactionsError: reactionsQuery.isError,
+    isSubmittingComment: createCommentMutation.isPending || uploadMediaMutation.isPending,
     isHidingPost: hidePostMutation.isPending,
     lightbox,
 
     // Handlers
     handleRefreshFeed,
+    handleRetryReactions,
     handleLoadMore,
     handleExpandComposer,
     handleCollapseComposer,

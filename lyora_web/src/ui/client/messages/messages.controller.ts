@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { isApiError, toast, useAuthStore, useDebounce } from '@/core';
 import { getClientProfilePath } from '@/routes/paths';
 import {
@@ -24,7 +24,11 @@ export type MessagesActiveView = 'list' | 'detail';
 
 export function useMessagesController() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null);
+  const [transferTargetUserId, setTransferTargetUserId] = useState<
     string | null
   >(null);
   const [filterType, setFilterType] = useState<MessagesFilterType>('ALL');
@@ -68,6 +72,17 @@ export function useMessagesController() {
   );
 
   const friendsQuery = useConversationFriendsQuery();
+
+  useEffect(() => {
+    const requestedConversationId = searchParams.get('conversationId');
+    if (!requestedConversationId) return;
+
+    setSelectedConversationId(requestedConversationId);
+    setActiveView('detail');
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('conversationId');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Mutations
   const createDirectMutation = useCreateDirectConversationMutation();
@@ -144,7 +159,6 @@ export function useMessagesController() {
         } else {
           toast.error('Không thể khởi tạo cuộc hội thoại trực tiếp');
         }
-        throw error;
       }
     },
     [createDirectMutation],
@@ -262,12 +276,17 @@ export function useMessagesController() {
     [selectedConversationId, addGroupMembersMutation],
   );
 
-  const handleOpenTransferOwnershipModal = useCallback(() => {
-    setIsTransferOwnershipModalOpen(true);
-  }, []);
+  const handleOpenTransferOwnershipModal = useCallback(
+    (targetUserId?: string) => {
+      setTransferTargetUserId(targetUserId ?? null);
+      setIsTransferOwnershipModalOpen(true);
+    },
+    [],
+  );
 
   const handleCloseTransferOwnershipModal = useCallback(() => {
     setIsTransferOwnershipModalOpen(false);
+    setTransferTargetUserId(null);
   }, []);
 
   const handleTransferOwnership = useCallback(
@@ -421,6 +440,18 @@ export function useMessagesController() {
     [navigate, currentUser?.id],
   );
 
+  const handleRetryConversations = useCallback(() => {
+    void conversationsQuery.refetch();
+  }, [conversationsQuery]);
+
+  const handleRetryActiveConversation = useCallback(() => {
+    void activeConversationQuery.refetch();
+  }, [activeConversationQuery]);
+
+  const handleRetryFriends = useCallback(() => {
+    void friendsQuery.refetch();
+  }, [friendsQuery]);
+
   return {
     // Current User
     currentUser,
@@ -441,16 +472,20 @@ export function useMessagesController() {
     isRenameGroupModalOpen,
     isAddGroupMembersModalOpen,
     isTransferOwnershipModalOpen,
+    transferTargetUserId,
     isOwnerLeaveGroupModalOpen,
     confirmModalState,
     // Data
     conversations,
     activeConversation: activeConversationQuery.data ?? null,
     friends,
-    // Loading states
+    // Loading & error states
     isLoadingConversations: conversationsQuery.isLoading,
+    isConversationsError: conversationsQuery.isError,
     isLoadingActiveConversation: activeConversationQuery.isLoading,
+    isActiveConversationError: activeConversationQuery.isError,
     isLoadingFriends: friendsQuery.isLoading,
+    isFriendsError: friendsQuery.isError,
     isCreatingDirect: createDirectMutation.isPending,
     isCreatingGroup: createGroupMutation.isPending,
     isUpdatingGroupTitle: updateGroupTitleMutation.isPending,
@@ -473,6 +508,9 @@ export function useMessagesController() {
     handleCreateDirect,
     handleCreateGroup,
     handleOpenUserProfile,
+    handleRetryConversations,
+    handleRetryActiveConversation,
+    handleRetryFriends,
     // Group Management Actions
     handleOpenRenameGroupModal,
     handleCloseRenameGroupModal,

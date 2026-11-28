@@ -21,11 +21,17 @@ export const RenameGroupModal: React.FC<RenameGroupModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setTitle(currentTitle);
-      setErrorMsg(null);
-    }
-  }, [isOpen, currentTitle]);
+    if (!isOpen) return;
+    setTitle(currentTitle);
+    setErrorMsg(null);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isUpdating) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, currentTitle, isUpdating, onClose]);
 
   if (!isOpen) return null;
 
@@ -61,7 +67,9 @@ export const RenameGroupModal: React.FC<RenameGroupModalProps> = ({
       aria-modal="true"
       aria-labelledby="rename-group-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
+      onClick={() => {
+        if (!isUpdating) onClose();
+      }}
     >
       <div
         className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border flex flex-col overflow-hidden"
@@ -82,9 +90,12 @@ export const RenameGroupModal: React.FC<RenameGroupModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (!isUpdating) onClose();
+            }}
+            disabled={isUpdating}
             aria-label="Đóng cửa sổ"
-            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
           >
             <CloseIcon className="h-5 w-5" />
           </button>

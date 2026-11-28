@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   Injectable,
   Logger,
@@ -84,7 +85,9 @@ export class ProfileMediaService {
         (error, result) => {
           if (error || !result) {
             reject(
-              new Error(error?.message ?? 'Cloudinary không trả về kết quả'),
+              new BadGatewayException(
+                'Không thể tải tệp lên dịch vụ lưu trữ. Vui lòng thử lại sau',
+              ),
             );
             return;
           }

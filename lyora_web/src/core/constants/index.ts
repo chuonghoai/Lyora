@@ -3,7 +3,6 @@ export const CORE_CONSTANTS = {
   DEFAULT_PAGE_SIZE: 10,
   MAX_PAGE_SIZE: 100,
   DATE_FORMAT: "DD/MM/YYYY",
-  SUPPORT_PHONE: "1900-6868",
   STORAGE_KEYS: {
     TOKEN: "lyora_token",
     REFRESH_TOKEN: "lyora_refresh_token",
@@ -23,6 +22,8 @@ export const CORE_CONSTANTS = {
     USERS: "/users",
     USERS_STATISTICS: "/users/statistics",
     POSTS: "/posts",
+    ADMIN_POSTS: "/admin/posts",
+    ADMIN_POSTS_STATISTICS: "/admin/posts/statistics",
     FRIENDS: "/friends",
     NOTIFICATIONS: "/notifications",
     CONVERSATIONS: "/conversations",

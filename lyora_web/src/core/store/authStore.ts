@@ -8,7 +8,11 @@ interface AuthState {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  setAuth: (tokens: { accessToken: string; refreshToken: string }, user: UserProfile) => void;
+  setAuth: (
+    tokens: { accessToken: string; refreshToken: string },
+    user: UserProfile,
+    options?: { rememberMe?: boolean },
+  ) => void;
   updateUser: (user: UserProfile) => void;
   logout: () => void;
   initAuth: () => void;
@@ -51,8 +55,8 @@ export const useAuthStore = create<AuthState>((set) => {
     isAuthenticated: Boolean(initialToken),
     isLoading: false,
 
-    setAuth: (tokens, user) => {
-      TokenStorage.saveAuthSession(tokens.accessToken, tokens.refreshToken, user);
+    setAuth: (tokens, user, options) => {
+      TokenStorage.saveAuthSession(tokens.accessToken, tokens.refreshToken, user, options);
       set({
         token: tokens.accessToken,
         refreshToken: tokens.refreshToken,

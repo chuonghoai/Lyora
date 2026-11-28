@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button, Input } from '@/core';
 import { FormAlert, PasswordField } from '@/ui/auth/AuthPrimitives';
 import { ROUTES } from '@/routes/paths';
+import { AccountLockedModal } from './AccountLockedModal';
 import type { LoginController } from './login.controller';
 
 export interface LoginFormProps {
@@ -10,9 +11,16 @@ export interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ controller }) => {
+  const isAccountLockedError = Boolean(controller.lockedAccountNotice);
+
   return (
-    <form onSubmit={controller.handleSubmit} noValidate className="space-y-5">
-      {controller.apiError && <FormAlert message={controller.apiError.message} />}
+    <>
+      <form onSubmit={controller.handleSubmit} noValidate className="space-y-5">
+        {controller.apiError && !isAccountLockedError && (
+          <FormAlert
+            message={controller.apiError.message || 'Đăng nhập không thành công. Vui lòng thử lại!'}
+          />
+        )}
 
       <Input
         label="Email"
@@ -61,9 +69,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ controller }) => {
         </Link>
       </div>
 
-      <Button type="submit" variant="primary" isLoading={controller.isLoading} className="w-full py-3 text-base">
-        Đăng nhập
-      </Button>
-    </form>
+        <Button type="submit" variant="primary" isLoading={controller.isLoading} className="w-full py-3 text-base">
+          Đăng nhập
+        </Button>
+      </form>
+
+      <AccountLockedModal
+        isOpen={Boolean(controller.lockedAccountNotice)}
+        lockReason={controller.lockedAccountNotice?.lockReason ?? ''}
+        lockedAt={controller.lockedAccountNotice?.lockedAt}
+        onClose={controller.handleCloseLockedModal}
+      />
+    </>
   );
 };

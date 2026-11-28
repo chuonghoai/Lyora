@@ -29,7 +29,15 @@ describe('adminNav feature search & active path helpers', () => {
   it('evaluates exact and nested admin nav active states accurately', () => {
     const dashboardItem = getAllAdminNavItems().find((i) => i.id === 'dashboard')!;
     const usersItem = getAllAdminNavItems().find((i) => i.id === 'users')!;
+    const postsItem = getAllAdminNavItems().find((i) => i.id === 'posts')!;
 
+    expect(postsItem.implemented).toBe(true);
+    expect(postsItem.path).toBe('/admin/posts');
+    expect(isAdminNavActive('/admin/posts', postsItem)).toBe(true);
+    expect(isAdminNavActive('/admin/posts', dashboardItem)).toBe(false);
+
+    expect(usersItem.implemented).toBe(true);
+    expect(usersItem.path).toBe('/admin/users');
     expect(isAdminNavActive('/admin', dashboardItem)).toBe(true);
     expect(isAdminNavActive('/admin/', dashboardItem)).toBe(true);
     expect(isAdminNavActive('/admin/users', dashboardItem)).toBe(false);

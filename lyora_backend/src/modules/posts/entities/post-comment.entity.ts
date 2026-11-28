@@ -21,6 +21,10 @@ export class PostComment extends AbstractBaseEntity {
   @JoinColumn({ name: 'authorId' })
   author: User;
 
+  @Index()
+  @Column({ type: 'uuid', nullable: true })
+  parentId?: string | null;
+
   @Column({ type: 'text' })
   content: string;
 

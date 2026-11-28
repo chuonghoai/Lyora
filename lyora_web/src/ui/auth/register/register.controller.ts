@@ -7,7 +7,7 @@ import {
   useRegisterMutation,
   useSendRegisterOtpMutation,
 } from '@/features/auth';
-import { isApiError, toast, useAuthStore, type ApiError } from '@/core';
+import { toast, useAuthStore, type ApiError } from '@/core';
 import { ROUTES } from '@/routes/paths';
 
 export type RegisterStep = 'FORM' | 'OTP';
@@ -43,12 +43,6 @@ export function useRegisterController() {
       setCooldown(res.cooldownSeconds || 60);
       toast.info(`Mã xác thực OTP đã được gửi đến ${res.email}`);
     },
-    onError: (err: unknown) => {
-      const message = isApiError(err)
-        ? err.message
-        : (err as Error)?.message || 'Gửi mã OTP không thành công';
-      toast.error(message);
-    },
   });
 
   const registerMutation = useRegisterMutation({
@@ -57,12 +51,6 @@ export function useRegisterController() {
       setAuth({ accessToken, refreshToken }, user);
       toast.success(`Đăng ký tài khoản thành công! Chào mừng ${user.fullName}.`);
       navigate(ROUTES.CLIENT.ROOT, { replace: true });
-    },
-    onError: (err: unknown) => {
-      const message = isApiError(err)
-        ? err.message
-        : (err as Error)?.message || 'Đăng ký không thành công';
-      toast.error(message);
     },
   });
 

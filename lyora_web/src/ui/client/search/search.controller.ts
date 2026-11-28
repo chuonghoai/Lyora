@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { isApiError, toast } from "@/core";
 import {
   useAcceptFriendRequestMutation,
@@ -8,6 +8,7 @@ import {
   useSendFriendRequestMutation,
 } from "@/features/friends";
 import { useInfinitePostsQuery } from "@/features/posts";
+import { ROUTES } from "@/routes/paths";
 
 export type SearchResultTab = "all" | "people" | "posts" | "pages";
 
@@ -18,6 +19,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function useSearchController() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = (searchParams.get("q") ?? "").trim();
   const tabParam = searchParams.get("tab");
@@ -33,6 +35,7 @@ export function useSearchController() {
     { search: query, limit: 10, filter: "all" },
     { enabled: query.length >= 2 },
   );
+
   const posts = useMemo(
     () => postsQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [postsQuery.data],
@@ -82,24 +85,38 @@ export function useSearchController() {
     }
   };
 
+  const handleRetryPeople = () => void peopleQuery.refetch();
+  const handleRetryPosts = () => void postsQuery.refetch();
+  const handleLoadMorePosts = () => {
+    if (postsQuery.hasNextPage && !postsQuery.isFetchingNextPage) {
+      void postsQuery.fetchNextPage();
+    }
+  };
+  const handleBackToFeed = () => navigate(ROUTES.CLIENT.ROOT);
+
   return {
     query,
     activeTab,
     people: peopleQuery.data?.items ?? [],
     posts,
-    isLoadingPeople: peopleQuery.isLoading,
-    isLoadingPosts: postsQuery.isFetching,
+    isLoadingPeople: peopleQuery.isFetching,
+    isPeopleError: peopleQuery.isError,
+    isLoadingPosts: postsQuery.isLoading,
+    isPostsError: postsQuery.isError,
+    hasNextPostsPage: Boolean(postsQuery.hasNextPage),
+    isFetchingNextPosts: postsQuery.isFetchingNextPage,
     isActionPending: (userId: string) =>
-      (sendRequestMutation.isPending &&
-        sendRequestMutation.variables === userId) ||
-      (acceptRequestMutation.isPending &&
-        acceptRequestMutation.variables === userId) ||
-      (removeRequestMutation.isPending &&
-        removeRequestMutation.variables === userId),
+      (sendRequestMutation.isPending && sendRequestMutation.variables === userId) ||
+      (acceptRequestMutation.isPending && acceptRequestMutation.variables === userId) ||
+      (removeRequestMutation.isPending && removeRequestMutation.variables === userId),
     handleSelectTab,
     handleSendRequest,
     handleAcceptRequest,
     handleRemoveRequest,
+    handleRetryPeople,
+    handleRetryPosts,
+    handleLoadMorePosts,
+    handleBackToFeed,
   };
 }
 

@@ -51,4 +51,14 @@ export class User extends AbstractBaseEntity {
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @Index()
+  @Column({ type: 'boolean', default: false })
+  isOnline: boolean;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  lockReason?: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lockedAt?: Date | null;
 }

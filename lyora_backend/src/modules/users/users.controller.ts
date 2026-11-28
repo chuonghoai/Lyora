@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -20,11 +19,16 @@ import { memoryStorage } from 'multer';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { VietnameseParseUUIDPipe } from '../../common/pipes/vietnamese-parse-uuid.pipe';
 import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
+import { AdminOnlineStatusQueryDto } from './dto/admin-online-status-query.dto';
+import { AdminUsersQueryDto } from './dto/admin-users-query.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { LockUserDto } from './dto/lock-user.dto';
 import { UserStatisticsQueryDto } from './dto/user-statistics-query.dto';
 import {
   isAllowedProfileImageMime,
@@ -44,8 +48,25 @@ export class UsersController {
   @Get()
   @Roles(UserRole.ADMIN)
   @ResponseMessage('Lấy danh sách người dùng thành công')
-  async findAll(@Query() query: PaginationQueryDto) {
-    return this.usersService.findAllPaginated(query);
+  async findAll(@Query() query: AdminUsersQueryDto) {
+    const result = await this.usersService.findAllPaginated(query);
+    return new ApiResponseDto(
+      true,
+      'Lấy danh sách người dùng thành công',
+      {
+        items: result.items,
+        summary: result.summary,
+      },
+      result.meta,
+    );
+  }
+
+  @Post()
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Tạo tài khoản người dùng thành công')
+  async create(@Body() dto: CreateUserDto) {
+    return this.usersService.createUser(dto);
   }
 
   @Get('statistics')
@@ -53,6 +74,13 @@ export class UsersController {
   @ResponseMessage('Lấy dữ liệu thống kê người dùng thành công')
   async getStatistics(@Query() query: UserStatisticsQueryDto) {
     return this.usersService.getStatistics(query.role);
+  }
+
+  @Get('online-status')
+  @Roles(UserRole.ADMIN)
+  @ResponseMessage('Lấy trạng thái trực tuyến người dùng thành công')
+  async getOnlineStatuses(@Query() query: AdminOnlineStatusQueryDto) {
+    return this.usersService.getOnlineStatuses(query.ids);
   }
 
   @Get('me/profile')
@@ -100,6 +128,34 @@ export class UsersController {
     return this.profileMediaService.uploadProfileImage(file);
   }
 
+  @Get(':id/admin-profile')
+  @Roles(UserRole.ADMIN)
+  @ResponseMessage('Lấy thông tin hồ sơ người dùng thành công')
+  async getAdminUserProfile(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+  ) {
+    return this.usersService.getAdminUserProfile(currentUser, id);
+  }
+
+  @Patch(':id/lock')
+  @Roles(UserRole.ADMIN)
+  @ResponseMessage('Đã khóa tài khoản người dùng thành công')
+  async lockUser(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+    @Body() dto: LockUserDto,
+  ) {
+    return this.usersService.lockUser(currentUser, id, dto);
+  }
+
+  @Patch(':id/unlock')
+  @Roles(UserRole.ADMIN)
+  @ResponseMessage('Đã mở khóa tài khoản người dùng thành công')
+  async unlockUser(@Param('id', VietnameseParseUUIDPipe) id: string) {
+    return this.usersService.unlockUser(id);
+  }
+
   @Get(':id/profile')
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @ResponseMessage('Lấy thông tin hồ sơ người dùng thành công')
@@ -113,7 +169,7 @@ export class UsersController {
   @Get(':id')
   @Roles(UserRole.ADMIN)
   @ResponseMessage('Lấy thông tin người dùng thành công')
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  async findOne(@Param('id', VietnameseParseUUIDPipe) id: string) {
     return this.usersService.findById(id);
   }
 }

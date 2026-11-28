@@ -1,5 +1,5 @@
 import React from "react";
-import { AppImage, Button } from "@/core";
+import { AppImage, Button, EmptyState, ErrorState, LoadingState } from "@/core";
 import {
   ClockIcon,
   CloseIcon,
@@ -118,29 +118,34 @@ export const ProfileFriendsSection: React.FC<ProfileFriendsSectionProps> = ({
       </div>
 
       {/* Lưới thẻ bạn bè */}
-      {controller.filteredFriendsList.length === 0 ? (
-        <div className="rounded-xl border border-border bg-background/50 p-8 text-center space-y-2">
-          <UsersIcon className="w-7 h-7 text-muted mx-auto" />
-          <p className="text-sm font-semibold text-foreground">
-            {controller.friendSearchQuery
+      {controller.isOwnProfile && controller.isLoadingFriends ? (
+        <LoadingState variant="skeleton-list" count={4} label="Đang tải danh sách bạn bè..." />
+      ) : controller.isOwnProfile && controller.isFriendsError ? (
+        <ErrorState
+          title="Không thể tải danh sách bạn bè"
+          description="Đã xảy ra lỗi khi đồng bộ danh sách bạn bè và lời mời kết bạn."
+          onRetry={controller.handleRetryFriends}
+        />
+      ) : controller.filteredFriendsList.length === 0 ? (
+        <EmptyState
+          icon={<UsersIcon className="w-6 h-6" />}
+          title={
+            controller.friendSearchQuery
               ? `Không tìm thấy kết quả khớp với "${controller.friendSearchQuery}"`
               : controller.friendsFilter === "REQUESTS"
                 ? "Hiện không có lời mời kết bạn nào"
-                : "Chưa có danh sách bạn bè phù hợp"}
-          </p>
-          {controller.friendSearchQuery && (
-            <div className="pt-1">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={controller.handleClearFriendSearch}
-                className="h-8 px-3 py-1 text-xs"
-              >
-                Xóa bộ lọc tìm kiếm
-              </Button>
-            </div>
-          )}
-        </div>
+                : "Chưa có danh sách bạn bè phù hợp"
+          }
+          action={
+            controller.friendSearchQuery
+              ? {
+                  label: "Xóa bộ lọc tìm kiếm",
+                  variant: "outline",
+                  onClick: controller.handleClearFriendSearch,
+                }
+              : undefined
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {controller.filteredFriendsList.map((friend) => {

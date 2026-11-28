@@ -107,7 +107,7 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
     (response) => {
       return response.data;
     },
-    async (error: AxiosError<{ message?: string | string[]; error?: string; timestamp?: string }>) => {
+    async (error: AxiosError<{ message?: string | string[]; error?: string; code?: string; details?: Record<string, unknown>; timestamp?: string }>) => {
       const originalRequest = error.config as ExtendedAxiosRequestConfig | undefined;
       const status = error.response?.status;
       const url = originalRequest?.url || '';
@@ -131,7 +131,7 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
         if (refreshCount > 5) {
           logger.error('ApiClient', 'Detected runaway token refresh loop. Clearing auth session.');
           TokenStorage.clearAuth();
-          toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+          toast.error('Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.');
           return Promise.reject(buildApiError(error));
         }
 
@@ -197,7 +197,13 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
 }
 
 function buildApiError(
-  error: AxiosError<{ message?: string | string[]; error?: string; timestamp?: string }>,
+  error: AxiosError<{
+    message?: string | string[];
+    error?: string;
+    code?: string;
+    details?: Record<string, unknown>;
+    timestamp?: string;
+  }>,
 ): ApiError {
   const statusCode = error.response?.status || 0;
   const data = error.response?.data;
@@ -212,7 +218,7 @@ function buildApiError(
   } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
     message = 'Hết thời gian kết nối đến máy chủ. Vui lòng thử lại!';
   } else if (!error.response && error.request) {
-    message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc backend service.';
+    message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.';
   } else if (statusCode === 401) {
     message = 'Email hoặc mật khẩu không chính xác hoặc phiên đã hết hạn.';
   } else if (statusCode === 403) {
@@ -229,6 +235,8 @@ function buildApiError(
     statusCode,
     message,
     error: data?.error || error.name,
+    ...(typeof data?.code === 'string' && data.code ? { code: data.code } : {}),
+    ...(data?.details && typeof data.details === 'object' ? { details: data.details } : {}),
     timestamp: data?.timestamp || new Date().toISOString(),
     path: error.config?.url,
     isNetworkError: !error.response,

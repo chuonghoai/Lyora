@@ -25,6 +25,7 @@ export interface PostAuthor {
 
 export interface PostComment {
   id: string;
+  parentId?: string | null;
   author: PostAuthor;
   content: string;
   media?: PostMediaItem | null;
@@ -65,7 +66,6 @@ export interface PostsQueryParams {
 export interface PaginatedPostsResult {
   items: Post[];
   meta: PaginationMeta;
-  isPreviewFallback?: boolean;
 }
 
 export interface CreatePostPayload {
@@ -103,7 +103,22 @@ export interface PaginatedPostReactionsResult {
   items: PostReactionUser[];
   meta: PaginationMeta;
   breakdown: ReactionBreakdown;
-  isPreviewFallback?: boolean;
+}
+
+export interface PostShareUser {
+  id: string;
+  user: PostAuthor;
+  createdAt: string;
+}
+
+export interface PostSharesQueryParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedPostSharesResult {
+  items: PostShareUser[];
+  meta: PaginationMeta;
 }
 
 export type PostSuggestionTone =
@@ -138,4 +153,103 @@ export interface PostContentSuggestion {
 export interface PostSuggestionsResult {
   tone: PostSuggestionTone;
   suggestions: PostContentSuggestion[];
+}
+
+export type PostModerationStatus = 'ACTIVE' | 'HIDDEN';
+
+export type AdminPostStatusFilter = 'ALL' | PostModerationStatus;
+
+export type AdminPostAuthorRole = 'ADMIN' | 'CLIENT';
+
+export type AdminPostAuthorRoleFilter = 'ALL' | AdminPostAuthorRole;
+
+export type AdminPostVisibilityFilter = 'ALL' | PostVisibility;
+
+export type AdminPostMediaFilter = 'ALL' | 'WITH_MEDIA' | 'TEXT_ONLY';
+
+export interface AdminPostStatistics {
+  totalPosts: number;
+  activePosts: number;
+  hiddenPosts: number;
+  postsToday: number;
+  postsThisMonth: number;
+  withMediaCount: number;
+  adminPostsCount: number;
+  visibilityBreakdown: Record<PostVisibility, number>;
+}
+
+export interface AdminPostAuthor {
+  id: string;
+  fullName: string;
+  email: string;
+  avatarUrl: string | null;
+  role: AdminPostAuthorRole;
+}
+
+export interface AdminPostModeratorSummary {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+export interface AdminPostComment {
+  id: string;
+  author: AdminPostAuthor;
+  content: string;
+  media: PostMediaItem | null;
+  createdAt: string;
+}
+
+export interface AdminPostItem {
+  id: string;
+  author: AdminPostAuthor;
+  content: string;
+  visibility: PostVisibility;
+  media: PostMediaItem[];
+  taggedUserIds: string[];
+  moderationStatus: PostModerationStatus;
+  moderationReason: string | null;
+  moderatedAt: string | null;
+  moderatedBy: AdminPostModeratorSummary | null;
+  reactionCount: number;
+  commentCount: number;
+  shareCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPostDetail extends AdminPostItem {
+  reactionBreakdown: ReactionBreakdown;
+  comments: AdminPostComment[];
+}
+
+export interface AdminPostsQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: AdminPostStatusFilter;
+  visibility?: PostVisibility;
+  authorRole?: AdminPostAuthorRole;
+  hasMedia?: 'true' | 'false';
+}
+
+export interface PaginatedAdminPostsResult {
+  items: AdminPostItem[];
+  meta: PaginationMeta;
+}
+
+export interface HideAdminPostPayload {
+  postId: string;
+  reason: string;
+}
+
+export interface RemoveAdminPostPayload {
+  postId: string;
+  reason?: string;
+}
+
+export interface RemoveAdminCommentPayload {
+  postId: string;
+  commentId: string;
+  reason?: string;
 }

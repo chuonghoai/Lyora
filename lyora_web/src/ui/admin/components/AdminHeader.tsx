@@ -5,7 +5,6 @@ import webIconLockup from '@/core/assets/web_icon_lockup.svg';
 import type { AdminNavItem, AdminNavSearchEntry } from '../adminNav';
 import {
   AdminNavIcon,
-  BellIcon,
   CloseIcon,
   MenuIcon,
   SearchIcon,
@@ -18,15 +17,11 @@ interface AdminHeaderProps {
   isSearchOpen: boolean;
   searchResults: AdminNavSearchEntry[];
   searchContainerRef: React.RefObject<HTMLDivElement | null>;
-  isNotificationOpen: boolean;
-  notificationRef: React.RefObject<HTMLDivElement | null>;
   onSearchOpen: () => void;
   onSearchChange: (value: string) => void;
   onSearchSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onSelectSearchItem: (item: AdminNavItem) => void;
   onClearSearch: () => void;
-  onToggleNotifications: () => void;
-  onCloseNotifications: () => void;
   onToggleSidebarCollapse: () => void;
   onOpenMobileSidebar: () => void;
 }
@@ -37,15 +32,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   isSearchOpen,
   searchResults,
   searchContainerRef,
-  isNotificationOpen,
-  notificationRef,
   onSearchOpen,
   onSearchChange,
   onSearchSubmit,
   onSelectSearchItem,
   onClearSearch,
-  onToggleNotifications,
-  onCloseNotifications,
   onToggleSidebarCollapse,
   onOpenMobileSidebar,
 }) => {
@@ -57,7 +48,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           type="button"
           onClick={onOpenMobileSidebar}
           aria-label="Mở menu điều hướng"
-          className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-background transition-colors"
+          className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-background transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <MenuIcon className="w-5 h-5" />
         </button>
@@ -67,7 +58,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           onClick={onToggleSidebarCollapse}
           aria-label={isSidebarCollapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
           title={isSidebarCollapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
-          className="hidden lg:inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted hover:text-foreground hover:bg-background transition-colors"
+          className="hidden lg:inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted hover:text-foreground hover:bg-background transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <SidebarToggleIcon className="w-4 h-4" collapsed={isSidebarCollapsed} />
         </button>
@@ -77,7 +68,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md"
         >
           <img src={webIconLockup} alt="Lyora" className="h-6 sm:h-7 w-auto" />
-          <span className="hidden sm:inline-flex items-center rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted">
+          <span className="hidden sm:inline-flex items-center rounded-md border border-border bg-card px-2 py-0.5 text-xs font-medium text-muted">
             Quản trị
           </span>
         </Link>
@@ -100,14 +91,14 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             aria-label="Tìm nhanh chức năng quản trị"
             aria-expanded={isSearchOpen}
             aria-controls="admin-feature-search-list"
-            className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-8 text-sm text-foreground placeholder:text-muted focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/15 transition-colors"
+            className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-8 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={onClearSearch}
               aria-label="Xóa từ khóa tìm kiếm"
-              className="absolute right-2 inline-flex h-6 w-6 items-center justify-center rounded text-muted hover:text-foreground"
+              className="absolute right-2 inline-flex h-6 w-6 items-center justify-center rounded text-muted hover:text-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <CloseIcon className="w-3.5 h-3.5" />
             </button>
@@ -122,8 +113,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             className="absolute left-0 right-0 mt-1.5 rounded-xl border border-border bg-card shadow-md overflow-hidden z-40"
           >
             <div className="px-3 py-2 border-b border-border bg-background/60 flex items-center justify-between">
-              <span className="text-[11px] font-medium text-muted">Chức năng quản trị</span>
-              <span className="text-[11px] text-muted tabular-nums">
+              <span className="text-xs font-medium text-foreground/80">Chức năng quản trị</span>
+              <span className="text-xs text-foreground/80 tabular-nums">
                 {searchResults.length} mục
               </span>
             </div>
@@ -143,8 +134,13 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                   <li key={item.id}>
                     <button
                       type="button"
+                      disabled={!item.implemented}
                       onClick={() => onSelectSearchItem(item)}
-                      className="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-background transition-colors"
+                      className={`w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                        item.implemented
+                          ? 'hover:bg-background cursor-pointer'
+                          : 'opacity-65 cursor-not-allowed'
+                      }`}
                     >
                       <span className="flex items-center gap-2.5 min-w-0">
                         <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-primary">
@@ -154,7 +150,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                           <span className="block text-sm font-medium text-foreground truncate">
                             {item.label}
                           </span>
-                          <span className="block text-[11px] text-muted truncate">
+                          <span className="block text-xs text-muted truncate">
                             {item.groupLabel}
                           </span>
                         </span>
@@ -162,13 +158,13 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
 
                       <span
                         className={[
-                          'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                          'shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium',
                           item.implemented
                             ? 'border-secondary-strong bg-secondary text-primary'
-                            : 'border-border bg-background text-muted',
+                            : 'border-border bg-card text-muted',
                         ].join(' ')}
                       >
-                        {item.implemented ? 'Đang mở' : 'Sắp mở'}
+                        {item.implemented ? 'Đang mở' : 'Chưa mở'}
                       </span>
                     </button>
                   </li>
@@ -179,47 +175,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         )}
       </div>
 
-      {/* Right: Notification Center */}
+      {/* Right spacer */}
       <div className="order-2 md:order-3 flex items-center gap-2 shrink-0">
-        <div className="relative" ref={notificationRef}>
-          <button
-            type="button"
-            onClick={onToggleNotifications}
-            aria-expanded={isNotificationOpen}
-            aria-haspopup="dialog"
-            aria-label="Mở thông báo hệ thống"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-background transition-colors"
-          >
-            <BellIcon className="w-4 h-4" />
-          </button>
-
-          {isNotificationOpen && (
-            <div
-              role="dialog"
-              aria-label="Trung tâm thông báo"
-              className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-card shadow-md overflow-hidden z-40"
-            >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                <h2 className="text-sm font-semibold text-foreground">Thông báo hệ thống</h2>
-                <button
-                  type="button"
-                  onClick={onCloseNotifications}
-                  aria-label="Đóng thông báo"
-                  className="text-muted hover:text-foreground"
-                >
-                  <CloseIcon className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="p-4 text-center space-y-1.5">
-                <p className="text-sm font-medium text-foreground">Chưa có thông báo mới</p>
-                <p className="text-xs text-muted leading-relaxed">
-                  {/* // TODO: Kết nối nguồn thông báo thời gian thực cho quản trị viên */}
-                  Luồng cảnh báo kiểm duyệt và sự kiện hệ thống sẽ hiển thị tại đây khi API thông báo được tích hợp.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+        <span className="hidden md:inline-flex items-center rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground/80">
+          Trung tâm điều hành
+        </span>
       </div>
     </header>
   );

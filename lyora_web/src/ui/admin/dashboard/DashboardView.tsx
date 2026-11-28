@@ -1,33 +1,28 @@
 import React from 'react';
-import { Button, formatDate } from '@/core';
+import { Button, formatDateTime } from '@/core';
 import { useDashboardController } from './dashboard.controller';
 import { RefreshIcon } from '../components/AdminIcons';
+import { PostStatsSection } from '../components/PostStatsSection';
 import { UserStatsSection } from '../components/UserStatsSection';
 import { FutureStatsSection } from '../components/FutureStatsSection';
 
-/**
- * DashboardView — Trang chủ Trung tâm Quản trị Lyora.
- * Tích hợp dữ liệu người dùng và sức khỏe hệ thống thực tế từ API,
- * đồng thời giữ khung cấu trúc đồng bộ cho các phân hệ thống kê sắp triển khai.
- */
 export const DashboardView: React.FC = () => {
   const ctrl = useDashboardController();
 
   return (
     <div className="space-y-8">
-      {/* Page Overview Header */}
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border pb-5">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border px-5 pb-5">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Tổng quan quản trị</h1>
           <p className="text-sm text-muted">
-            Theo dõi số liệu tài khoản cộng đồng và tình trạng phản hồi của hệ thống Lyora.
+            Theo dõi số liệu tài khoản, bài viết cộng đồng và tình trạng phản hồi của hệ thống Lyora.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
-          {ctrl.systemHealth?.timestamp && (
+          {!ctrl.isHealthError && ctrl.systemHealth?.timestamp && (
             <span className="text-xs text-muted tabular-nums">
-              Đồng bộ: {formatDate(ctrl.systemHealth.timestamp)}
+              Đồng bộ: {formatDateTime(ctrl.systemHealth.timestamp)}
             </span>
           )}
 
@@ -43,7 +38,6 @@ export const DashboardView: React.FC = () => {
         </div>
       </header>
 
-      {/* Primary Real User Statistics */}
       <UserStatsSection
         stats={ctrl.userStats}
         isLoading={ctrl.isStatsLoading}
@@ -60,11 +54,19 @@ export const DashboardView: React.FC = () => {
         onClearFilter={() => ctrl.setFilterQuery('')}
         onSelectRoleFilter={ctrl.handleSelectRoleFilter}
         onViewAllUsers={ctrl.handleViewAllUsers}
+        onSelectUser={ctrl.handleOpenAdminUserDetail}
         onCheckHealth={ctrl.handleCheckHealth}
-        onRefresh={ctrl.handleRefreshStats}
+        onRefresh={ctrl.handleRetryStats}
       />
 
-      {/* Future Statistics Modules (Waiting for Backend APIs) */}
+      <PostStatsSection
+        stats={ctrl.postStats}
+        isLoading={ctrl.isPostStatsLoading}
+        isError={ctrl.isPostStatsError}
+        onRetry={ctrl.handleRetryPostStats}
+        onNavigateAdminPosts={ctrl.handleNavigateAdminPosts}
+      />
+
       <FutureStatsSection />
     </div>
   );

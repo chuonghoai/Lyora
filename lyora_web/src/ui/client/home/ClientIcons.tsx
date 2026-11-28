@@ -1,4 +1,5 @@
 import React from 'react';
+import { ICON_SCALE_ANIMATION } from '@/core';
 import type { ReactionType } from '@/features/posts';
 import angryEmoteUrl from '@/assets/emotes/angry.svg';
 import hahaEmoteUrl from '@/assets/emotes/haha.svg';
@@ -12,8 +13,7 @@ export interface IconProps {
   filled?: boolean;
 }
 
-export const ICON_SCALE_ANIMATION =
-  'transition-colors motion-safe:transition-[scale,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:group-hover:scale-[1.18] motion-safe:group-focus-visible:scale-[1.18] motion-safe:group-active:scale-[0.94]';
+export { ICON_SCALE_ANIMATION };
 
 export const HomeFeedIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className} aria-hidden="true">

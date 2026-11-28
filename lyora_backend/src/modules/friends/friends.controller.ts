@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -15,6 +14,7 @@ import { ResponseMessage } from '../../common/decorators/response-message.decora
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { VietnameseParseUUIDPipe } from '../../common/pipes/vietnamese-parse-uuid.pipe';
 import { FriendResponseDto } from './dto/friend-response.dto';
 import { FriendDiscoveryResponseDto } from './dto/friend-discovery-response.dto';
 import { FriendSearchQueryDto } from './dto/friend-search-query.dto';
@@ -67,7 +67,7 @@ export class FriendsController {
   @ResponseMessage('Đã gửi lời mời kết bạn')
   async sendRequest(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('userId', VietnameseParseUUIDPipe) userId: string,
   ): Promise<void> {
     await this.friendsService.sendRequest(currentUser.id, userId);
   }
@@ -77,7 +77,7 @@ export class FriendsController {
   @ResponseMessage('Đã chấp nhận lời mời kết bạn')
   async acceptRequest(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('userId', VietnameseParseUUIDPipe) userId: string,
   ): Promise<void> {
     await this.friendsService.acceptRequest(currentUser.id, userId);
   }
@@ -88,7 +88,7 @@ export class FriendsController {
   @ResponseMessage('Đã hủy lời mời kết bạn')
   async removeRequest(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('userId', VietnameseParseUUIDPipe) userId: string,
   ): Promise<void> {
     await this.friendsService.removeRequest(currentUser.id, userId);
   }
@@ -99,7 +99,7 @@ export class FriendsController {
   @ResponseMessage('Đã hủy kết bạn')
   async unfriend(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('userId', VietnameseParseUUIDPipe) userId: string,
   ): Promise<void> {
     await this.friendsService.unfriend(currentUser.id, userId);
   }

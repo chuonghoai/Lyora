@@ -1,5 +1,13 @@
 import React from 'react';
-import { AppImage, Button, formatDate, LoadingSpinner } from '@/core';
+import {
+  AppImage,
+  Button,
+  EmptyState,
+  ErrorState,
+  formatDate,
+  LoadingSpinner,
+  LoadingState,
+} from '@/core';
 import {
   AcademicCapIcon,
   AtSignIcon,
@@ -18,7 +26,6 @@ import {
   PhoneIcon,
   RefreshIcon,
   UserCheckIcon,
-  UserPlusIcon,
   UsersIcon,
 } from '../home/ClientIcons';
 import { PostCard } from '../home/PostCard';
@@ -149,7 +156,7 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
             <li className="flex items-start gap-2.5">
               <CalendarIcon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <span className="text-muted">
-                Tham gia Lyora từ {formatDate(profile.createdAt)}
+                Tham gia Lyora từ {profile.createdAt ? formatDate(profile.createdAt) : 'Chưa cập nhật'}
               </span>
             </li>
           </ul>
@@ -178,13 +185,17 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
           </div>
           <div className="p-3.5">
             <p className="text-xs font-medium text-muted">Trạng thái</p>
-            <p className="mt-1 text-xs sm:text-sm font-semibold text-success">
-              {profile.isOnline ? 'Trực tuyến' : 'Hoạt động'}
+            <p
+              className={`mt-1 text-xs sm:text-sm font-semibold ${
+                profile.isOnline ? 'text-success' : 'text-muted'
+              }`}
+            >
+              {profile.isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}
             </p>
           </div>
         </section>
 
-        {/* Gôm 3 nút (Được chia sẻ / gắn thẻ, Yêu thích, Đã lưu bookmark) vào 1 chỗ */}
+        {/* Gôm 3 nút (Được chia sẻ / gắn thẻ, Yêu thích, Bài viết đã lưu) vào 1 chỗ */}
         <section
           aria-label={
             controller.isOwnProfile
@@ -221,8 +232,7 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
                   <AtSignIcon className="w-4 h-4 text-primary shrink-0" />
                   <span className="truncate">Được chia sẻ / Gắn thẻ</span>
                 </span>
-                <span className="inline-flex items-center gap-1 shrink-0 text-muted tabular-nums">
-                  <span>{controller.activityCounts.tagged}</span>
+                <span className="inline-flex items-center gap-1 shrink-0 text-muted">
                   <ChevronRightIcon className="w-3.5 h-3.5" />
                 </span>
               </button>
@@ -236,8 +246,7 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
                   <HeartIcon className="w-4 h-4 text-accent shrink-0" />
                   <span className="truncate">Bài viết yêu thích</span>
                 </span>
-                <span className="inline-flex items-center gap-1 shrink-0 text-muted tabular-nums">
-                  <span>{controller.activityCounts.reacted}</span>
+                <span className="inline-flex items-center gap-1 shrink-0 text-muted">
                   <ChevronRightIcon className="w-3.5 h-3.5" />
                 </span>
               </button>
@@ -249,10 +258,9 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
               >
                 <span className="inline-flex items-center gap-2 min-w-0">
                   <BookmarkIcon className="w-4 h-4 text-primary shrink-0" />
-                  <span className="truncate">Đã lưu bookmark</span>
+                  <span className="truncate">Bài viết đã lưu</span>
                 </span>
-                <span className="inline-flex items-center gap-1 shrink-0 text-muted tabular-nums">
-                  <span>{controller.activityCounts.saved}</span>
+                <span className="inline-flex items-center gap-1 shrink-0 text-muted">
                   <ChevronRightIcon className="w-3.5 h-3.5" />
                 </span>
               </button>
@@ -267,8 +275,7 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
                 <AtSignIcon className="w-4 h-4 text-primary shrink-0" />
                 <span className="truncate">Xem bài được gắn thẻ</span>
               </span>
-              <span className="inline-flex items-center gap-1 shrink-0 text-muted tabular-nums">
-                <span>{controller.activityCounts.tagged}</span>
+              <span className="inline-flex items-center gap-1 shrink-0 text-muted">
                 <ChevronRightIcon className="w-3.5 h-3.5" />
               </span>
             </button>
@@ -366,39 +373,44 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
             <ProfilePostSkeletonCard />
           </div>
         ) : controller.isFeedError ? (
-          <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
-            <p className="text-base font-semibold text-foreground">
-              Không thể tải danh sách bài viết
-            </p>
-            <p className="text-xs sm:text-sm text-muted">
-              Vui lòng kiểm tra kết nối máy chủ hoặc thử tải lại trang.
-            </p>
-            <Button variant="primary" onClick={() => void controller.handleRefreshFeed()}>
-              Thử lại
-            </Button>
-          </div>
+          <ErrorState
+            title="Không thể tải danh sách bài viết"
+            description="Vui lòng kiểm tra kết nối máy chủ hoặc thử tải lại trang."
+            onRetry={() => void controller.handleRefreshFeed()}
+          />
         ) : controller.posts.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
-            <p className="text-sm font-semibold text-foreground">
-              {controller.isOwnProfile
+          <EmptyState
+            title={
+              controller.isOwnProfile
                 ? controller.profileVisibilityFilter !== 'ALL'
                   ? 'Không có bài viết nào ở chế độ hiển thị này'
                   : 'Bạn chưa có bài viết nào trên trang cá nhân'
-                : `${profile.fullName} chưa có bài viết công khai nào`}
-            </p>
-            <p className="text-xs text-muted">
-              {controller.isOwnProfile
-                ? 'Hãy chia sẻ suy nghĩ, hình ảnh hoặc khoảnh khắc mới ngay bằng khung viết bài ở trên.'
-                : 'Các bài viết mới của thành viên này sẽ xuất hiện tại đây.'}
-            </p>
-            {controller.isOwnProfile && controller.profileVisibilityFilter === 'ALL' && (
-              <div className="pt-1">
-                <Button variant="primary" onClick={controller.handleExpandComposer}>
-                  Viết bài đầu tiên
-                </Button>
-              </div>
-            )}
-          </div>
+                : `${profile.fullName} chưa có bài viết công khai nào`
+            }
+            description={
+              controller.isOwnProfile
+                ? controller.profileVisibilityFilter !== 'ALL'
+                  ? 'Hãy chuyển bộ lọc về Tất cả để xem các bài viết khác của bạn.'
+                  : 'Hãy chia sẻ suy nghĩ, hình ảnh hoặc khoảnh khắc mới ngay bằng khung viết bài ở trên.'
+                : 'Các bài viết mới của thành viên này sẽ xuất hiện tại đây.'
+            }
+            action={
+              controller.isOwnProfile
+                ? controller.profileVisibilityFilter !== 'ALL'
+                  ? {
+                      label: 'Xem tất cả bài viết',
+                      variant: 'outline',
+                      onClick: () =>
+                        controller.handleSelectProfileVisibilityFilter('ALL'),
+                    }
+                  : {
+                      label: 'Viết bài đầu tiên',
+                      variant: 'primary',
+                      onClick: controller.handleExpandComposer,
+                    }
+                : undefined
+            }
+          />
         ) : (
           <div className="space-y-4">
             {controller.posts.map((post) => (
@@ -411,6 +423,14 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
                   <LoadingSpinner size="sm" />
                   <span>Đang tải thêm bài viết...</span>
                 </div>
+              ) : controller.isFetchNextPageError ? (
+                <Button
+                  variant="outline"
+                  onClick={controller.handleLoadMore}
+                  className="text-xs"
+                >
+                  Thử tải thêm lại
+                </Button>
               ) : controller.hasNextPage ? (
                 <Button
                   variant="outline"
@@ -419,11 +439,11 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
                 >
                   Tải thêm bài viết
                 </Button>
-              ) : (
+              ) : controller.posts.length > 10 ? (
                 <p className="text-xs text-muted">
                   Đã hiển thị toàn bộ bài viết hiện có.
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
         )}
@@ -443,20 +463,33 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => controller.handleSelectTab('friends')}
-              className="rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-secondary/60 transition-colors cursor-pointer"
-            >
-              Tất cả
-            </button>
+            {(profile.friendsCount > 0 ||
+              controller.overviewFriends.length > 0) && (
+              <button
+                type="button"
+                onClick={() => controller.handleSelectTab('friends')}
+                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-secondary/60 transition-colors cursor-pointer"
+              >
+                Tất cả
+              </button>
+            )}
           </div>
 
-          {controller.overviewFriends.length === 0 ? (
-            <div className="rounded-xl border border-border bg-background/60 p-5 text-center space-y-1.5">
-              <UsersIcon className="w-5 h-5 text-muted mx-auto" />
-              <p className="text-xs font-medium text-foreground">Chưa có bạn bè hiển thị</p>
-            </div>
+          {controller.isOwnProfile && controller.isLoadingFriends ? (
+            <LoadingState compact label="Đang tải bạn bè..." />
+          ) : controller.isOwnProfile && controller.isFriendsError ? (
+            <ErrorState
+              compact
+              title="Không thể tải danh sách bạn bè"
+              description="Vui lòng thử lại để đồng bộ danh sách kết nối."
+              onRetry={controller.handleRetryFriends}
+            />
+          ) : controller.overviewFriends.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<UsersIcon className="w-5 h-5" />}
+              title="Chưa có bạn bè hiển thị"
+            />
           ) : (
             <ul className="space-y-1.5">
               {controller.overviewFriends.map((friend) => {
@@ -508,140 +541,89 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
           )}
         </section>
 
-        {controller.isOwnProfile &&
-          (controller.incomingRequests.length > 0 ||
-            controller.suggestedConnections.length > 0) && (
-            <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-3.5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-foreground">
-                  Lời mời & gợi ý kết nối
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => {
-                    controller.handleSelectTab('friends');
-                    controller.handleSelectFriendsFilter(
-                      controller.incomingRequests.length > 0 ? 'REQUESTS' : 'SUGGESTIONS',
-                    );
-                  }}
-                  className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+        {controller.isOwnProfile && controller.incomingRequests.length > 0 && (
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm space-y-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">
+                Lời mời kết bạn
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  controller.handleSelectTab('friends');
+                  controller.handleSelectFriendsFilter('REQUESTS');
+                }}
+                className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+              >
+                Xem thêm
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {controller.incomingRequests.map((person) => (
+                <div
+                  key={person.id}
+                  className="rounded-xl border border-border bg-background/50 p-3 space-y-2.5"
                 >
-                  Xem thêm
-                </button>
-              </div>
-
-              <div className="space-y-2.5">
-                {controller.incomingRequests.map((person) => (
-                  <div
-                    key={person.id}
-                    className="rounded-xl border border-border bg-background/50 p-3 space-y-2.5"
+                  <button
+                    type="button"
+                    onClick={() => controller.handleOpenUserProfile(person.id)}
+                    className="w-full flex items-center gap-2.5 min-w-0 text-left cursor-pointer group"
                   >
-                    <button
-                      type="button"
-                      onClick={() => controller.handleOpenUserProfile(person.id)}
-                      className="w-full flex items-center gap-2.5 min-w-0 text-left cursor-pointer group"
-                    >
-                      {person.avatarUrl ? (
-                        <AppImage
-                          src={person.avatarUrl}
-                          alt={person.fullName}
-                          rounded
-                          className="h-9 w-9 shrink-0 border border-border"
-                        />
-                      ) : (
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
-                          {person.fullName.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
-                          {person.fullName}
-                        </p>
-                        <p className="text-[11px] text-muted truncate tabular-nums">
-                          {person.mutualFriendsCount} bạn chung · Gửi lời mời
-                        </p>
-                      </div>
-                    </button>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        variant="primary"
-                        disabled={controller.isFriendshipMutating}
-                        onClick={() =>
-                          void controller.handleAcceptFriendRequest(person.id, person.fullName)
-                        }
-                        className="h-8 px-2.5 py-1 text-xs gap-1"
-                      >
-                        <UserCheckIcon className="w-3.5 h-3.5" />
-                        <span>Chấp nhận</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={controller.isFriendshipMutating}
-                        onClick={() =>
-                          void controller.handleRejectFriendRequest(person.id, person.fullName)
-                        }
-                        className="h-8 px-2.5 py-1 text-xs"
-                      >
-                        Từ chối
-                      </Button>
+                    {person.avatarUrl ? (
+                      <AppImage
+                        src={person.avatarUrl}
+                        alt={person.fullName}
+                        rounded
+                        className="h-9 w-9 shrink-0 border border-border"
+                      />
+                    ) : (
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
+                        {person.fullName.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
+                        {person.fullName}
+                      </p>
+                      <p className="text-[11px] text-muted truncate tabular-nums">
+                        {person.mutualFriendsCount > 0
+                          ? `${person.mutualFriendsCount} bạn chung · Gửi lời mời`
+                          : 'Đã gửi lời mời kết bạn'}
+                      </p>
                     </div>
-                  </div>
-                ))}
+                  </button>
 
-                {controller.suggestedConnections.slice(0, 2).map((person) => (
-                  <div
-                    key={person.id}
-                    className="flex items-center justify-between gap-2.5 rounded-xl border border-border bg-background/50 p-3"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => controller.handleOpenUserProfile(person.id)}
-                      className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer group"
-                    >
-                      {person.avatarUrl ? (
-                        <AppImage
-                          src={person.avatarUrl}
-                          alt={person.fullName}
-                          rounded
-                          className="h-9 w-9 shrink-0 border border-border"
-                        />
-                      ) : (
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
-                          {person.fullName.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
-                          {person.fullName}
-                        </p>
-                        <p className="text-[11px] text-muted truncate tabular-nums">
-                          {person.mutualFriendsCount > 0
-                            ? `${person.mutualFriendsCount} bạn chung`
-                            : person.location || 'Gợi ý kết nối'}
-                        </p>
-                      </div>
-                    </button>
-
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="primary"
                       disabled={controller.isFriendshipMutating}
                       onClick={() =>
-                        void controller.handleSendFriendRequest(person.id, person.fullName)
+                        void controller.handleAcceptFriendRequest(person.id, person.fullName)
                       }
-                      className="h-8 px-2.5 py-1 text-xs gap-1 shrink-0"
+                      className="h-8 px-2.5 py-1 text-xs gap-1"
                     >
-                      <UserPlusIcon className="w-3.5 h-3.5" />
-                      <span>Kết bạn</span>
+                      <UserCheckIcon className="w-3.5 h-3.5" />
+                      <span>Chấp nhận</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={controller.isFriendshipMutating}
+                      onClick={() =>
+                        void controller.handleRejectFriendRequest(person.id, person.fullName)
+                      }
+                      className="h-8 px-2.5 py-1 text-xs"
+                    >
+                      Từ chối
                     </Button>
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </aside>
     </div>
   );

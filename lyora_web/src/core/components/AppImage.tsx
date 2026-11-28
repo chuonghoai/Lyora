@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 export interface AppImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackSrc?: string;
   rounded?: boolean;
+  objectFit?: 'cover' | 'contain';
 }
 
 const DEFAULT_FALLBACK_SVG =
@@ -10,9 +11,10 @@ const DEFAULT_FALLBACK_SVG =
 
 export const AppImage: React.FC<AppImageProps> = ({
   src,
-  alt = 'Image',
+  alt = 'Hình ảnh',
   fallbackSrc = DEFAULT_FALLBACK_SVG,
   rounded = false,
+  objectFit,
   className = '',
   ...props
 }) => {
@@ -31,12 +33,24 @@ export const AppImage: React.FC<AppImageProps> = ({
     }
   };
 
+  const hasExplicitObjectFit = /\bobject-(contain|cover|fill|none|scale-down)\b/.test(
+    className,
+  );
+  const resolvedObjectFit =
+    objectFit === 'contain'
+      ? 'object-contain'
+      : objectFit === 'cover'
+        ? 'object-cover'
+        : hasExplicitObjectFit
+          ? ''
+          : 'object-cover';
+
   return (
     <img
       src={imageSrc}
       alt={alt}
       onError={handleError}
-      className={`object-cover ${rounded ? 'rounded-full' : 'rounded-lg'} ${className}`}
+      className={`${resolvedObjectFit} ${rounded ? 'rounded-full' : 'rounded-lg'} ${className}`.trim()}
       loading="lazy"
       {...props}
     />
