@@ -13,17 +13,9 @@ export class SystemService implements ISystemService {
   }
 
   async getHealthStatus(): Promise<HealthStatus> {
-    try {
-      const response = await this.repository.checkHealth();
-      return response.data;
-    } catch {
-      return {
-        status: 'error',
-        timestamp: new Date().toISOString(),
-      };
-    }
+    const response = await this.repository.checkHealth();
+    return response.data;
   }
 }
 
 export const systemService = new SystemService();
-

@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { AppImage, Button, Input } from '@/core';
-import { CameraIcon, CheckIcon, CloseIcon } from '../home/ClientIcons';
+import { CameraIcon, CloseIcon } from '../home/ClientIcons';
 import type { ProfileController } from './profile.controller';
 
 export interface ProfileEditModalProps {
@@ -108,19 +108,31 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
               <div className="pt-3 border-t border-border space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-foreground">Ảnh bìa hồ sơ</p>
-                  <label className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-background transition-colors cursor-pointer">
-                    <CameraIcon className="w-3.5 h-3.5 text-primary" />
-                    <span>Tải ảnh bìa từ máy</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => void controller.handlePickCoverFile(e)}
-                      className="sr-only"
-                    />
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-background transition-colors cursor-pointer">
+                      <CameraIcon className="w-3.5 h-3.5 text-primary" />
+                      <span>Tải ảnh bìa từ máy</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => void controller.handlePickCoverFile(e)}
+                        className="sr-only"
+                      />
+                    </label>
+                    {controller.editForm.coverUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={controller.handleRemoveCover}
+                        className="h-8 px-2.5 py-1 text-xs text-error"
+                      >
+                        Gỡ ảnh bìa
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                {controller.editForm.coverUrl && (
+                {controller.editForm.coverUrl ? (
                   <div className="overflow-hidden rounded-xl border border-border h-28 bg-secondary">
                     <AppImage
                       src={controller.editForm.coverUrl}
@@ -128,35 +140,11 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                       className="h-full w-full rounded-none object-cover"
                     />
                   </div>
+                ) : (
+                  <p className="text-xs text-muted">
+                    Chưa có ảnh bìa. Hãy tải ảnh lên hoặc để nền mặc định.
+                  </p>
                 )}
-
-                <div className="grid grid-cols-3 gap-2">
-                  {controller.coverPresets.map((preset) => {
-                    const isSelected = controller.editForm.coverUrl === preset.url;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => controller.handleSelectCoverPreset(preset.url)}
-                        className={`relative overflow-hidden rounded-lg border text-left transition-colors cursor-pointer ${
-                          isSelected
-                            ? 'border-primary ring-2 ring-primary/40'
-                            : 'border-border hover:border-secondary-strong'
-                        }`}
-                      >
-                        <img
-                          src={preset.url}
-                          alt={preset.label}
-                          className="h-12 w-full object-cover"
-                        />
-                        <span className="flex items-center justify-between bg-card px-2 py-1 text-[11px] font-medium text-foreground">
-                          <span className="truncate">{preset.label}</span>
-                          {isSelected && <CheckIcon className="w-3 h-3 text-primary shrink-0" />}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
             </div>
 

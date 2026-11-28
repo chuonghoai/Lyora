@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { AppImage } from '@/core';
 import type { ConversationDetail } from '@/features/conversations';
 import { ChatOutlineIcon } from './ConversationIcons';
 
@@ -30,6 +31,33 @@ function formatMessageTime(isoString: string): string {
   } catch {
     return '';
   }
+}
+
+function getDateKey(isoString: string): string {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+function formatDateDivider(isoString: string): string {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const yesterdayKey = `${yesterday.getFullYear()}-${yesterday.getMonth()}-${yesterday.getDate()}`;
+
+  const currentKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  if (currentKey === todayKey) return 'Hôm nay';
+  if (currentKey === yesterdayKey) return 'Hôm qua';
+
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 }
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
@@ -68,32 +96,43 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       aria-label="Vùng hiển thị tin nhắn"
       className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-background min-h-0 focus-visible:outline-none"
     >
-      {/* Date separator */}
-      <div className="flex justify-center my-2">
-        <span className="text-[11px] font-medium text-muted bg-card border border-border/80 rounded-full px-3 py-0.5 shadow-xs select-none">
-          Hôm nay
-        </span>
-      </div>
+      {messages.map((msg, index) => {
+        const currentDateKey = getDateKey(msg.createdAt);
+        const prevDateKey = index > 0 ? getDateKey(messages[index - 1].createdAt) : '';
+        const dateLabel =
+          currentDateKey && currentDateKey !== prevDateKey
+            ? formatDateDivider(msg.createdAt)
+            : '';
 
-      {messages.map((msg) => {
         const isOutgoing =
           msg.isOutgoing || (currentUserId && msg.senderId === currentUserId);
         const timeFormatted = formatMessageTime(msg.createdAt);
 
+        const dateDividerNode = dateLabel ? (
+          <div className="flex justify-center my-2">
+            <span className="text-[11px] font-medium text-muted bg-card border border-border/80 rounded-full px-3 py-0.5 shadow-xs select-none">
+              {dateLabel}
+            </span>
+          </div>
+        ) : null;
+
         if (isOutgoing) {
           return (
-            <div key={msg.id} className="flex justify-end">
-              <div className="flex flex-col items-end max-w-[85%] sm:max-w-[70%]">
-                <div className="rounded-2xl rounded-tr-sm bg-primary px-4 py-2.5 text-sm text-on-primary shadow-xs break-words whitespace-pre-wrap leading-relaxed">
-                  {msg.content}
+            <React.Fragment key={msg.id}>
+              {dateDividerNode}
+              <div className="flex justify-end">
+                <div className="flex flex-col items-end max-w-[85%] sm:max-w-[70%]">
+                  <div className="rounded-2xl rounded-tr-sm bg-primary px-4 py-2.5 text-sm text-on-primary shadow-xs break-words whitespace-pre-wrap leading-relaxed">
+                    {msg.content}
+                  </div>
+                  {timeFormatted && (
+                    <span className="mt-1 text-[10px] text-muted pr-1">
+                      {timeFormatted}
+                    </span>
+                  )}
                 </div>
-                {timeFormatted && (
-                  <span className="mt-1 text-[10px] text-muted pr-1">
-                    {timeFormatted}
-                  </span>
-                )}
               </div>
-            </div>
+            </React.Fragment>
           );
         }
 
@@ -101,73 +140,75 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         const senderInitial = (msg.senderName || 'L').charAt(0).toUpperCase();
 
         return (
-          <div
-            key={msg.id}
-            className="flex items-start gap-2.5 max-w-[85%] sm:max-w-[70%]"
-          >
-            {isGroup && (
-              onOpenUserProfile ? (
-                <button
-                  type="button"
-                  onClick={() => onOpenUserProfile(msg.senderId)}
-                  aria-label={`Xem hồ sơ của ${msg.senderName}`}
-                  className="relative shrink-0 mt-0.5 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                >
-                  {msg.senderAvatarUrl ? (
-                    <img
-                      src={msg.senderAvatarUrl}
-                      alt={msg.senderName}
-                      className="h-8 w-8 rounded-full object-cover border border-border"
-                    />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs border border-border">
-                      {senderInitial}
-                    </div>
-                  )}
-                </button>
-              ) : (
-                <div className="relative shrink-0 mt-0.5">
-                  {msg.senderAvatarUrl ? (
-                    <img
-                      src={msg.senderAvatarUrl}
-                      alt={msg.senderName}
-                      className="h-8 w-8 rounded-full object-cover border border-border"
-                    />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs border border-border">
-                      {senderInitial}
-                    </div>
-                  )}
-                </div>
-              )
-            )}
-
-            <div className="flex flex-col items-start min-w-0">
+          <React.Fragment key={msg.id}>
+            {dateDividerNode}
+            <div className="flex items-start gap-2.5 max-w-[85%] sm:max-w-[70%]">
               {isGroup && (
                 onOpenUserProfile ? (
                   <button
                     type="button"
                     onClick={() => onOpenUserProfile(msg.senderId)}
-                    className="text-[11px] font-semibold text-muted hover:text-primary hover:underline mb-1 ml-1 truncate max-w-full cursor-pointer text-left"
+                    aria-label={`Xem hồ sơ của ${msg.senderName}`}
+                    className="relative shrink-0 mt-0.5 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   >
-                    {msg.senderName}
+                    {msg.senderAvatarUrl ? (
+                      <AppImage
+                        src={msg.senderAvatarUrl}
+                        alt={msg.senderName}
+                        rounded
+                        className="h-8 w-8 border border-border"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs border border-border">
+                        {senderInitial}
+                      </div>
+                    )}
                   </button>
                 ) : (
-                  <span className="text-[11px] font-semibold text-muted mb-1 ml-1 truncate max-w-full">
-                    {msg.senderName}
-                  </span>
+                  <div className="relative shrink-0 mt-0.5">
+                    {msg.senderAvatarUrl ? (
+                      <AppImage
+                        src={msg.senderAvatarUrl}
+                        alt={msg.senderName}
+                        rounded
+                        className="h-8 w-8 border border-border"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary font-bold text-xs border border-border">
+                        {senderInitial}
+                      </div>
+                    )}
+                  </div>
                 )
               )}
-              <div className="rounded-2xl rounded-tl-sm bg-card border border-border px-4 py-2.5 text-sm text-foreground shadow-xs break-words whitespace-pre-wrap leading-relaxed">
-                {msg.content}
+
+              <div className="flex flex-col items-start min-w-0">
+                {isGroup && (
+                  onOpenUserProfile ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenUserProfile(msg.senderId)}
+                      className="text-[11px] font-semibold text-muted hover:text-primary hover:underline mb-1 ml-1 truncate max-w-full cursor-pointer text-left"
+                    >
+                      {msg.senderName}
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-muted mb-1 ml-1 truncate max-w-full">
+                      {msg.senderName}
+                    </span>
+                  )
+                )}
+                <div className="rounded-2xl rounded-tl-sm bg-card border border-border px-4 py-2.5 text-sm text-foreground shadow-xs break-words whitespace-pre-wrap leading-relaxed">
+                  {msg.content}
+                </div>
+                {timeFormatted && (
+                  <span className="mt-1 text-[10px] text-muted pl-1">
+                    {timeFormatted}
+                  </span>
+                )}
               </div>
-              {timeFormatted && (
-                <span className="mt-1 text-[10px] text-muted pl-1">
-                  {timeFormatted}
-                </span>
-              )}
             </div>
-          </div>
+          </React.Fragment>
         );
       })}
 

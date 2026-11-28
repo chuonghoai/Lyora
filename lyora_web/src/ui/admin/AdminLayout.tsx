@@ -4,11 +4,6 @@ import { useAdminLayoutController } from './admin-layout.controller';
 import { AdminHeader } from './components/AdminHeader';
 import { AdminSidebar } from './components/AdminSidebar';
 
-/**
- * AdminLayout — Khung bố cục quản trị chuẩn Ruled T-Frame.
- * Gồm Header Bar độc lập (Brand Lockup, tìm kiếm chức năng local, thông báo)
- * và Sidebar Navigation cố định góc dưới trái màn hình kèm menu tài khoản & đăng xuất.
- */
 export const AdminLayout: React.FC = () => {
   const ctrl = useAdminLayoutController();
 
@@ -20,15 +15,11 @@ export const AdminLayout: React.FC = () => {
         isSearchOpen={ctrl.isSearchOpen}
         searchResults={ctrl.searchResults}
         searchContainerRef={ctrl.searchContainerRef}
-        isNotificationOpen={ctrl.isNotificationOpen}
-        notificationRef={ctrl.notificationRef}
         onSearchOpen={ctrl.handleOpenSearch}
         onSearchChange={ctrl.handleHeaderSearchChange}
         onSearchSubmit={ctrl.handleHeaderSearchSubmit}
         onSelectSearchItem={ctrl.handleSelectSearchItem}
         onClearSearch={ctrl.handleClearHeaderSearch}
-        onToggleNotifications={ctrl.handleToggleNotifications}
-        onCloseNotifications={ctrl.handleCloseNotifications}
         onToggleSidebarCollapse={ctrl.handleToggleSidebarCollapse}
         onOpenMobileSidebar={ctrl.handleOpenMobileSidebar}
       />
@@ -42,12 +33,11 @@ export const AdminLayout: React.FC = () => {
           isMobileOpen={ctrl.isMobileSidebarOpen}
           isLoggingOut={ctrl.isLoggingOut}
           onCloseMobile={ctrl.handleCloseMobileSidebar}
-          onPlaceholderClick={ctrl.handlePlaceholderNavClick}
           onLogout={ctrl.handleLogout}
         />
 
-        <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-[1360px]">
+        <main className="flex-1 min-w-0 px-2.5 py-5">
+          <div className="w-full">
             <Outlet />
           </div>
         </main>

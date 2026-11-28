@@ -5,8 +5,12 @@ import type { ForgotPasswordController } from '@/ui/auth/forgot-password/forgot-
 import type { HomeController } from '@/ui/client/home/home.controller';
 import type { ProfileController } from '@/ui/client/profile/profile.controller';
 import type { DashboardController } from '@/ui/admin/dashboard/dashboard.controller';
+import type { AdminUsersController } from '@/ui/admin/users/admin-users.controller';
+import type { AdminUserDetailController } from '@/ui/admin/users/admin-user-detail.controller';
+import type { AdminPostsController } from '@/ui/admin/posts/admin-posts.controller';
 import type { ClientLayoutController } from '@/ui/client/client-layout.controller';
 import type { AdminLayoutController } from '@/ui/admin/admin-layout.controller';
+import type { MessagesController } from '@/ui/client/messages/messages.controller';
 
 describe('View-Controller Contract & Integration Types', () => {
   it('LoginController contract has all required unified properties and handlers', () => {
@@ -16,8 +20,10 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'showPassword'
       | 'isLoading'
       | 'apiError'
+      | 'lockedAccountNotice'
       | 'handleFieldChange'
       | 'handleTogglePassword'
+      | 'handleCloseLockedModal'
       | 'handleSubmit';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
@@ -79,7 +85,11 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'profileUser'
       | 'isEditingProfile'
       | 'profileForm'
+      | 'profileFormError'
       | 'isUpdatingProfile'
+      | 'isFriendsLoading'
+      | 'isFriendsError'
+      | 'isCreatingDirectChat'
       | 'posts'
       | 'totalItems'
       | 'myPostsCount'
@@ -91,7 +101,6 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'visibilityFilter'
       | 'searchQuery'
       | 'debouncedSearch'
-      | 'isPreviewFallback'
       | 'isFeedLoading'
       | 'isFeedError'
       | 'isFeedRefetching'
@@ -112,18 +121,13 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'reactionsModalPost'
       | 'reactionsData'
       | 'isReactionsLoading'
+      | 'isReactionsError'
       | 'isHidingPost'
-      | 'maxExpandedChatWindows'
-      | 'maxTotalChatWindows'
-      | 'maxChatWindows'
-      | 'openChatWindows'
-      | 'forwardingState'
-      | 'getFriendById'
-      | 'getMessagesForFriend'
-      | 'getPinnedMessageForFriend'
-      | 'handleSelectTab'
       | 'handleSelectVisibilityFilter'
+      | 'handleClearFilters'
       | 'handleRefreshFeed'
+      | 'handleRetryReactions'
+      | 'handleRetryFriends'
       | 'handleLoadMore'
       | 'handleStartEditProfile'
       | 'handleSaveProfile'
@@ -150,16 +154,6 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleRemoveCommentMedia'
       | 'handleSubmitComment'
       | 'handleOpenChatWithFriend'
-      | 'handleMinimizeChatWindow'
-      | 'handleCloseChatWindow'
-      | 'handleChatDraftChange'
-      | 'handleSendChatMessage'
-      | 'handleSendQuickLike'
-      | 'handleReplyMessage'
-      | 'handleRecallMessage'
-      | 'handleTogglePinMessage'
-      | 'handleConfirmForwardToFriend'
-      | 'handleReactChatMessage'
       | 'handleOpenLightbox'
       | 'isAiPanelOpen'
       | 'aiTopic'
@@ -185,37 +179,33 @@ describe('View-Controller Contract & Integration Types', () => {
 
   it('DashboardController contract has all required unified properties and handlers', () => {
     type ExpectedKeys =
-      | 'adminActions'
       | 'filterQuery'
       | 'debouncedFilter'
-      | 'isMenuOpen'
-      | 'isSubmitting'
-      | 'menuRef'
+      | 'isStatsRefreshing'
+      | 'isCheckingHealth'
+      | 'lastHealthReport'
+      | 'activeRoleFilter'
       | 'systemHealth'
       | 'isHealthLoading'
+      | 'isHealthError'
       | 'userStats'
       | 'isStatsLoading'
+      | 'isStatsError'
+      | 'statsError'
+      | 'postStats'
+      | 'isPostStatsLoading'
+      | 'isPostStatsError'
       | 'appTitle'
-      | 'handleSimulateSync'
-      | 'handleToggleMenu'
       | 'handleFilterChange'
       | 'handleRefreshStats'
-      | 'handleCreateUser'
-      | 'handleExportUsers'
-      | 'handleManageRoles'
-      | 'handleBatchLockUsers'
-      | 'handleCreateAnnouncement'
-      | 'handleModeratePosts'
-      | 'handleReviewReports'
-      | 'handleHideViolatingContent'
-      | 'handleManageFeatureFlags'
-      | 'handleMonitorRealtimeSockets'
-      | 'handleManageCommunityGroups'
-      | 'handleBroadcastNotification'
-      | 'handlePurgeCache'
-      | 'handleBackupDatabase'
-      | 'handleViewAuditLogs'
-      | 'handleConfigureSecurity';
+      | 'handleRetryStats'
+      | 'handleRetryPostStats'
+      | 'handleNavigateAdminPosts'
+      | 'handleCheckHealth'
+      | 'handleSelectRoleFilter'
+      | 'handleViewAllUsers'
+      | 'handleOpenAdminUserDetail'
+      | 'setFilterQuery';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<DashboardController, ExpectedKeys>;
@@ -231,22 +221,29 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'isAuthenticated'
       | 'isRefreshingSession'
       | 'searchQuery'
+      | 'isSearchSuggestionsError'
       | 'activeTab'
       | 'isMessagesRoute'
+      | 'isFriendsRoute'
       | 'isHomeRoute'
       | 'isProfileRoute'
       | 'accountMenuPanel'
       | 'fontScale'
       | 'reduceMotion'
       | 'notifications'
+      | 'isLoadingNotifications'
+      | 'isNotificationsError'
       | 'unreadNotificationsCount'
       | 'handleMarkNotificationRead'
       | 'handleMarkAllNotificationsRead'
+      | 'handleRetryNotifications'
+      | 'handleRetrySearchSuggestions'
       | 'handleSearchChange'
       | 'handleSelectTab'
       | 'handleOpenComposer'
       | 'handleNavigateAccountPanel'
       | 'handleNavigateMessages'
+      | 'handleNavigateFriends'
       | 'handleOpenProfile'
       | 'handleSelectFontScale'
       | 'handleToggleReduceMotion'
@@ -265,6 +262,10 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'isOwnProfile'
       | 'isLoading'
       | 'isError'
+      | 'isLoadingFriends'
+      | 'isFriendsError'
+      | 'isActivityError'
+      | 'isCreatingDirectChat'
       | 'activeTab'
       | 'profileVisibilityFilter'
       | 'posts'
@@ -295,17 +296,47 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleSelectFriendsFilter'
       | 'handleFriendSearchChange'
       | 'handleOpenUserProfile'
+      | 'handleOpenMessages'
       | 'handleOpenEditModal'
+      | 'handleRemoveCover'
       | 'handleSaveProfile'
       | 'handleSendFriendRequest'
       | 'handleCancelFriendRequest'
       | 'handleAcceptFriendRequest'
       | 'handleRejectFriendRequest'
       | 'handleRequestUnfriend'
-      | 'handleConfirmUnfriend';
+      | 'handleConfirmUnfriend'
+      | 'handleRetryFriends'
+      | 'handleRetryActivity';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<ProfileController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('MessagesController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'currentUser'
+      | 'selectedConversationId'
+      | 'transferTargetUserId'
+      | 'conversations'
+      | 'activeConversation'
+      | 'friends'
+      | 'isLoadingConversations'
+      | 'isConversationsError'
+      | 'isLoadingActiveConversation'
+      | 'isActiveConversationError'
+      | 'isLoadingFriends'
+      | 'isFriendsError'
+      | 'handleSelectConversation'
+      | 'handleOpenTransferOwnershipModal'
+      | 'handleRetryConversations'
+      | 'handleRetryActiveConversation'
+      | 'handleRetryFriends';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<MessagesController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });
@@ -319,6 +350,205 @@ describe('View-Controller Contract & Integration Types', () => {
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<AdminLayoutController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('AdminUsersController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'activeRoleTab'
+      | 'statusFilter'
+      | 'onlineFilter'
+      | 'sortOption'
+      | 'searchQuery'
+      | 'items'
+      | 'meta'
+      | 'summary'
+      | 'isLoading'
+      | 'isError'
+      | 'isTransitioningData'
+      | 'isRefreshingOnlineStatus'
+      | 'isCreateModalOpen'
+      | 'isCreatingUser'
+      | 'createUserError'
+      | 'handleSelectRoleTab'
+      | 'handleStatusFilterChange'
+      | 'handleOnlineFilterChange'
+      | 'handleSortOptionChange'
+      | 'handleSearchChange'
+      | 'handleClearSearch'
+      | 'handleResetFilters'
+      | 'handlePageChange'
+      | 'handleRefresh'
+      | 'handleOpenUserDetail'
+      | 'handleOpenCreateModal'
+      | 'handleCloseCreateModal'
+      | 'handleCreateUser';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<AdminUsersController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('AdminUserDetailController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'user'
+      | 'posts'
+      | 'totalPosts'
+      | 'visibilityFilter'
+      | 'canLockTarget'
+      | 'canUnlockTarget'
+      | 'isLoadingUser'
+      | 'isUserError'
+      | 'isLoadingPosts'
+      | 'isPostsError'
+      | 'isLockModalOpen'
+      | 'isLockingUser'
+      | 'isUnlockConfirmOpen'
+      | 'isUnlockingUser'
+      | 'expandedCommentsMap'
+      | 'reactionsModal'
+      | 'reactionsModalPost'
+      | 'reactionsData'
+      | 'isReactionsLoading'
+      | 'isReactionsError'
+      | 'sharesModal'
+      | 'sharesModalPost'
+      | 'sharesData'
+      | 'isSharesLoading'
+      | 'isSharesError'
+      | 'moderationTarget'
+      | 'moderationReason'
+      | 'moderationError'
+      | 'isModeratingPost'
+      | 'handleBackToList'
+      | 'handleRefreshAll'
+      | 'handleOpenLockModal'
+      | 'handleConfirmLock'
+      | 'handleOpenUnlockConfirm'
+      | 'handleConfirmUnlock'
+      | 'handleFlagCoverViolation'
+      | 'handleFlagAvatarViolation'
+      | 'handleFlagPostViolation'
+      | 'handleOpenHidePostModal'
+      | 'handleOpenRemovePostModal'
+      | 'handleOpenRemoveCommentModal'
+      | 'handleCloseModerationModal'
+      | 'handleModerationReasonChange'
+      | 'handleSelectModerationReasonPreset'
+      | 'handleConfirmModeration'
+      | 'handleTogglePostComments'
+      | 'handleOpenReactionsModal'
+      | 'handleCloseReactionsModal'
+      | 'handleChangeReactionsFilter'
+      | 'handleChangeReactionsPage'
+      | 'handleOpenSharesModal'
+      | 'handleCloseSharesModal'
+      | 'handleChangeSharesPage'
+      | 'handleInspectUserProfile';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<AdminUserDetailController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('AdminPostsController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'stats'
+      | 'isStatsLoading'
+      | 'isStatsError'
+      | 'posts'
+      | 'paginationMeta'
+      | 'isPostsLoading'
+      | 'isPostsFetching'
+      | 'isPostsError'
+      | 'isManualRefreshing'
+      | 'searchQuery'
+      | 'debouncedSearch'
+      | 'statusFilter'
+      | 'visibilityFilter'
+      | 'authorRoleFilter'
+      | 'mediaFilter'
+      | 'hasActiveFilters'
+      | 'isDetailModalOpen'
+      | 'detailPostId'
+      | 'detailPost'
+      | 'isDetailLoading'
+      | 'isDetailError'
+      | 'lightbox'
+      | 'moderationMode'
+      | 'lastModerationMode'
+      | 'moderationTargetPost'
+      | 'moderationReason'
+      | 'moderationError'
+      | 'isModeratingPost'
+      | 'restoringPostId'
+      | 'removeCommentTarget'
+      | 'removeCommentReason'
+      | 'removeCommentError'
+      | 'isRemovingComment'
+      | 'isCreateModalOpen'
+      | 'isComposerDirty'
+      | 'composerContent'
+      | 'composerMedia'
+      | 'composerError'
+      | 'isPublishingPost'
+      | 'isAiPanelOpen'
+      | 'aiTopic'
+      | 'aiTone'
+      | 'aiSuggestions'
+      | 'isGeneratingAi'
+      | 'aiError'
+      | 'canUndoAiApply'
+      | 'handleSearchChange'
+      | 'handleClearSearch'
+      | 'handleSelectStatusFilter'
+      | 'handleSelectVisibilityFilter'
+      | 'handleSelectAuthorRoleFilter'
+      | 'handleSelectMediaFilter'
+      | 'handleResetFilters'
+      | 'handleChangePage'
+      | 'handleRefreshAll'
+      | 'handleRetryLoad'
+      | 'handleOpenDetail'
+      | 'handleCloseDetail'
+      | 'handleRetryDetail'
+      | 'handleOpenLightbox'
+      | 'handleCloseLightbox'
+      | 'handlePrevLightbox'
+      | 'handleNextLightbox'
+      | 'handleOpenHideModal'
+      | 'handleOpenRemoveModal'
+      | 'handleCloseModerationModal'
+      | 'handleModerationReasonChange'
+      | 'handleSelectReasonPreset'
+      | 'handleConfirmModeration'
+      | 'handleRestorePost'
+      | 'handlePromptRemoveComment'
+      | 'handleCancelRemoveComment'
+      | 'handleRemoveCommentReasonChange'
+      | 'handleRemoveCommentCompositionEnd'
+      | 'handleRemoveCommentReasonKeyDown'
+      | 'handleConfirmRemoveComment'
+      | 'handleOpenCreateModal'
+      | 'handleCloseCreateModal'
+      | 'handleComposerContentChange'
+      | 'handlePickComposerMedia'
+      | 'handleRemoveComposerMedia'
+      | 'handleToggleAiPanel'
+      | 'handleAiTopicChange'
+      | 'handleAiTopicCompositionEnd'
+      | 'handleAiTopicKeyDown'
+      | 'handleAiToneChange'
+      | 'handleRequestAiSuggestions'
+      | 'handleApplyAiSuggestion'
+      | 'handleUndoAiApply'
+      | 'handleSubmitAdminPost';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<AdminPostsController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });

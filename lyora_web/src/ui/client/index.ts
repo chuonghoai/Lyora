@@ -11,7 +11,6 @@ export * from './home/PostDetailModal';
 export * from './home/PostReactionsModal';
 export * from './home/MediaLightboxModal';
 export * from './home/AllFriendsModal';
-export * from './home/FriendChatWidget';
 export * from './profile/profile.controller';
 export * from './profile/ProfileView';
 export * from './profile/ProfileHeader';

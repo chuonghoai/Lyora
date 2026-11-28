@@ -166,20 +166,263 @@ code {
   animation: lyora-emote-pop 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes lyora-indeterminate-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.animate-indeterminate-bar {
+  animation: lyora-indeterminate-bar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 html.motion-reduce .animate-slide-up,
 html.motion-reduce .animate-emote-dock-in,
-html.motion-reduce .animate-emote-pop {
+html.motion-reduce .animate-emote-pop,
+html.motion-reduce .animate-indeterminate-bar {
   animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-up,
   .animate-emote-dock-in,
-  .animate-emote-pop {
+  .animate-emote-pop,
+  .animate-indeterminate-bar {
     animation: none !important;
   }
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--mut);
+}
+
+/* ==========================================================================
+   Modern Web Platform Primitives (Dialog Top-Layer, Auto-Sizing Fields, @container Table)
+   ========================================================================== */
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+dialog.lyora-dialog {
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--bd);
+  background-color: var(--card);
+  color: var(--txt);
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-behavior: allow-discrete;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+dialog.lyora-dialog::backdrop {
+  background-color: transparent;
+  backdrop-filter: blur(0px);
+  transition-property: background-color, backdrop-filter, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+:is(dialog.lyora-dialog[open]):where(:not([data-closing])) {
+  opacity: 1;
+
+  @starting-style {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translateY(0) scale(1);
+
+    @starting-style {
+      transform: translateY(8px) scale(0.97);
+    }
+  }
+
+  &::backdrop {
+    background-color: color-mix(in srgb, var(--txt) 42%, transparent);
+    backdrop-filter: blur(2px);
+
+    @starting-style {
+      background-color: transparent;
+      backdrop-filter: blur(0px);
+    }
+  }
+}
+
+html.motion-reduce dialog.lyora-dialog,
+html.motion-reduce dialog.lyora-dialog::backdrop {
+  transition-duration: 0.08s;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.lyora-dialog,
+  dialog.lyora-dialog::backdrop {
+    transition-duration: 0.1s;
+  }
+}
+
+/* Auto-sizing form fields (field-sizing: content progressive enhancement) */
+.lyora-auto-textarea {
+  field-sizing: content;
+  height: auto;
+  width: 100%;
+  min-block-size: 4.25lh;
+  max-block-size: 12lh;
+}
+
+.lyora-auto-textarea-compact {
+  field-sizing: content;
+  height: auto;
+  width: 100%;
+  min-block-size: 2.5lh;
+  max-block-size: 7lh;
+}
+
+.lyora-fit-select {
+  field-sizing: content;
+  width: auto;
+  min-inline-size: 13ch;
+  max-inline-size: 28ch;
+}
+
+/* Container-adaptive data table */
+.lyora-table-region {
+  container-type: inline-size;
+  overflow-x: auto;
+  max-inline-size: 100%;
+}
+
+.lyora-responsive-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  inline-size: 100%;
+  min-inline-size: 980px;
+  --col-2: "Tác giả";
+  --col-3: "Phạm vi";
+  --col-4: "Trạng thái";
+  --col-5: "Tương tác";
+  --col-6: "Thời gian đăng";
+}
+
+.lyora-responsive-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+}
+
+@container (width < 760px) {
+  .lyora-responsive-table {
+    min-inline-size: 0;
+  }
+
+  .lyora-responsive-table,
+  .lyora-responsive-table thead,
+  .lyora-responsive-table tbody,
+  .lyora-responsive-table tr,
+  .lyora-responsive-table th,
+  .lyora-responsive-table td {
+    display: block;
+    inline-size: 100%;
+  }
+
+  .lyora-responsive-table thead {
+    display: none;
+  }
+
+  .lyora-responsive-table tbody tr {
+    padding: 1rem;
+    border-block-end: 1px solid var(--bd);
+    background-color: var(--card);
+  }
+
+  .lyora-responsive-table tbody tr:last-child {
+    border-block-end: none;
+  }
+
+  .lyora-responsive-table tbody th[scope="row"] {
+    padding: 0 0 0.75rem 0;
+    margin-block-end: 0.5rem;
+    border-block-end: 1px dashed var(--bd);
+    text-align: left;
+  }
+
+  .lyora-responsive-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.375rem 0;
+    border: none;
+    text-align: right;
+  }
+
+  .lyora-responsive-table tbody td:nth-child(2)::before {
+    content: var(--col-2) ": ";
+    color: var(--mut);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .lyora-responsive-table tbody td:nth-child(3)::before {
+    content: var(--col-3) ": ";
+    color: var(--mut);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .lyora-responsive-table tbody td:nth-child(4)::before {
+    content: var(--col-4) ": ";
+    color: var(--mut);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .lyora-responsive-table tbody td:nth-child(5)::before {
+    content: var(--col-5) ": ";
+    color: var(--mut);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .lyora-responsive-table tbody td:nth-child(6)::before {
+    content: var(--col-6) ": ";
+    color: var(--mut);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .lyora-responsive-table tbody td:nth-child(7) {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    padding-block-start: 0.75rem;
+    margin-block-start: 0.375rem;
+    border-block-start: 1px solid var(--bd);
+  }
 }

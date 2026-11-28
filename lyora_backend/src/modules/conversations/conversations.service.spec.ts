@@ -378,4 +378,51 @@ describe('ConversationsService', () => {
       expect(detail.members).toHaveLength(1);
     });
   });
+
+  describe('findAllPaginated (SQL-level Search & Empty State)', () => {
+    it('áp dụng tìm kiếm ở mức SQL trước khi đếm tổng và phân trang', async () => {
+      const userConvQbMock = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getQuery: jest.fn().mockReturnValue('SELECT cm.conversationId FROM cm'),
+        getParameters: jest.fn().mockReturnValue({ currentUserId }),
+      };
+      const directMatchQbMock = {
+        select: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getQuery: jest.fn().mockReturnValue('SELECT 1 FROM cm_s'),
+      };
+
+      (memberRepo.createQueryBuilder as jest.Mock)
+        .mockReturnValueOnce(userConvQbMock)
+        .mockReturnValueOnce(directMatchQbMock);
+
+      const mainQbMock = {
+        where: jest.fn().mockReturnThis(),
+        setParameters: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      (convRepo.createQueryBuilder as jest.Mock).mockReturnValue(mainQbMock);
+
+      const result = await service.findAllPaginated(currentUserId, {
+        page: 1,
+        limit: 20,
+        search: 'Minh Anh',
+      });
+
+      expect(mainQbMock.andWhere).toHaveBeenCalledTimes(2);
+      expect(mainQbMock.getCount).toHaveBeenCalledTimes(1);
+      expect(result.items).toEqual([]);
+      expect(result.meta.totalItems).toBe(0);
+    });
+  });
 });

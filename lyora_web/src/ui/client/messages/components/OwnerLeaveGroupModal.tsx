@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Button } from '@/core';
+import React, { useEffect, useState } from 'react';
+import { AppImage, Button } from '@/core';
 import type { ConversationMember } from '@/features/conversations';
 import {
   CheckIcon,
@@ -29,6 +29,20 @@ export const OwnerLeaveGroupModal: React.FC<OwnerLeaveGroupModalProps> = ({
     string | null
   >(null);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedSuccessorId(null);
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isLeaving) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isLeaving, onClose]);
+
   if (!isOpen) return null;
 
   const otherMembers = members.filter((m) => m.userId !== currentUserId);
@@ -53,7 +67,9 @@ export const OwnerLeaveGroupModal: React.FC<OwnerLeaveGroupModalProps> = ({
       aria-modal="true"
       aria-labelledby="owner-leave-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
+      onClick={() => {
+        if (!isLeaving) onClose();
+      }}
     >
       <div
         className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border flex flex-col max-h-[85vh] overflow-hidden"
@@ -74,9 +90,12 @@ export const OwnerLeaveGroupModal: React.FC<OwnerLeaveGroupModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (!isLeaving) onClose();
+            }}
+            disabled={isLeaving}
             aria-label="Đóng cửa sổ"
-            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
@@ -86,7 +105,7 @@ export const OwnerLeaveGroupModal: React.FC<OwnerLeaveGroupModalProps> = ({
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
           <div className="p-4 border-b border-border">
             {hasOtherMembers ? (
-              <div className="p-3 text-xs text-amber-800 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 rounded-xl space-y-1">
+              <div className="p-3 text-xs text-warning bg-warning/10 border border-warning/30 rounded-xl space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
                   <CrownIcon className="w-3.5 h-3.5" />
                   <span>Yêu cầu chuyển quyền Trưởng nhóm</span>
@@ -130,10 +149,11 @@ export const OwnerLeaveGroupModal: React.FC<OwnerLeaveGroupModalProps> = ({
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
                         {member.user?.avatarUrl ? (
-                          <img
+                          <AppImage
                             src={member.user.avatarUrl}
                             alt={member.user.fullName}
-                            className="w-9 h-9 rounded-full object-cover border border-border"
+                            rounded
+                            className="w-9 h-9 border border-border"
                           />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-secondary text-primary font-bold text-xs flex items-center justify-center border border-border">
@@ -152,7 +172,7 @@ export const OwnerLeaveGroupModal: React.FC<OwnerLeaveGroupModalProps> = ({
                     <div
                       className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
                         isSelected
-                          ? 'bg-primary border-primary text-white'
+                          ? 'bg-primary border-primary text-on-primary'
                           : 'border-muted/40 bg-card'
                       }`}
                     >

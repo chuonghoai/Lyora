@@ -8,9 +8,12 @@ import {
   createCommentSchema,
   createPostSchema,
   getTopReactions,
+  hidePostModerationSchema,
   postKeys,
   PostService,
   suggestPostContentSchema,
+  type AdminPostDetail,
+  type AdminPostStatistics,
   type IPostRepository,
   type Post,
 } from '@/features/posts';
@@ -55,6 +58,12 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       'reactions',
       'post-1',
       { page: 1, limit: 6 },
+    ]);
+    expect(postKeys.shares('post-1', { page: 1, limit: 10 })).toEqual([
+      'posts',
+      'shares',
+      'post-1',
+      { page: 1, limit: 10 },
     ]);
     expect(postKeys.list({ filter: 'saved', limit: 5 })).toEqual([
       'posts',
@@ -118,23 +127,30 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
       getPostReactions: vi.fn(),
+      getPostShares: vi.fn(),
       toggleBookmark: vi.fn(),
       sharePost: vi.fn(),
       hidePost: vi.fn(),
       unhidePost: vi.fn(),
       addComment: vi.fn(),
+      getAdminPostStatistics: vi.fn(),
+      getAdminPosts: vi.fn(),
+      getAdminPostDetail: vi.fn(),
+      hideAdminPost: vi.fn(),
+      restoreAdminPost: vi.fn(),
+      removeAdminPost: vi.fn(),
+      removeAdminComment: vi.fn(),
     };
 
     const service = new PostService(mockRepo);
     const result = await service.getPosts({ page: 1, limit: 5 });
 
     expect(mockRepo.getPosts).toHaveBeenCalledTimes(1);
-    expect(result.isPreviewFallback).toBe(false);
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.id).toBe('post-1');
   });
 
-  it('PostService falls back gracefully on 404 (pending backend) and supports pagination + interactions', async () => {
+  it('PostService propagates 404 errors without falling back to preview/mock data', async () => {
     const notFoundError: ApiError = {
       statusCode: 404,
       message: 'Cannot GET /posts',
@@ -149,69 +165,54 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       uploadMedia: vi.fn(),
       reactPost: vi.fn().mockRejectedValue(notFoundError),
       getPostReactions: vi.fn().mockRejectedValue(notFoundError),
+      getPostShares: vi.fn().mockRejectedValue(notFoundError),
       toggleBookmark: vi.fn().mockRejectedValue(notFoundError),
       sharePost: vi.fn().mockRejectedValue(notFoundError),
       hidePost: vi.fn().mockRejectedValue(notFoundError),
       unhidePost: vi.fn().mockRejectedValue(notFoundError),
       addComment: vi.fn().mockRejectedValue(notFoundError),
+      getAdminPostStatistics: vi.fn().mockRejectedValue(notFoundError),
+      getAdminPosts: vi.fn().mockRejectedValue(notFoundError),
+      getAdminPostDetail: vi.fn().mockRejectedValue(notFoundError),
+      hideAdminPost: vi.fn().mockRejectedValue(notFoundError),
+      restoreAdminPost: vi.fn().mockRejectedValue(notFoundError),
+      removeAdminPost: vi.fn().mockRejectedValue(notFoundError),
+      removeAdminComment: vi.fn().mockRejectedValue(notFoundError),
     };
 
     const service = new PostService(mockRepo);
-    const friendsList = await service.getFriends();
-    expect(friendsList.length).toBe(5);
-    const page1 = await service.getPosts({ page: 1, limit: 5 });
-    expect(page1.isPreviewFallback).toBe(true);
-    expect(page1.items).toHaveLength(5);
-    expect(page1.meta.hasNextPage).toBe(true);
-
-    const page2 = await service.getPosts({ page: 2, limit: 5 });
-    expect(page2.items).toHaveLength(5);
-    expect(page2.items[0]?.id).not.toBe(page1.items[0]?.id);
-
-    const created = await service.createPost({
-      content: 'Bài viết mới trong giao diện Client Home',
-      visibility: 'PUBLIC',
-      media: [],
+    await expect(service.getFriends()).rejects.toMatchObject({ statusCode: 404 });
+    await expect(service.getPosts({ page: 1, limit: 5 })).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(created.content).toBe('Bài viết mới trong giao diện Client Home');
-
-    const reacted = await service.reactPost(created.id, 'LOVE');
-    expect(reacted.userReaction).toBe('LOVE');
-    expect(reacted.reactionCount).toBe(1);
-
-    const bookmarked = await service.toggleBookmark(created.id);
-    expect(bookmarked.isBookmarked).toBe(true);
-    expect(bookmarked.bookmarkCount).toBe(1);
-
-    const shared = await service.sharePost(created.id);
-    expect(shared.shareCount).toBe(1);
-
-    const comment = await service.addComment(created.id, 'Bình luận thử nghiệm', {
-      url: 'https://example.com/comment.jpg',
-      type: 'IMAGE',
+    await expect(
+      service.createPost({
+        content: 'Bài viết mới trong giao diện Client Home',
+        visibility: 'PUBLIC',
+        media: [],
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(service.reactPost('post-1', 'LOVE')).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(comment.content).toBe('Bình luận thử nghiệm');
-    expect(comment.media?.type).toBe('IMAGE');
-
-    const reactorsPage1 = await service.getPostReactions(page1.items[0]!.id, {
-      page: 1,
-      limit: 6,
+    await expect(service.toggleBookmark('post-1')).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(reactorsPage1.items.length).toBe(6);
-    expect(reactorsPage1.meta.hasNextPage).toBe(true);
-
-    const reactorsPage2 = await service.getPostReactions(page1.items[0]!.id, {
-      page: 2,
-      limit: 6,
+    await expect(service.sharePost('post-1')).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(reactorsPage2.items.length).toBe(6);
-    expect(reactorsPage2.items[0]?.id).not.toBe(reactorsPage1.items[0]?.id);
-
-    const hiddenRes = await service.hidePost(created.id);
-    expect(hiddenRes.hidden).toBe(true);
-
-    const unhiddenRes = await service.unhidePost(created.id);
-    expect(unhiddenRes.hidden).toBe(false);
+    await expect(
+      service.addComment('post-1', 'Bình luận thử nghiệm', {
+        url: 'https://example.com/comment.jpg',
+        type: 'IMAGE',
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(
+      service.getPostReactions('post-1', { page: 1, limit: 6 }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(
+      service.getPostShares('post-1', { page: 1, limit: 10 }),
+    ).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it('PostService rethrows real non-404 API errors (e.g. 401/500)', async () => {
@@ -228,11 +229,19 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
       getPostReactions: vi.fn(),
+      getPostShares: vi.fn(),
       toggleBookmark: vi.fn(),
       sharePost: vi.fn(),
       hidePost: vi.fn(),
       unhidePost: vi.fn(),
       addComment: vi.fn(),
+      getAdminPostStatistics: vi.fn(),
+      getAdminPosts: vi.fn(),
+      getAdminPostDetail: vi.fn(),
+      hideAdminPost: vi.fn(),
+      restoreAdminPost: vi.fn(),
+      removeAdminPost: vi.fn(),
+      removeAdminComment: vi.fn(),
     };
 
     const service = new PostService(mockRepo);
@@ -433,5 +442,154 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     await expect(
       failingService.suggestContent({ topic: 'Cà phê sáng', tone: 'FUNNY' }),
     ).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('supports Admin Post Management keys, schemas, and service operations', async () => {
+    expect(postKeys.adminAll()).toEqual(['posts', 'admin']);
+    expect(postKeys.adminStats()).toEqual(['posts', 'admin', 'statistics']);
+    expect(postKeys.adminList({ page: 1, status: 'HIDDEN' })).toEqual([
+      'posts',
+      'admin',
+      'list',
+      { page: 1, status: 'HIDDEN' },
+    ]);
+    expect(postKeys.adminDetail('post-1')).toEqual([
+      'posts',
+      'admin',
+      'detail',
+      'post-1',
+    ]);
+
+    expect(hidePostModerationSchema.safeParse({ reason: 'abc' }).success).toBe(
+      false,
+    );
+    expect(
+      hidePostModerationSchema.safeParse({
+        reason: 'Vi phạm quy tắc cộng đồng',
+      }).success,
+    ).toBe(true);
+
+    const mockStats: AdminPostStatistics = {
+      totalPosts: 12,
+      activePosts: 10,
+      hiddenPosts: 2,
+      postsToday: 3,
+      postsThisMonth: 9,
+      withMediaCount: 5,
+      adminPostsCount: 2,
+      visibilityBreakdown: { PUBLIC: 8, FRIENDS: 2, PRIVATE: 2 },
+    };
+
+    const mockDetail: AdminPostDetail = {
+      id: 'post-admin-1',
+      author: {
+        id: 'user-1',
+        fullName: 'Nguyễn Minh Anh',
+        email: 'minhanh@lyora.vn',
+        avatarUrl: null,
+        role: 'CLIENT',
+      },
+      content: 'Bài viết cần kiểm duyệt',
+      visibility: 'PUBLIC',
+      media: [],
+      taggedUserIds: [],
+      moderationStatus: 'HIDDEN',
+      moderationReason: 'Nội dung quảng cáo trái phép',
+      moderatedAt: new Date().toISOString(),
+      moderatedBy: {
+        id: 'admin-1',
+        fullName: 'Quản Trị',
+        email: 'admin@lyora.vn',
+      },
+      reactionCount: 0,
+      reactionBreakdown: {
+        LIKE: 0,
+        LOVE: 0,
+        HAHA: 0,
+        WOW: 0,
+        SAD: 0,
+        ANGRY: 0,
+      },
+      commentCount: 0,
+      comments: [],
+      shareCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const adminRepo = {
+      getAdminPostStatistics: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: mockStats }),
+      getAdminPosts: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: [mockDetail] }),
+      getAdminPostDetail: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: mockDetail }),
+      hideAdminPost: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: mockDetail }),
+      restoreAdminPost: vi.fn().mockResolvedValue({
+        success: true,
+        data: {
+          ...mockDetail,
+          moderationStatus: 'ACTIVE',
+          moderationReason: null,
+        },
+      }),
+      removeAdminPost: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: null }),
+      removeAdminComment: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: null }),
+    } as unknown as IPostRepository;
+
+    const service = new PostService(adminRepo);
+    expect(await service.getAdminPostStatistics()).toEqual(mockStats);
+
+    const listRes = await service.getAdminPosts({
+      page: 1,
+      limit: 10,
+      search: '  kiểm duyệt ',
+      status: 'ALL',
+    });
+    expect(adminRepo.getAdminPosts).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      search: 'kiểm duyệt',
+    });
+    expect(listRes.items).toHaveLength(1);
+
+    await expect(service.hidePostAsAdmin('post-admin-1', '  ')).rejects.toThrow(
+      'Vui lòng nhập lý do ẩn bài viết tối thiểu 5 ký tự',
+    );
+
+    const hidden = await service.hidePostAsAdmin(
+      'post-admin-1',
+      '  Nội dung quảng cáo trái phép  ',
+    );
+    expect(adminRepo.hideAdminPost).toHaveBeenCalledWith(
+      'post-admin-1',
+      'Nội dung quảng cáo trái phép',
+    );
+    expect(hidden.moderationStatus).toBe('HIDDEN');
+
+    const restored = await service.restorePostAsAdmin('post-admin-1');
+    expect(restored.moderationStatus).toBe('ACTIVE');
+
+    await service.removePostAsAdmin('post-admin-1', '  Vi phạm lặp lại  ');
+    expect(adminRepo.removeAdminPost).toHaveBeenCalledWith(
+      'post-admin-1',
+      'Vi phạm lặp lại',
+    );
+
+    await service.removeCommentAsAdmin('post-admin-1', 'cmt-1', '  Spam  ');
+    expect(adminRepo.removeAdminComment).toHaveBeenCalledWith(
+      'post-admin-1',
+      'cmt-1',
+      'Spam',
+    );
   });
 });

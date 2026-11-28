@@ -1,4 +1,4 @@
-import type { UserProfile, UserRole } from '@/core';
+import type { PaginationMeta, UserProfile, UserRole } from '@/core';
 
 export interface RecentUserSummary {
   id: string;
@@ -6,10 +6,95 @@ export interface RecentUserSummary {
   fullName: string;
   role: UserRole;
   isActive: boolean;
+  isOnline?: boolean;
   createdAt: string;
 }
 
 export type UserRoleFilter = 'ALL' | UserRole;
+export type AdminUserRoleTab = 'ALL' | UserRole;
+export type AdminUserStatusFilter = 'ALL' | 'ACTIVE' | 'LOCKED';
+export type AdminUserOnlineFilter = 'ALL' | 'ONLINE' | 'OFFLINE';
+export type AdminUserSortBy = 'createdAt' | 'fullName' | 'isOnline';
+export type AdminUserSortOrder = 'DESC' | 'ASC';
+
+export interface AdminUsersQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: AdminUserRoleTab;
+  status?: AdminUserStatusFilter;
+  online?: AdminUserOnlineFilter;
+  sortBy?: AdminUserSortBy;
+  sortOrder?: AdminUserSortOrder;
+}
+
+export interface AdminUserSummaryItem {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  avatarUrl?: string | null;
+  isActive: boolean;
+  isOnline: boolean;
+  lockReason?: string | null;
+  lockedAt?: string | null;
+  createdAt: string;
+}
+
+export interface AdminUsersSummaryCounts {
+  all: number;
+  client: number;
+  admin: number;
+  active: number;
+  locked: number;
+  online: number;
+}
+
+export interface AdminUsersListResult {
+  items: AdminUserSummaryItem[];
+  meta: PaginationMeta;
+  summary: AdminUsersSummaryCounts;
+}
+
+export interface AdminOnlineStatusResponse {
+  statuses: Record<string, boolean>;
+  onlineCount: number;
+  checkedAt: string;
+}
+
+export interface CreateAdminUserPayload {
+  fullName: string;
+  email: string;
+  password: string;
+  role: UserRole;
+}
+
+export interface AdminUserDetail {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  phoneNumber: string | null;
+  bio: string | null;
+  location: string | null;
+  hometown: string | null;
+  workplace: string | null;
+  education: string | null;
+  website: string | null;
+  avatarUrl: string | null;
+  coverUrl: string | null;
+  isActive: boolean;
+  isOnline: boolean;
+  lockReason: string | null;
+  lockedAt: string | null;
+  createdAt: string;
+  friendsCount: number;
+  friendsPreview: ProfileFriendSummary[];
+}
+
+export interface LockUserPayload {
+  reason: string;
+}
 
 export interface UserStatistics {
   totalUsers: number;
@@ -80,7 +165,7 @@ export interface ProfileActivityFeed {
   authored: ProfileActivityItem[];
 }
 
-export type ProfileFriendsFilter = 'ALL' | 'MUTUAL' | 'REQUESTS' | 'SUGGESTIONS';
+export type ProfileFriendsFilter = 'ALL' | 'MUTUAL' | 'REQUESTS';
 
 export interface ProfileFriendSummary {
   id: string;
@@ -114,7 +199,6 @@ export interface PublicUserProfile {
   friendsCount: number;
   mutualFriendsCount: number;
   friendsPreview: ProfileFriendSummary[];
-  isPreviewFallback?: boolean;
 }
 
 export interface UpdateExtendedProfilePayload extends UpdateUserProfilePayload {
@@ -126,17 +210,10 @@ export interface UpdateExtendedProfilePayload extends UpdateUserProfilePayload {
   website?: string | null;
 }
 
-export interface ProfileCoverPreset {
-  id: string;
-  label: string;
-  url: string;
-}
-
 export interface ProfileFriendsDirectory {
   friends: ProfileFriendSummary[];
   incomingRequests: ProfileFriendSummary[];
   sentRequests: ProfileFriendSummary[];
-  suggestions: ProfileFriendSummary[];
 }
 
 export type { UserProfile, UserRole };

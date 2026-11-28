@@ -67,6 +67,8 @@ export class FriendsService {
         'workplace',
         'location',
         'isActive',
+        'isOnline',
+        'isOnline',
       ],
     });
 
@@ -78,7 +80,7 @@ export class FriendsService {
       location: u.location ?? null,
       friendshipStatus: 'FRIEND',
       mutualFriendsCount: 0,
-      isOnline: false, // Chuẩn hóa bảo mật: Không giả định isActive là online; Phase 3 sẽ tích hợp WebSocket Presence
+      isOnline: Boolean(u.isOnline),
     }));
   }
 
@@ -91,6 +93,8 @@ export class FriendsService {
       .createQueryBuilder('user')
       .where('user.id != :currentUserId', { currentUserId })
       .andWhere('user.isActive = true')
+      .andWhere('user.role = :clientRole', { clientRole: UserRole.CLIENT })
+      .andWhere('user.role = :clientRole', { clientRole: UserRole.CLIENT })
       .andWhere('user.fullName ILIKE :keyword', { keyword: `%${keyword}%` })
       .andWhere(
         `NOT EXISTS (

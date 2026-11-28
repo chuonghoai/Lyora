@@ -1,5 +1,12 @@
 import React from 'react';
-import { AppImage, formatDateTime, formatRelativeTime } from '@/core';
+import {
+  AppImage,
+  EmptyState,
+  ErrorState,
+  formatDateTime,
+  formatRelativeTime,
+  LoadingState,
+} from '@/core';
 import {
   ArrowLeftIcon,
   AtSignIcon,
@@ -38,7 +45,7 @@ export const ProfileActivitySection: React.FC<ProfileActivitySectionProps> = ({
             </h2>
             <p className="text-xs text-muted">
               {controller.isOwnProfile
-                ? 'Tập hợp 3 mục: bài viết được chia sẻ/gắn thẻ, bài viết bạn yêu thích và bài viết bạn đã lưu bookmark.'
+                ? 'Tập hợp 3 mục: bài viết được chia sẻ/gắn thẻ, bài viết bạn yêu thích và bài viết đã lưu.'
                 : 'Những bài viết công khai mà thành viên này được gắn thẻ.'}
             </p>
           </div>
@@ -73,9 +80,6 @@ export const ProfileActivitySection: React.FC<ProfileActivitySectionProps> = ({
             >
               <AtSignIcon className="w-4 h-4 shrink-0" />
               <span className="truncate">Được chia sẻ &amp; Gắn thẻ</span>
-              <span className="text-[11px] font-medium text-muted tabular-nums">
-                ({controller.activityCounts.tagged})
-              </span>
             </button>
 
             <button
@@ -94,9 +98,6 @@ export const ProfileActivitySection: React.FC<ProfileActivitySectionProps> = ({
                 filled={controller.activityTab === 'reacted'}
               />
               <span className="truncate">Yêu thích</span>
-              <span className="text-[11px] font-medium text-muted tabular-nums">
-                ({controller.activityCounts.reacted})
-              </span>
             </button>
 
             <button
@@ -114,42 +115,37 @@ export const ProfileActivitySection: React.FC<ProfileActivitySectionProps> = ({
                 className="w-4 h-4 shrink-0"
                 filled={controller.activityTab === 'saved'}
               />
-              <span className="truncate">Đã lưu bookmark</span>
-              <span className="text-[11px] font-medium text-muted tabular-nums">
-                ({controller.activityCounts.saved})
-              </span>
+              <span className="truncate">Bài viết đã lưu</span>
             </button>
           </div>
         ) : (
           <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs sm:text-sm font-semibold text-primary">
             <AtSignIcon className="w-4 h-4 shrink-0" />
             <span>Được gắn thẻ</span>
-            <span className="text-[11px] font-medium text-muted tabular-nums">
-              ({controller.activityCounts.tagged})
-            </span>
           </div>
         )}
       </div>
 
       {/* Danh sách bài viết trong nhóm đang chọn */}
       {controller.isLoadingActivity ? (
-        <div className="space-y-4">
-          <div className="h-44 rounded-2xl border border-border bg-card animate-pulse" />
-          <div className="h-44 rounded-2xl border border-border bg-card animate-pulse" />
-        </div>
+        <LoadingState variant="skeleton-cards" count={2} label="Đang tải dấu ấn hoạt động..." />
+      ) : controller.isActivityError ? (
+        <ErrorState
+          title="Không thể tải dấu ấn hoạt động"
+          description="Đã xảy ra lỗi khi tải danh sách hoạt động từ hệ thống."
+          onRetry={controller.handleRetryActivity}
+        />
       ) : controller.activityItems.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-2">
-          <p className="text-sm font-semibold text-foreground">
-            Chưa có bài viết nào trong mục này
-          </p>
-          <p className="text-xs text-muted">
-            {controller.activityTab === 'tagged'
-              ? 'Các bài viết bạn được gắn thẻ hoặc chia sẻ tới bạn sẽ xuất hiện tại đây.'
+        <EmptyState
+          title="Chưa có dữ liệu trong mục này"
+          description={
+            controller.activityTab === 'tagged'
+              ? 'Tính năng thống kê bài viết được gắn thẻ hoặc chia sẻ hiện chưa được máy chủ hỗ trợ.'
               : controller.activityTab === 'reacted'
-                ? 'Những bài viết bạn bày tỏ cảm xúc yêu thích trên bảng tin sẽ hiển thị ở đây.'
-                : 'Các bài viết bạn lưu bookmark sẽ tập hợp tại đây để xem lại nhanh.'}
-          </p>
-        </div>
+                ? 'Tính năng tổng hợp danh sách bài viết yêu thích hiện chưa được máy chủ hỗ trợ.'
+                : 'Tính năng lưu trữ bài viết đã lưu hiện chưa được máy chủ hỗ trợ.'
+          }
+        />
       ) : (
         <div className="space-y-4">
           {controller.activityItems.map((item) => {

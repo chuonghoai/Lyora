@@ -4,6 +4,19 @@ import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
+export interface CreateModerationNoticeParams {
+  recipientId: string;
+  actorId: string;
+  type:
+    | NotificationType.POST_HIDDEN
+    | NotificationType.POST_RESTORED
+    | NotificationType.POST_REMOVED
+    | NotificationType.COMMENT_REMOVED;
+  title: string;
+  description: string;
+  targetPath?: string | null;
+}
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -58,6 +71,20 @@ export class NotificationsService {
       notification,
     );
     return notification;
+  }
+
+  async createModerationNotice(params: CreateModerationNoticeParams) {
+    return this.notificationRepository.save(
+      this.notificationRepository.create({
+        recipientId: params.recipientId,
+        actorId: params.actorId,
+        type: params.type,
+        title: params.title.slice(0, 255),
+        description: params.description.slice(0, 500),
+        targetPath: params.targetPath ?? '/me',
+        isRead: false,
+      }),
+    );
   }
 
   async findMine(recipientId: string): Promise<Notification[]> {

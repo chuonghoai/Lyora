@@ -1,8 +1,15 @@
 import React from "react";
-import { AppImage, Button, LoadingSpinner } from "@/core";
+import {
+  AppImage,
+  Button,
+  ConfirmModal,
+  EmptyState,
+  ErrorState,
+  LoadingSpinner,
+  LoadingState,
+} from "@/core";
 import type { FriendDiscoveryItem } from "@/features/friends";
 import {
-  CheckIcon,
   ClockIcon,
   SearchIcon,
   UserCheckIcon,
@@ -135,7 +142,7 @@ const FriendCard: React.FC<FriendCardProps> = ({
             aria-label={`Hủy kết bạn với ${friend.fullName}`}
             title={`Hủy kết bạn với ${friend.fullName}`}
             onClick={() =>
-              void controller.handleUnfriend(friend.id, friend.fullName)
+              controller.handleRequestUnfriend(friend.id, friend.fullName)
             }
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted hover:border-error/40 hover:bg-error/10 hover:text-error disabled:opacity-50 cursor-pointer"
           >
@@ -187,7 +194,9 @@ export default function FriendsView(): React.ReactElement {
         </p>
       </section>
 
-      {controller.receivedRequests.length > 0 && (
+      {(controller.isLoadingRequests ||
+        Boolean(controller.requestsError) ||
+        controller.receivedRequests.length > 0) && (
         <section
           aria-labelledby="friend-requests-heading"
           className="space-y-3"
@@ -199,20 +208,37 @@ export default function FriendsView(): React.ReactElement {
             >
               Lời mời kết bạn
             </h2>
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold tabular-nums text-primary-active">
-              {controller.receivedRequests.length}
-            </span>
+            {!controller.isLoadingRequests && !controller.requestsError && (
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold tabular-nums text-primary-active">
+                {controller.receivedRequests.length}
+              </span>
+            )}
           </div>
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {controller.receivedRequests.map((friend) => (
-              <FriendCard
-                key={friend.id}
-                friend={friend}
-                controller={controller}
-                requestActions
-              />
-            ))}
-          </div>
+          {controller.isLoadingRequests ? (
+            <LoadingState
+              variant="skeleton-list"
+              count={2}
+              label="Đang tải lời mời kết bạn..."
+            />
+          ) : controller.requestsError ? (
+            <ErrorState
+              compact
+              title="Không thể tải lời mời kết bạn"
+              description="Vui lòng thử lại để kiểm tra các lời mời đang chờ."
+              onRetry={controller.handleRetryRequests}
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {controller.receivedRequests.map((friend) => (
+                <FriendCard
+                  key={friend.id}
+                  friend={friend}
+                  controller={controller}
+                  requestActions
+                />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -224,17 +250,32 @@ export default function FriendsView(): React.ReactElement {
           >
             Bạn bè của bạn
           </h2>
-          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold tabular-nums text-primary-active">
-            {controller.acceptedFriends.length}
-          </span>
+          {!controller.isLoadingFriends && !controller.friendsError && (
+            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold tabular-nums text-primary-active">
+              {controller.acceptedFriends.length}
+            </span>
+          )}
         </div>
-        {controller.acceptedFriends.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-background/50 p-6 text-center">
-            <UsersIcon className="mx-auto h-6 w-6 text-muted" />
-            <p className="mt-2 text-sm text-muted">
-              Bạn chưa có bạn bè. Hãy tìm thành viên để kết nối.
-            </p>
-          </div>
+        {controller.isLoadingFriends ? (
+          <LoadingState
+            variant="skeleton-list"
+            count={4}
+            label="Đang tải danh sách bạn bè..."
+          />
+        ) : controller.friendsError ? (
+          <ErrorState
+            compact
+            title="Không thể tải danh sách bạn bè"
+            description="Kết nối đến máy chủ gặp sự cố. Vui lòng thử lại."
+            onRetry={controller.handleRetryFriends}
+          />
+        ) : controller.acceptedFriends.length === 0 ? (
+          <EmptyState
+            compact
+            icon={<UsersIcon className="h-5 w-5" />}
+            title="Bạn chưa có bạn bè nào"
+            description="Hãy nhập tên ở ô tìm kiếm phía trên để kết nối với các thành viên khác trên Lyora."
+          />
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {controller.acceptedFriends.map((friend) => (
@@ -256,7 +297,7 @@ export default function FriendsView(): React.ReactElement {
           >
             Khám phá thành viên
           </h2>
-          {hasSearch && !controller.isSearching && (
+          {hasSearch && !controller.isSearching && !controller.searchError && (
             <span className="text-xs text-muted tabular-nums">
               {controller.totalResults} kết quả
             </span>
@@ -292,23 +333,30 @@ export default function FriendsView(): React.ReactElement {
             ))}
           </div>
         ) : controller.isSearching ? (
-          <div className="flex min-h-32 items-center justify-center rounded-xl border border-border bg-card">
-            <LoadingSpinner size="md" />
-          </div>
+          <LoadingState
+            variant="skeleton-list"
+            count={3}
+            label="Đang tìm kiếm thành viên..."
+          />
         ) : controller.searchError ? (
-          <div
-            role="alert"
-            className="rounded-xl border border-error/30 bg-error/5 p-4 text-sm text-error"
-          >
-            Không thể tìm kiếm thành viên lúc này. Vui lòng thử lại.
-          </div>
+          <ErrorState
+            compact
+            title="Không thể tìm kiếm thành viên lúc này"
+            description="Kết nối đến máy chủ bị gián đoạn. Vui lòng thử lại."
+            onRetry={controller.handleRetrySearch}
+          />
         ) : controller.results.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-background/50 p-8 text-center">
-            <CheckIcon className="mx-auto h-6 w-6 text-muted" />
-            <p className="mt-2 text-sm text-muted">
-              Không tìm thấy thành viên phù hợp.
-            </p>
-          </div>
+          <EmptyState
+            compact
+            icon={<SearchIcon className="h-5 w-5" />}
+            title="Không tìm thấy thành viên phù hợp"
+            description={`Không có thành viên nào khớp với từ khóa "${controller.searchText.trim()}".`}
+            action={{
+              label: "Xóa tìm kiếm",
+              onClick: controller.handleClearSearch,
+              variant: "outline",
+            }}
+          />
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {controller.results.map((friend) => (
@@ -321,6 +369,18 @@ export default function FriendsView(): React.ReactElement {
           </div>
         )}
       </section>
+
+      <ConfirmModal
+        isOpen={Boolean(controller.unfriendTarget)}
+        title="Xác nhận hủy kết bạn"
+        description={`Bạn có chắc chắn muốn hủy kết bạn với ${controller.unfriendTarget?.fullName ?? "thành viên này"}? Hai bạn có thể gửi lại lời mời kết bạn bất kỳ lúc nào.`}
+        confirmLabel="Hủy kết bạn"
+        cancelLabel="Giữ kết nối"
+        variant="danger"
+        isLoading={controller.isUnfriending}
+        onConfirm={() => void controller.handleConfirmUnfriend()}
+        onCancel={controller.handleCancelUnfriend}
+      />
     </div>
   );
 }

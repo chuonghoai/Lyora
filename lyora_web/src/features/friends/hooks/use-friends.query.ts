@@ -44,6 +44,7 @@ function rememberSentFriendRequest(targetUserId: string) {
 }
 
 function invalidateFriendData(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: friendsKeys.all });
   void queryClient.invalidateQueries({ queryKey: friendsKeys.accepted() });
   void queryClient.invalidateQueries({
     queryKey: friendsKeys.receivedRequests(),
@@ -51,7 +52,7 @@ function invalidateFriendData(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: friendsKeys.suggestions() });
   void queryClient.invalidateQueries({ queryKey: ["users", "profile-page"] });
   void queryClient.invalidateQueries({
-    queryKey: ["users", "friends-directory"],
+    queryKey: ['users', 'friends-directory'],
   });
 }
 
