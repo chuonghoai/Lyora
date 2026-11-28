@@ -26,13 +26,14 @@ import {
   PhoneIcon,
   RefreshIcon,
   ShareIcon,
-  TrashIcon,
   UnlockIcon,
   UsersIcon,
 } from '../components/AdminIcons';
 import { AdminPostCommentsSection } from './AdminPostCommentsSection';
 import { AdminPostReactionsModal } from './AdminPostReactionsModal';
 import { AdminPostSharesModal } from './AdminPostSharesModal';
+import { AdminUserPostActionMenu } from './AdminUserPostActionMenu';
+import { AdminUserPostModerationModal } from './AdminUserPostModerationModal';
 import {
   useAdminUserDetailController,
   type AdminUserPostVisibilityFilter,
@@ -42,18 +43,18 @@ import { LockUserModal } from './LockUserModal';
 const VISIBILITY_LABELS: Record<'PUBLIC' | 'FRIENDS' | 'PRIVATE', string> = {
   PUBLIC: 'Công khai',
   FRIENDS: 'Bạn bè',
-  PRIVATE: 'Chỉ mình tôi',
+  PRIVATE: 'Riêng tư',
 };
 
 const VISIBILITY_FILTER_OPTIONS: Array<{
   value: AdminUserPostVisibilityFilter;
   label: string;
 }> = [
-  { value: 'ALL', label: 'Tất cả' },
-  { value: 'PUBLIC', label: 'Công khai' },
-  { value: 'FRIENDS', label: 'Bạn bè' },
-  { value: 'PRIVATE', label: 'Riêng tư' },
-];
+    { value: 'ALL', label: 'Tất cả' },
+    { value: 'PUBLIC', label: 'Công khai' },
+    { value: 'FRIENDS', label: 'Bạn bè' },
+    { value: 'PRIVATE', label: 'Riêng tư' },
+  ];
 
 export const AdminUserDetailView: React.FC = () => {
   const ctrl = useAdminUserDetailController();
@@ -460,10 +461,10 @@ export const AdminUserDetailView: React.FC = () => {
               action={
                 ctrl.visibilityFilter !== 'ALL'
                   ? {
-                      label: 'Xem tất cả bài viết',
-                      onClick: () => ctrl.setVisibilityFilter('ALL'),
-                      variant: 'outline',
-                    }
+                    label: 'Xem tất cả bài viết',
+                    onClick: () => ctrl.setVisibilityFilter('ALL'),
+                    variant: 'outline',
+                  }
                   : undefined
               }
             />
@@ -479,10 +480,10 @@ export const AdminUserDetailView: React.FC = () => {
                 return (
                   <article
                     key={post.id}
-                    className="rounded-xl border border-border bg-card overflow-hidden"
+                    className="rounded-xl border border-border bg-card"
                   >
                     <div className="p-5 space-y-4">
-                      <header className="flex flex-wrap items-start justify-between gap-3">
+                      <header className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                           {authorAvatar ? (
                             <AppImage
@@ -512,27 +513,13 @@ export const AdminUserDetailView: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={ctrl.handleFlagPostViolation}
-                            className="h-8 px-2.5 py-1 text-xs gap-1.5 border-warning/40 text-warning hover:bg-warning/10"
-                          >
-                            <FlagIcon className="w-3.5 h-3.5" />
-                            <span>Đánh dấu vi phạm</span>
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={ctrl.handleAdminDeletePost}
-                            className="h-8 px-2.5 py-1 text-xs gap-1.5 border-error/40 text-error hover:bg-error/10"
-                          >
-                            <TrashIcon className="w-3.5 h-3.5" />
-                            <span>Xóa bài viết</span>
-                          </Button>
-                        </div>
+                        <AdminUserPostActionMenu
+                          postId={post.id}
+                          disabled={ctrl.isModeratingPost}
+                          onHidePost={() => ctrl.handleOpenHidePostModal(post)}
+                          onFlagViolation={ctrl.handleFlagPostViolation}
+                          onRemovePost={() => ctrl.handleOpenRemovePostModal(post)}
+                        />
                       </header>
 
                       {post.content && (
@@ -626,6 +613,7 @@ export const AdminUserDetailView: React.FC = () => {
                       isExpanded={isCommentsExpanded}
                       onToggleExpand={ctrl.handleTogglePostComments}
                       onInspectAuthor={ctrl.handleInspectUserProfile}
+                      onRequestRemoveComment={ctrl.handleOpenRemoveCommentModal}
                     />
                   </article>
                 );
@@ -709,6 +697,19 @@ export const AdminUserDetailView: React.FC = () => {
         onChangePage={ctrl.handleChangeSharesPage}
         onRetry={ctrl.handleRetryShares}
         onInspectUser={ctrl.handleInspectUserProfile}
+      />
+
+      {/* Post & Comment Moderation Modal */}
+      <AdminUserPostModerationModal
+        target={ctrl.moderationTarget}
+        fallbackAuthorName={displayName}
+        reason={ctrl.moderationReason}
+        error={ctrl.moderationError}
+        isSubmitting={ctrl.isModeratingPost}
+        onReasonChange={ctrl.handleModerationReasonChange}
+        onSelectPreset={ctrl.handleSelectModerationReasonPreset}
+        onClose={ctrl.handleCloseModerationModal}
+        onConfirm={(e) => void ctrl.handleConfirmModeration(e)}
       />
     </div>
   );

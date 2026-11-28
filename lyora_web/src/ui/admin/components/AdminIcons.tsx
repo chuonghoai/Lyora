@@ -378,3 +378,11 @@ export const UserPlusIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => 
   </svg>
 );
 
+export const MoreHorizontalIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24">
+    <circle cx="5" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="19" cy="12" r="1.5" fill="currentColor" />
+  </svg>
+);
+
