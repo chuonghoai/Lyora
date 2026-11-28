@@ -15,6 +15,7 @@ import {
 import { useAdminPostsController } from './admin-posts.controller';
 import { AdminAppealEvidenceModal } from './AdminAppealEvidenceModal';
 import { AdminCreatePostModal } from './AdminCreatePostModal';
+import { AdminMediaLightboxModal } from './AdminMediaLightboxModal';
 import { AdminModerationModal } from './AdminModerationModal';
 import { AdminPostAppealHistoryModal } from './AdminPostAppealHistoryModal';
 import { AdminPostAppealsTab } from './AdminPostAppealsTab';
@@ -43,14 +44,15 @@ export const AdminPostsView: React.FC = () => {
   const friendsPct = stats
     ? toPercent(stats.visibilityBreakdown.FRIENDS, stats.totalPosts)
     : 0;
-  const privatePct = stats
-    ? Math.max(0, 100 - publicPct - friendsPct)
-    : 0;
+  const privatePct =
+    stats && stats.visibilityBreakdown.PRIVATE > 0
+      ? Math.max(0, 100 - publicPct - friendsPct)
+      : 0;
 
   return (
     <div className="space-y-6">
       {/* Page Title Row */}
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border pb-5">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border px-5 pb-5">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Quản lý bài viết
@@ -135,22 +137,31 @@ export const AdminPostsView: React.FC = () => {
                   {friendsPct > 0 && (
                     <span
                       style={{ width: `${friendsPct}%` }}
-                      className="bg-info"
+                      className="bg-success"
                     />
                   )}
                   {privatePct > 0 && (
                     <span
                       style={{ width: `${privatePct}%` }}
-                      className="bg-muted/60"
+                      className="bg-warning"
                     />
                   )}
                 </div>
               )}
-              <p className="text-xs text-muted tabular-nums">
-                Công khai {stats.visibilityBreakdown.PUBLIC} · Bạn bè{' '}
-                {stats.visibilityBreakdown.FRIENDS} · Riêng tư{' '}
-                {stats.visibilityBreakdown.PRIVATE}
-              </p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted tabular-nums">
+                <span className="inline-flex items-center gap-1.5">
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />
+                  <span>Công khai {stats.visibilityBreakdown.PUBLIC}</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full bg-success" />
+                  <span>Bạn bè {stats.visibilityBreakdown.FRIENDS}</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full bg-warning" />
+                  <span>Riêng tư {stats.visibilityBreakdown.PRIVATE}</span>
+                </span>
+              </div>
             </button>
 
             <button
@@ -196,7 +207,7 @@ export const AdminPostsView: React.FC = () => {
                   className="absolute inset-x-0 top-0 h-0.5 bg-primary"
                 />
               )}
-              <p className="text-xs font-medium text-muted">Đã ẩn kiểm duyệt</p>
+              <p className="text-xs font-medium text-muted">Đã ẩn</p>
               <p
                 className={`text-[28px] leading-tight font-semibold tracking-tight tabular-nums ${
                   stats.hiddenPosts > 0 ? 'text-warning' : 'text-foreground'
@@ -460,6 +471,7 @@ export const AdminPostsView: React.FC = () => {
 
       {/* Native Top-Layer Modals */}
       <AdminPostDetailModal controller={controller} />
+      <AdminMediaLightboxModal controller={controller} />
       <AdminModerationModal controller={controller} />
       <AdminCreatePostModal controller={controller} />
       <AdminAppealEvidenceModal

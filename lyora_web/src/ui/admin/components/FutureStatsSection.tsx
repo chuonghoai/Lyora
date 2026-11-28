@@ -11,12 +11,6 @@ interface FutureStatModule {
 // TODO: Kết nối từng module bên dưới với endpoint API thực tế khi backend hoàn thiện.
 const FUTURE_STAT_MODULES: FutureStatModule[] = [
   {
-    id: 'posts',
-    title: 'Thống kê bài viết',
-    description: 'Tổng số bài viết mới, tốc độ xuất bản theo ngày và trạng thái hiển thị.',
-    plannedEndpoint: '/posts/statistics',
-  },
-  {
     id: 'engagement',
     title: 'Tương tác bài viết',
     description: 'Tổng hợp lượt thích, phản hồi cảm xúc và lượt chia sẻ trong cộng đồng.',
@@ -67,21 +61,16 @@ export const FutureStatsSection: React.FC = () => {
           </p>
         </div>
         <span className="self-start sm:self-auto inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 text-xs font-medium text-muted">
-          7 phân hệ đang quy hoạch
+          {FUTURE_STAT_MODULES.length} phân hệ đang quy hoạch
         </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {FUTURE_STAT_MODULES.map((item, idx) => {
-          const isFullRowAnchor = idx === FUTURE_STAT_MODULES.length - 1;
-
+        {FUTURE_STAT_MODULES.map((item) => {
           return (
             <article
               key={item.id}
-              className={[
-                'rounded-xl border border-border bg-card p-5 flex flex-col justify-between gap-4',
-                isFullRowAnchor ? 'sm:col-span-2 xl:col-span-3' : '',
-              ].join(' ')}
+              className="rounded-xl border border-border bg-card p-5 flex flex-col justify-between gap-4"
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">

@@ -11,5 +11,6 @@ export * from './posts/admin-posts.controller';
 export * from './posts/AdminPostsView';
 export * from './posts/AdminPostsTable';
 export * from './posts/AdminPostDetailModal';
+export * from './posts/AdminMediaLightboxModal';
 export * from './posts/AdminModerationModal';
 export * from './posts/AdminCreatePostModal';
