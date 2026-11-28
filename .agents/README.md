@@ -44,6 +44,7 @@ Mọi thay đổi do AI Agent thực hiện phải tuân thủ các tài liệu 
     ├── logo-design/                        # [Group B] Thiết kế logo & nhận diện thương hiệu chuyên nghiệp
     ├── lya-analyzeTask/                    # Phân tích scope, rủi ro, tác động của task
     ├── lya-cleanup/                        # Quét và dọn dẹp file rác trong workspace
+    ├── lya-commit/                         # Gợi ý tiêu đề commit hợp lý
     ├── lya-createPR/                       # Chuẩn bị và tạo Pull Request
     ├── lya-createSeedDB/                   # Audit Code-DB & tạo/cập nhật seed files insert-only (giữ dữ liệu cũ)
     ├── lya-createTestCase/                 # Đọc code thực tế và tạo Test Cases
