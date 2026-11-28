@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, formatDateTime } from '@/core';
 import { useDashboardController } from './dashboard.controller';
 import { RefreshIcon } from '../components/AdminIcons';
+import { PostStatsSection } from '../components/PostStatsSection';
 import { UserStatsSection } from '../components/UserStatsSection';
 import { FutureStatsSection } from '../components/FutureStatsSection';
 
@@ -14,7 +15,7 @@ export const DashboardView: React.FC = () => {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Tổng quan quản trị</h1>
           <p className="text-sm text-muted">
-            Theo dõi số liệu tài khoản cộng đồng và tình trạng phản hồi của hệ thống Lyora.
+            Theo dõi số liệu tài khoản, bài viết cộng đồng và tình trạng phản hồi của hệ thống Lyora.
           </p>
         </div>
 
@@ -56,6 +57,14 @@ export const DashboardView: React.FC = () => {
         onSelectUser={ctrl.handleOpenAdminUserDetail}
         onCheckHealth={ctrl.handleCheckHealth}
         onRefresh={ctrl.handleRetryStats}
+      />
+
+      <PostStatsSection
+        stats={ctrl.postStats}
+        isLoading={ctrl.isPostStatsLoading}
+        isError={ctrl.isPostStatsError}
+        onRetry={ctrl.handleRetryPostStats}
+        onNavigateAdminPosts={ctrl.handleNavigateAdminPosts}
       />
 
       <FutureStatsSection />
