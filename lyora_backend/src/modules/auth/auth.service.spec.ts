@@ -1,6 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { REDIS_TTL } from '../../common/constants/redis-keys.constant';
 import { UserRole } from '../../common/enums/role.enum';
 import { RedisService } from '../../redis/redis.service';
@@ -18,6 +19,7 @@ describe('AuthService Security & OTP Guards', () => {
       | 'updatePassword'
       | 'findById'
       | 'updateProfile'
+      | 'setOnlineStatus'
     >
   >;
   let redisService: jest.Mocked<
@@ -41,6 +43,7 @@ describe('AuthService Security & OTP Guards', () => {
       updatePassword: jest.fn(),
       findById: jest.fn(),
       updateProfile: jest.fn(),
+      setOnlineStatus: jest.fn().mockResolvedValue(undefined),
     };
 
     const jwtService = {
@@ -172,5 +175,74 @@ describe('AuthService Security & OTP Guards', () => {
       location: 'TP. Hồ Chí Minh',
     });
     expect(res.phoneNumber).toBe('0908123456');
+  });
+
+  it('throws ForbiddenException with ACCOUNT_LOCKED and lockReason details when locked user logs in', async () => {
+    const lockedAt = new Date('2026-11-27T09:00:00.000Z');
+    usersService.findByEmail.mockResolvedValue({
+      id: 'user-locked',
+      email: 'locked@lyora.com',
+      fullName: 'Locked User',
+      role: UserRole.CLIENT,
+      isActive: false,
+      isOnline: false,
+      lockReason: 'Tài khoản vi phạm quy định cộng đồng',
+      lockedAt,
+      passwordHash: 'hash',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    try {
+      await authService.login({
+        email: 'locked@lyora.com',
+        password: 'password123',
+      });
+      throw new Error('Expected ForbiddenException to be thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(ForbiddenException);
+      const response = (error as ForbiddenException).getResponse() as {
+        code?: string;
+        details?: { lockReason?: string; lockedAt?: string | null };
+      };
+      expect(response.code).toBe('ACCOUNT_LOCKED');
+      expect(response.details?.lockReason).toBe(
+        'Tài khoản vi phạm quy định cộng đồng',
+      );
+      expect(response.details?.lockedAt).toBe(lockedAt.toISOString());
+    }
+  });
+
+  it('marks user online on login and offline on logout', async () => {
+    const passwordHash = await bcrypt.hash('password123', 4);
+    usersService.findByEmail.mockResolvedValue({
+      id: 'user-active',
+      email: 'active@lyora.com',
+      fullName: 'Active User',
+      role: UserRole.CLIENT,
+      isActive: true,
+      isOnline: false,
+      passwordHash,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const loginRes = await authService.login({
+      email: 'active@lyora.com',
+      password: 'password123',
+    });
+
+    expect(usersService.setOnlineStatus).toHaveBeenCalledWith(
+      'user-active',
+      true,
+    );
+    expect(loginRes.user.isOnline).toBe(true);
+
+    const logoutRes = await authService.logout('user-active');
+    expect(usersService.setOnlineStatus).toHaveBeenCalledWith(
+      'user-active',
+      false,
+    );
+    expect(logoutRes).toEqual({ loggedOut: true });
   });
 });

@@ -2,3 +2,8 @@ export * from './AdminLayout';
 export * from './admin-layout.controller';
 export * from './dashboard/dashboard.controller';
 export * from './dashboard/DashboardView';
+export * from './users/admin-users.controller';
+export * from './users/AdminUsersView';
+export * from './users/admin-user-detail.controller';
+export * from './users/AdminUserDetailView';
+export * from './users/LockUserModal';

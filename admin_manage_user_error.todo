@@ -1,0 +1,72 @@
+{
+  "todotree": {
+    "tree": [
+      {
+        "key": 1795835811274,
+        "children": [],
+        "todo": {
+          "content": "admin: Trong giao diện quản lý người dùng, thêm cơ chế polling API mỗi 15s để tự động fetch lại trạng thái online của tất cả các tài khoản trong danh sách đang hiển thị. Và mỗi khi thực hiện chuyển sang trang mới (phân trang) đối với danh sách, thực hiện 1 lần refresh lại trạng thái online của danh sách mới.",
+          "id": 1795835811274,
+          "level": "default",
+          "done": false,
+          "start": 1795835811274
+        }
+      },
+      {
+        "key": 1795835934380,
+        "children": [],
+        "todo": {
+          "content": "Admin - Trang giao diện quản lý người dùng: Thiết kế hiệu ứng waiting dữ liệu mỗi khi đang chờ dữ liệu API",
+          "id": 1795835934380,
+          "level": "default",
+          "done": false,
+          "start": 1795835934380
+        }
+      },
+      {
+        "key": 1795836069683,
+        "children": [],
+        "todo": {
+          "content": "Admin - trang hồ sơ người dùng: Admin có thể xem bình luận của bài viết của người dùng. UI hiển thị bình luân phải phù hợp với cơ chế bình luận, reply... Và có thể xem được danh sách người dùng đã like và shared bài viết giống như client",
+          "id": 1795836069683,
+          "level": "default",
+          "done": false,
+          "start": 1795836069683
+        }
+      },
+      {
+        "key": 1795836211750,
+        "children": [],
+        "todo": {
+          "content": "Admin - chức năng khóa tài khoản: Nếu chọn lý do khóa là lý do có sẵn, thì không cần nhập mô tả (Ẩn field nhập mô tả), chỉ khi chọn lý do \"Khác\" thì mới bắt buộc nhập mô tả.",
+          "id": 1795836211750,
+          "level": "default",
+          "done": false,
+          "start": 1795836211750
+        }
+      },
+      {
+        "key": 1795836319085,
+        "children": [],
+        "todo": {
+          "content": "Admin - hồ sơ người dùng - danh sách bài viết: Phải hiển thị ảnh avatar của người dùng bên cạnh tên của người dùng giống như ảnh bài viết bên phía client vậy",
+          "id": 1795836319085,
+          "level": "default",
+          "done": false,
+          "start": 1795836319085
+        }
+      }
+    ],
+    "expandKeys": [],
+    "add_mode": "bottom",
+    "virtual": false,
+    "showLine": false,
+    "playFontSize": 24,
+    "title": "admin_manage_user_error",
+    "autoSort": false,
+    "showEndTime": false,
+    "simpleMode": false,
+    "lang": "en",
+    "version": "1795836359198"
+  }
+}

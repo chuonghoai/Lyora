@@ -20,6 +20,8 @@ interface UserStatsSectionProps {
   onFilterChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearFilter: () => void;
   onSelectRoleFilter: (filter: UserRoleFilter) => void;
+  onViewAllUsers: () => void;
+  onSelectUser: (userId: string) => void;
   onCheckHealth: () => void;
   onRefresh: () => void;
 }
@@ -162,6 +164,8 @@ export const UserStatsSection: React.FC<UserStatsSectionProps> = ({
   onFilterChange,
   onClearFilter,
   onSelectRoleFilter,
+  onViewAllUsers,
+  onSelectUser,
   onCheckHealth,
   onRefresh,
 }) => {
@@ -387,25 +391,36 @@ export const UserStatsSection: React.FC<UserStatsSectionProps> = ({
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-background p-1">
-                {ROLE_FILTER_OPTIONS.map((option) => {
-                  const active = activeRoleFilter === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => onSelectRoleFilter(option.value)}
-                      className={[
-                        'rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-                        active
-                          ? 'bg-card text-primary border border-border'
-                          : 'text-foreground/75 hover:text-foreground',
-                      ].join(' ')}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-background p-1">
+                  {ROLE_FILTER_OPTIONS.map((option) => {
+                    const active = activeRoleFilter === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => onSelectRoleFilter(option.value)}
+                        className={[
+                          'rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                          active
+                            ? 'bg-card text-primary border border-border'
+                            : 'text-foreground/75 hover:text-foreground',
+                        ].join(' ')}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onViewAllUsers}
+                  className="h-8 px-3 py-1 text-xs border-border bg-card text-primary hover:bg-secondary/60"
+                >
+                  Tất cả
+                </Button>
               </div>
             </div>
 
@@ -478,11 +493,23 @@ export const UserStatsSection: React.FC<UserStatsSectionProps> = ({
                     </thead>
                     <tbody className="divide-y divide-border">
                       {filteredRecentUsers.map((account) => (
-                        <tr key={account.id} className="hover:bg-background/70 transition-colors">
+                        <tr
+                          key={account.id}
+                          onClick={() => onSelectUser(account.id)}
+                          className="hover:bg-background/70 transition-colors cursor-pointer"
+                        >
                           <td className="py-3.5 px-5">
-                            <p className="text-sm font-medium text-foreground truncate max-w-[260px]">
-                              {account.fullName || 'Chưa cập nhật tên'}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-foreground truncate max-w-[240px]">
+                                {account.fullName || 'Chưa cập nhật tên'}
+                              </p>
+                              {account.isOnline && (
+                                <span
+                                  title="Đang trực tuyến"
+                                  className="inline-block h-2 w-2 shrink-0 rounded-full bg-success"
+                                />
+                              )}
+                            </div>
                             <p className="text-xs text-muted truncate max-w-[260px]">{account.email}</p>
                           </td>
                           <td className="py-3.5 px-4">
@@ -511,22 +538,36 @@ export const UserStatsSection: React.FC<UserStatsSectionProps> = ({
 
                 <ul className="md:hidden divide-y divide-border">
                   {filteredRecentUsers.map((account) => (
-                    <li key={account.id} className="p-4 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {account.fullName || 'Chưa cập nhật tên'}
-                          </p>
-                          <p className="text-xs text-muted truncate">{account.email}</p>
+                    <li key={account.id} className="p-4">
+                      <button
+                        type="button"
+                        onClick={() => onSelectUser(account.id)}
+                        className="w-full text-left space-y-2 cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-medium text-foreground truncate">
+                                {account.fullName || 'Chưa cập nhật tên'}
+                              </p>
+                              {account.isOnline && (
+                                <span
+                                  title="Đang trực tuyến"
+                                  className="inline-block h-2 w-2 shrink-0 rounded-full bg-success"
+                                />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted truncate">{account.email}</p>
+                          </div>
+                          <StatusBadge isActive={account.isActive} />
                         </div>
-                        <StatusBadge isActive={account.isActive} />
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-muted pt-0.5">
-                        <span>{ROLE_LABELS[account.role] ?? account.role}</span>
-                        <span className="tabular-nums">
-                          {account.createdAt ? formatDate(account.createdAt) : 'Chưa rõ'}
-                        </span>
-                      </div>
+                        <div className="flex items-center justify-between text-xs text-muted pt-0.5">
+                          <span>{ROLE_LABELS[account.role] ?? account.role}</span>
+                          <span className="tabular-nums">
+                            {account.createdAt ? formatDate(account.createdAt) : 'Chưa rõ'}
+                          </span>
+                        </div>
+                      </button>
                     </li>
                   ))}
                 </ul>

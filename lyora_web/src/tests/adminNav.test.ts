@@ -30,6 +30,8 @@ describe('adminNav feature search & active path helpers', () => {
     const dashboardItem = getAllAdminNavItems().find((i) => i.id === 'dashboard')!;
     const usersItem = getAllAdminNavItems().find((i) => i.id === 'users')!;
 
+    expect(usersItem.implemented).toBe(true);
+    expect(usersItem.path).toBe('/admin/users');
     expect(isAdminNavActive('/admin', dashboardItem)).toBe(true);
     expect(isAdminNavActive('/admin/', dashboardItem)).toBe(true);
     expect(isAdminNavActive('/admin/users', dashboardItem)).toBe(false);

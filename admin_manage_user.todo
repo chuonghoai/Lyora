@@ -1,0 +1,61 @@
+{
+  "todotree": {
+    "tree": [
+      {
+        "key": 1795835793134,
+        "children": [],
+        "todo": {
+          "content": "Xóa bài viết từ góc nhìn Quản trị viên",
+          "id": 1795835793134,
+          "level": "default",
+          "done": false,
+          "start": 1795835793134
+        }
+      },
+      {
+        "key": 1795835796008,
+        "children": [],
+        "todo": {
+          "content": "Đánh dấu vi phạm bài viết",
+          "id": 1795835796008,
+          "level": "default",
+          "done": false,
+          "start": 1795835796008
+        }
+      },
+      {
+        "key": 1795835799223,
+        "children": [],
+        "todo": {
+          "content": "Đánh dấu vi phạm ảnh đại diện",
+          "id": 1795835799223,
+          "level": "default",
+          "done": false,
+          "start": 1795835799223
+        }
+      },
+      {
+        "key": 1795835801289,
+        "children": [],
+        "todo": {
+          "content": "Đánh dấu vi phạm ảnh bìa",
+          "id": 1795835801289,
+          "level": "default",
+          "done": false,
+          "start": 1795835801289
+        }
+      }
+    ],
+    "expandKeys": [],
+    "add_mode": "bottom",
+    "virtual": false,
+    "showLine": false,
+    "playFontSize": 24,
+    "title": "admin_manage_user",
+    "autoSort": false,
+    "showEndTime": false,
+    "simpleMode": false,
+    "lang": "en",
+    "version": "1795835803688"
+  }
+}

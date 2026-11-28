@@ -47,9 +47,9 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       {
         id: 'users',
         label: 'Quản lý người dùng',
-        path: '/admin/users',
+        path: ROUTES.ADMIN.USERS,
         icon: 'users',
-        implemented: false,
+        implemented: true,
       },
       {
         id: 'posts',

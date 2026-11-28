@@ -100,6 +100,11 @@ describe('Query Key Factories & Data Layer Hooks', () => {
             recentUsers: [],
           },
         }),
+        getAdminUsers: vi.fn(),
+        getUsersOnlineStatus: vi.fn(),
+        getAdminUserDetail: vi.fn(),
+        lockUser: vi.fn(),
+        unlockUser: vi.fn(),
       };
 
       const userService = new UserService(mockUserRepo);
