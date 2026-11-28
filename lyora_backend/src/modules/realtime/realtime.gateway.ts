@@ -10,7 +10,10 @@ import {
 import type { Server, Socket } from 'socket.io';
 import type { JwtPayload } from '../../common/interfaces/authenticated-user.interface';
 import { UserRole } from '../../common/enums/role.enum';
-import { FriendsService } from '../friends/friends.service';
+import {
+  REALTIME_FRIENDS_SERVICE,
+  type RealtimeFriendsService,
+} from './realtime.constants';
 
 export interface RealtimeEvent<T = unknown> {
   type: string;
@@ -145,12 +148,18 @@ export class RealtimeGateway implements OnGatewayConnection {
     currentUserId: string,
     payload: unknown,
     acknowledge: unknown,
-    action: (friends: FriendsService, targetUserId: string) => Promise<void>,
+    action: (
+      friends: RealtimeFriendsService,
+      targetUserId: string,
+    ) => Promise<void>,
   ): Promise<void> {
     const respond = this.toAcknowledgement(acknowledge);
     try {
       const targetUserId = this.getTargetUserId(payload);
-      const friends = this.moduleRef.get(FriendsService, { strict: false });
+      const friends = this.moduleRef.get<RealtimeFriendsService>(
+        REALTIME_FRIENDS_SERVICE,
+        { strict: false },
+      );
       await action(friends, targetUserId);
       respond?.({ success: true });
     } catch (error) {

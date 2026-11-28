@@ -6,6 +6,7 @@ import { User } from '../users/entities/user.entity';
 import { Friendship } from './entities/friendship.entity';
 import { FriendsController } from './friends.controller';
 import { FriendsService } from './friends.service';
+import { REALTIME_FRIENDS_SERVICE } from '../realtime/realtime.constants';
 
 @Module({
   imports: [
@@ -14,7 +15,10 @@ import { FriendsService } from './friends.service';
     RealtimeModule,
   ],
   controllers: [FriendsController],
-  providers: [FriendsService],
+  providers: [
+    FriendsService,
+    { provide: REALTIME_FRIENDS_SERVICE, useExisting: FriendsService },
+  ],
   exports: [FriendsService],
 })
 export class FriendsModule {}
