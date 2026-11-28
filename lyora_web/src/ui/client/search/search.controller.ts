@@ -87,12 +87,15 @@ export function useSearchController() {
     activeTab,
     people: peopleQuery.data?.items ?? [],
     posts,
-    isLoadingPeople: peopleQuery.isFetching,
+    isLoadingPeople: peopleQuery.isLoading,
     isLoadingPosts: postsQuery.isFetching,
-    isMutating:
-      sendRequestMutation.isPending ||
-      acceptRequestMutation.isPending ||
-      removeRequestMutation.isPending,
+    isActionPending: (userId: string) =>
+      (sendRequestMutation.isPending &&
+        sendRequestMutation.variables === userId) ||
+      (acceptRequestMutation.isPending &&
+        acceptRequestMutation.variables === userId) ||
+      (removeRequestMutation.isPending &&
+        removeRequestMutation.variables === userId),
     handleSelectTab,
     handleSendRequest,
     handleAcceptRequest,

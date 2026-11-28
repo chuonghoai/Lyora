@@ -198,7 +198,12 @@ export class FriendsService {
         currentUserId,
       );
     });
-    this.emitFriendshipUpdate([currentUserId, targetUserId], 'REQUEST_SENT');
+    this.emitFriendshipUpdate(
+      currentUserId,
+      targetUserId,
+      'REQUEST_SENT',
+      'REQUEST_RECEIVED',
+    );
   }
 
   async acceptRequest(
@@ -225,7 +230,7 @@ export class FriendsService {
         currentUserId,
       );
     });
-    this.emitFriendshipUpdate([currentUserId, requesterId], 'ACCEPTED');
+    this.emitFriendshipUpdate(currentUserId, requesterId, 'FRIEND', 'FRIEND');
   }
 
   async removeRequest(
@@ -237,7 +242,7 @@ export class FriendsService {
       throw new NotFoundException('Không tìm thấy lời mời kết bạn đang chờ');
     }
     await this.friendshipRepository.remove(request);
-    this.emitFriendshipUpdate([currentUserId, targetUserId], 'REQUEST_REMOVED');
+    this.emitFriendshipUpdate(currentUserId, targetUserId, 'NONE', 'NONE');
   }
 
   async unfriend(currentUserId: string, targetUserId: string): Promise<void> {
@@ -249,7 +254,7 @@ export class FriendsService {
       throw new NotFoundException('Hai người chưa là bạn bè');
     }
     await this.friendshipRepository.remove(relationship);
-    this.emitFriendshipUpdate([currentUserId, targetUserId], 'UNFRIENDED');
+    this.emitFriendshipUpdate(currentUserId, targetUserId, 'NONE', 'NONE');
   }
 
   /**
@@ -382,8 +387,20 @@ export class FriendsService {
       .getOne();
   }
 
-  private emitFriendshipUpdate(userIds: string[], action: string): void {
-    this.realtimeGateway.emitToUsers(userIds, 'friendship.updated', { action });
+  private emitFriendshipUpdate(
+    firstUserId: string,
+    secondUserId: string,
+    firstStatus: FriendRelationshipStatus,
+    secondStatus: FriendRelationshipStatus,
+  ): void {
+    this.realtimeGateway.emitToUser(firstUserId, 'friendship.updated', {
+      userId: secondUserId,
+      friendshipStatus: firstStatus,
+    });
+    this.realtimeGateway.emitToUser(secondUserId, 'friendship.updated', {
+      userId: firstUserId,
+      friendshipStatus: secondStatus,
+    });
   }
 
   private toDiscoveryResponse(

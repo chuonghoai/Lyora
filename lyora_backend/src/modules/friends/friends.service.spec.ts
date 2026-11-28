@@ -17,7 +17,7 @@ describe('FriendsService', () => {
       'createFriendRequest' | 'createFriendRequestAccepted'
     >
   >;
-  let realtimeGateway: jest.Mocked<Pick<RealtimeGateway, 'emitToUsers'>>;
+  let realtimeGateway: jest.Mocked<Pick<RealtimeGateway, 'emitToUser'>>;
 
   beforeEach(() => {
     friendshipRepo = {
@@ -35,7 +35,7 @@ describe('FriendsService', () => {
       createFriendRequest: jest.fn(),
       createFriendRequestAccepted: jest.fn(),
     };
-    realtimeGateway = { emitToUsers: jest.fn() };
+    realtimeGateway = { emitToUser: jest.fn() };
 
     service = new FriendsService(
       friendshipRepo as Repository<Friendship>,
@@ -223,10 +223,10 @@ describe('FriendsService', () => {
         'Người gửi',
         'user-1',
       );
-      expect(realtimeGateway.emitToUsers).toHaveBeenCalledWith(
-        ['user-1', 'user-2'],
+      expect(realtimeGateway.emitToUser).toHaveBeenCalledWith(
+        'user-1',
         'friendship.updated',
-        { action: 'REQUEST_SENT' },
+        { userId: 'user-2', friendshipStatus: 'REQUEST_SENT' },
       );
     });
 
@@ -249,10 +249,10 @@ describe('FriendsService', () => {
       expect(
         notificationsService.createFriendRequestAccepted,
       ).toHaveBeenCalledWith('user-2', 'Người chấp nhận', 'user-1');
-      expect(realtimeGateway.emitToUsers).toHaveBeenCalledWith(
-        ['user-1', 'user-2'],
+      expect(realtimeGateway.emitToUser).toHaveBeenCalledWith(
+        'user-1',
         'friendship.updated',
-        { action: 'ACCEPTED' },
+        { userId: 'user-2', friendshipStatus: 'FRIEND' },
       );
     });
 
