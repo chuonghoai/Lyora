@@ -27,6 +27,8 @@ export interface ApiError {
   statusCode: number;
   message: string;
   error?: string;
+  code?: string;
+  details?: Record<string, unknown>;
   timestamp?: string;
   path?: string;
   isNetworkError?: boolean;
@@ -49,6 +51,9 @@ export interface UserProfile {
   avatarUrl?: string | null;
   coverUrl?: string | null;
   isActive?: boolean;
+  isOnline?: boolean;
+  lockReason?: string | null;
+  lockedAt?: string | null;
   createdAt?: string;
 }
 

@@ -52,6 +52,8 @@ export const DashboardView: React.FC = () => {
         onFilterChange={ctrl.handleFilterChange}
         onClearFilter={() => ctrl.setFilterQuery('')}
         onSelectRoleFilter={ctrl.handleSelectRoleFilter}
+        onViewAllUsers={ctrl.handleViewAllUsers}
+        onSelectUser={ctrl.handleOpenAdminUserDetail}
         onCheckHealth={ctrl.handleCheckHealth}
         onRefresh={ctrl.handleRetryStats}
       />

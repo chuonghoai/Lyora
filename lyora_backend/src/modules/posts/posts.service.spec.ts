@@ -7,6 +7,7 @@ import { FriendshipStatus } from '../friends/enums/friendship-status.enum';
 import { User } from '../users/entities/user.entity';
 import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
+import { PostShare } from './entities/post-share.entity';
 import { Post } from './entities/post.entity';
 import { PostReactionType, PostVisibility } from './enums/post.enums';
 import { PostsService } from './posts.service';
@@ -16,6 +17,7 @@ describe('PostsService (Real DB Data & Empty State)', () => {
   let postRepo: jest.Mocked<Partial<Repository<Post>>>;
   let reactionRepo: jest.Mocked<Partial<Repository<PostReaction>>>;
   let commentRepo: jest.Mocked<Partial<Repository<PostComment>>>;
+  let postShareRepo: jest.Mocked<Partial<Repository<PostShare>>>;
   let userRepo: jest.Mocked<Partial<Repository<User>>>;
   let friendshipRepo: jest.Mocked<Partial<Repository<Friendship>>>;
 
@@ -32,9 +34,13 @@ describe('PostsService (Real DB Data & Empty State)', () => {
     };
     reactionRepo = {
       find: jest.fn().mockResolvedValue([]),
+      findAndCount: jest.fn().mockResolvedValue([[], 0]),
     };
     commentRepo = {
       find: jest.fn().mockResolvedValue([]),
+    };
+    postShareRepo = {
+      findAndCount: jest.fn().mockResolvedValue([[], 0]),
     };
     userRepo = {
       find: jest.fn().mockResolvedValue([]),
@@ -50,6 +56,7 @@ describe('PostsService (Real DB Data & Empty State)', () => {
       commentRepo as Repository<PostComment>,
       userRepo as Repository<User>,
       friendshipRepo as Repository<Friendship>,
+      postShareRepo as Repository<PostShare>,
     );
   });
 
@@ -205,5 +212,105 @@ describe('PostsService (Real DB Data & Empty State)', () => {
 
     const visible = await service.findOne(currentUser, postId);
     expect(visible.id).toBe(postId);
+  });
+
+  it('cho phép ADMIN lọc bài viết của bất kỳ authorId nào mà không bị giới hạn visibility', async () => {
+    const adminUser: AuthenticatedUser = {
+      id: '99999999-9999-4999-8999-999999999999',
+      email: 'admin@lyora.vn',
+      role: UserRole.ADMIN,
+    };
+    const targetAuthorId = '77777777-7777-4777-8777-777777777777';
+
+    const qbMock = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    };
+    (postRepo.createQueryBuilder as jest.Mock).mockReturnValue(qbMock);
+
+    await service.findAllPaginated(adminUser, {
+      page: 1,
+      limit: 10,
+      authorId: targetAuthorId,
+    });
+
+    expect(qbMock.where).toHaveBeenCalledWith('post.authorId = :authorId', {
+      authorId: targetAuthorId,
+    });
+  });
+
+  it('trả về danh sách reactions, shares phân trang và parentId bình luận cho ADMIN xem bài viết PRIVATE', async () => {
+    const adminUser: AuthenticatedUser = {
+      id: '99999999-9999-4999-8999-999999999999',
+      email: 'admin@lyora.vn',
+      role: UserRole.ADMIN,
+    };
+    const postId = '88888888-8888-4888-8888-888888888888';
+    const privatePost = {
+      id: postId,
+      authorId: '77777777-7777-4777-8777-777777777777',
+      visibility: PostVisibility.PRIVATE,
+    } as Post;
+
+    (postRepo.findOne as jest.Mock).mockResolvedValue(privatePost);
+    (reactionRepo.findAndCount as jest.Mock).mockResolvedValue([
+      [
+        {
+          id: 'react-1',
+          postId,
+          userId: 'user-a',
+          type: PostReactionType.LOVE,
+          createdAt: new Date('2026-11-28T09:00:00.000Z'),
+          user: {
+            id: 'user-a',
+            fullName: 'Lê Thu Hà',
+            email: 'thuha@lyora.vn',
+            avatarUrl: null,
+          },
+        },
+      ],
+      1,
+    ]);
+    (postShareRepo.findAndCount as jest.Mock).mockResolvedValue([
+      [
+        {
+          id: 'share-1',
+          postId,
+          userId: 'user-b',
+          createdAt: new Date('2026-11-28T09:30:00.000Z'),
+          user: {
+            id: 'user-b',
+            fullName: 'Phạm Hoàng Nam',
+            email: 'nam@lyora.vn',
+            avatarUrl: null,
+          },
+        },
+      ],
+      1,
+    ]);
+
+    const reactionsRes = await service.getPostReactions(adminUser, postId, {
+      page: 1,
+      limit: 10,
+      reactionType: PostReactionType.LOVE,
+    });
+    expect(reactionsRes.items).toHaveLength(1);
+    expect(reactionsRes.items[0]?.user.email).toBe('thuha@lyora.vn');
+    expect(reactionsRes.items[0]?.reactionType).toBe(PostReactionType.LOVE);
+    expect(reactionsRes.meta.totalItems).toBe(1);
+
+    const sharesRes = await service.getPostShares(adminUser, postId, {
+      page: 1,
+      limit: 10,
+    });
+    expect(sharesRes.items).toHaveLength(1);
+    expect(sharesRes.items[0]?.user.fullName).toBe('Phạm Hoàng Nam');
+    expect(sharesRes.items[0]?.user.email).toBe('nam@lyora.vn');
+    expect(sharesRes.meta.totalItems).toBe(1);
   });
 });

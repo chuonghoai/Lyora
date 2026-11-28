@@ -7,6 +7,8 @@ import type {
   PostMediaItem,
   PostReactionUser,
   PostReactionsQueryParams,
+  PostShareUser,
+  PostSharesQueryParams,
   PostsQueryParams,
   PostSuggestionsResult,
   ReactionType,
@@ -26,6 +28,10 @@ export interface IPostRepository {
     postId: string,
     params: PostReactionsQueryParams,
   ): Promise<ApiResponse<PostReactionUser[]>>;
+  getPostShares(
+    postId: string,
+    params: PostSharesQueryParams,
+  ): Promise<ApiResponse<PostShareUser[]>>;
   toggleBookmark(postId: string): Promise<ApiResponse<Post>>;
   sharePost(postId: string): Promise<ApiResponse<Post>>;
   hidePost(postId: string): Promise<ApiResponse<{ hidden: boolean }>>;
@@ -123,6 +129,16 @@ export class PostRepository implements IPostRepository {
   ): Promise<ApiResponse<PostReactionUser[]>> {
     return apiClient.get<ApiResponse<PostReactionUser[]>, ApiResponse<PostReactionUser[]>>(
       `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}/reactions`,
+      { params },
+    );
+  }
+
+  async getPostShares(
+    postId: string,
+    params: PostSharesQueryParams,
+  ): Promise<ApiResponse<PostShareUser[]>> {
+    return apiClient.get<ApiResponse<PostShareUser[]>, ApiResponse<PostShareUser[]>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}/shares`,
       { params },
     );
   }

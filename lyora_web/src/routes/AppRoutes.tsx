@@ -23,6 +23,12 @@ const SearchResultsView = lazy(
 const AdminDashboardView = lazy(
   () => import('@/ui/admin/dashboard/DashboardView'),
 );
+const AdminUsersView = lazy(
+  () => import('@/ui/admin/users/AdminUsersView'),
+);
+const AdminUserDetailView = lazy(
+  () => import('@/ui/admin/users/AdminUserDetailView'),
+);
 const LoginView = lazy(
   () => import('@/ui/auth/login/LoginView'),
 );
@@ -155,6 +161,22 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <AdminDashboardView />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'users',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <AdminUsersView />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'users/:userId',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <AdminUserDetailView />
               </Suspense>
             ),
           },

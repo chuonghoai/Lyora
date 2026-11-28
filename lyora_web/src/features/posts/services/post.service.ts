@@ -4,12 +4,14 @@ import { postRepository, type IPostRepository } from '../repositories/post.repos
 import type {
   CreatePostPayload,
   PaginatedPostReactionsResult,
+  PaginatedPostSharesResult,
   PaginatedPostsResult,
   Post,
   PostAuthor,
   PostComment,
   PostMediaItem,
   PostReactionsQueryParams,
+  PostSharesQueryParams,
   PostsQueryParams,
   PostSuggestionsResult,
   ReactionBreakdown,
@@ -28,6 +30,10 @@ export interface IPostService {
     postId: string,
     params: PostReactionsQueryParams,
   ): Promise<PaginatedPostReactionsResult>;
+  getPostShares(
+    postId: string,
+    params: PostSharesQueryParams,
+  ): Promise<PaginatedPostSharesResult>;
   toggleBookmark(postId: string): Promise<Post>;
   sharePost(postId: string): Promise<Post>;
   hidePost(postId: string): Promise<{ hidden: boolean }>;
@@ -156,6 +162,31 @@ export class PostService implements IPostService {
         hasPrevPage: page > 1,
       },
       breakdown,
+    };
+  }
+
+  async getPostShares(
+    postId: string,
+    params: PostSharesQueryParams,
+  ): Promise<PaginatedPostSharesResult> {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const response = await this.repository.getPostShares(postId, {
+      ...params,
+      page,
+      limit,
+    });
+    const items = response.data ?? [];
+    return {
+      items,
+      meta: response.meta ?? {
+        page,
+        limit,
+        totalItems: items.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: page > 1,
+      },
     };
   }
 

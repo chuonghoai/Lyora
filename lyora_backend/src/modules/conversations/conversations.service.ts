@@ -147,7 +147,7 @@ export class ConversationsService {
             id: targetUser.id,
             fullName: targetUser.fullName,
             avatarUrl: targetUser.avatarUrl ?? null,
-            isOnline: false,
+            isOnline: Boolean(targetUser.isOnline),
           },
           createdAt: savedConv.createdAt,
           updatedAt: savedConv.updatedAt,
@@ -391,7 +391,7 @@ export class ConversationsService {
           id: dm.user.id,
           fullName: dm.user.fullName,
           avatarUrl: dm.user.avatarUrl ?? null,
-          isOnline: false,
+          isOnline: Boolean(dm.user.isOnline),
         });
       }
     }
@@ -491,7 +491,7 @@ export class ConversationsService {
         id: m.user?.id ?? m.userId,
         fullName: m.user?.fullName ?? 'Người dùng Lyora',
         avatarUrl: m.user?.avatarUrl ?? null,
-        isOnline: false,
+        isOnline: Boolean(m.user?.isOnline),
       },
     }));
 
@@ -557,7 +557,7 @@ export class ConversationsService {
             id: partnerMember.user.id,
             fullName: partnerMember.user.fullName,
             avatarUrl: partnerMember.user.avatarUrl ?? null,
-            isOnline: false,
+            isOnline: Boolean(partnerMember.user.isOnline),
           }
         : null;
 

@@ -19,6 +19,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { CreatePostDto } from './dto/create-post.dto';
+import {
+  PostReactionsQueryDto,
+  PostSharesQueryDto,
+} from './dto/post-interactions-query.dto';
 import { PostQueryDto } from './dto/post-query.dto';
 import { SuggestPostContentDto } from './dto/suggest-post-content.dto';
 import { PostsService } from './posts.service';
@@ -111,6 +115,26 @@ export class PostsController {
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
     return this.postAiSuggestionService.suggest(currentUser, dto, files);
+  }
+
+  @Get(':id/reactions')
+  @ResponseMessage('Lấy danh sách cảm xúc bài viết thành công')
+  async getReactions(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: PostReactionsQueryDto,
+  ) {
+    return this.postsService.getPostReactions(currentUser, id, query);
+  }
+
+  @Get(':id/shares')
+  @ResponseMessage('Lấy danh sách người đã chia sẻ bài viết thành công')
+  async getShares(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: PostSharesQueryDto,
+  ) {
+    return this.postsService.getPostShares(currentUser, id, query);
   }
 
   @Get(':id')
