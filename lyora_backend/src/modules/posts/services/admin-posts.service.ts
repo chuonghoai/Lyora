@@ -13,9 +13,11 @@ import { UserRole } from '../../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { buildAvatarViolation } from '../../users/dto/flag-profile-media-violation.dto';
 import { User } from '../../users/entities/user.entity';
 import { AdminPostQueryDto } from '../dto/admin-post-query.dto';
 import {
+  FlagPostViolationDto,
   HidePostModerationDto,
   RemoveModerationReasonDto,
 } from '../dto/moderate-post.dto';
@@ -367,6 +369,52 @@ export class AdminPostsService {
         targetPath: `/post/${post.id}`,
       });
     }
+
+    return this.findOneDetail(post.id);
+  }
+
+  async flagPostViolation(
+    adminUser: AuthenticatedUser,
+    id: string,
+    dto: FlagPostViolationDto,
+  ): Promise<AdminPostDetailResponse> {
+    const post = await this.getPostOrThrow(id);
+    const reason = dto.reason.trim();
+
+    post.isViolationFlagged = true;
+    post.violationReason = reason;
+    post.violationFlaggedAt = new Date();
+    post.violationFlaggedById = adminUser.id;
+
+    await this.postRepository.save(post);
+
+    if (post.authorId !== adminUser.id) {
+      const excerpt = summarizePostExcerpt(post.content);
+      await this.notificationsService.createModerationNotice({
+        recipientId: post.authorId,
+        actorId: adminUser.id,
+        type: NotificationType.POST_VIOLATION_FLAGGED,
+        title: 'Bài viết của bạn bị đánh dấu vi phạm',
+        description: `Bài viết ${excerpt} đã bị Quản trị viên đánh dấu vi phạm tiêu chuẩn cộng đồng. Lý do: ${reason}`,
+        targetPath: `/post/${post.id}`,
+      });
+    }
+
+    return this.findOneDetail(post.id);
+  }
+
+  async unflagPostViolation(
+    _adminUser: AuthenticatedUser,
+    id: string,
+  ): Promise<AdminPostDetailResponse> {
+    const post = await this.getPostOrThrow(id);
+
+    post.isViolationFlagged = false;
+    post.violationReason = null;
+    post.violationFlaggedAt = null;
+    post.violationFlaggedById = null;
+
+    await this.postRepository.save(post);
 
     return this.findOneDetail(post.id);
   }
@@ -865,6 +913,7 @@ export class AdminPostsService {
         fullName: post.author.fullName,
         email: post.author.email,
         avatarUrl: post.author.avatarUrl ?? null,
+        avatarViolation: buildAvatarViolation(post.author),
         role: post.author.role ?? UserRole.CLIENT,
       },
       content: post.content,
@@ -877,6 +926,15 @@ export class AdminPostsService {
       moderatedBy: post.moderatedById
         ? (moderatorMap.get(post.moderatedById) ?? null)
         : null,
+      violationFlag:
+        post.isViolationFlagged && post.violationReason
+          ? {
+              reason: post.violationReason,
+              flaggedAt: post.violationFlaggedAt
+                ? post.violationFlaggedAt.toISOString()
+                : null,
+            }
+          : null,
       reactionCount: reactionCountMap.get(post.id) ?? post.reactionsCount,
       commentCount: commentCountMap.get(post.id) ?? post.commentsCount,
       shareCount: post.sharesCount,

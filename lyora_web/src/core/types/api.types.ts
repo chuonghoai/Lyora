@@ -36,6 +36,12 @@ export interface ApiError {
 
 export type UserRole = 'CLIENT' | 'ADMIN';
 
+export interface MediaViolationInfo {
+  reason: string;
+  flaggedAt: string | null;
+  evidenceUrl: string | null;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -50,6 +56,8 @@ export interface UserProfile {
   website?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
+  avatarViolation?: MediaViolationInfo | null;
+  coverViolation?: MediaViolationInfo | null;
   isActive?: boolean;
   isOnline?: boolean;
   lockReason?: string | null;

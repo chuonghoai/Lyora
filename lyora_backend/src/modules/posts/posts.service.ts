@@ -16,6 +16,7 @@ import { Friendship } from '../friends/entities/friendship.entity';
 import { FriendshipStatus } from '../friends/enums/friendship-status.enum';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { buildAvatarViolation } from '../users/dto/flag-profile-media-violation.dto';
 import { User } from '../users/entities/user.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreatePostAppealDto } from './dto/post-appeal.dto';
@@ -715,6 +716,7 @@ export class PostsService {
           id: comment.author?.id ?? comment.authorId,
           fullName: comment.author?.fullName ?? 'Người dùng Lyora',
           avatarUrl: comment.author?.avatarUrl ?? null,
+          avatarViolation: buildAvatarViolation(comment.author),
         },
         content: comment.content,
         media: comment.media ?? null,
@@ -745,6 +747,7 @@ export class PostsService {
             ? { email: post.author.email }
             : {}),
           avatarUrl: post.author.avatarUrl ?? null,
+          avatarViolation: buildAvatarViolation(post.author),
         },
         content: post.content,
         visibility: post.visibility,
@@ -754,6 +757,15 @@ export class PostsService {
           .map((taggedId) => taggedUserMap.get(taggedId))
           .filter((item): item is PostTaggedUserResponse => Boolean(item)),
         moderationStatus,
+        violationFlag:
+          post.isViolationFlagged && post.violationReason
+            ? {
+                reason: post.violationReason,
+                flaggedAt: post.violationFlaggedAt
+                  ? post.violationFlaggedAt.toISOString()
+                  : null,
+              }
+            : null,
         ...(canViewModeration
           ? {
               moderationReason: post.moderationReason ?? null,

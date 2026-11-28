@@ -1,5 +1,6 @@
 import { PaginationMetaDto } from '../../../common/dto/api-response.dto';
 import { UserRole } from '../../../common/enums/role.enum';
+import type { ProfileMediaViolationDto } from '../../users/dto/flag-profile-media-violation.dto';
 import {
   PostAppealStatus,
   PostModerationStatus,
@@ -7,7 +8,10 @@ import {
   PostVisibility,
 } from '../enums/post.enums';
 import { PostMediaItem } from './post-media.interface';
-import { PostAppealSummaryResponse } from './post-response.interface';
+import type {
+  PostAppealSummaryResponse,
+  PostViolationFlagResponse,
+} from './post-response.interface';
 
 export interface AdminPostStatistics {
   totalPosts: number;
@@ -26,6 +30,7 @@ export interface AdminPostAuthorResponse {
   fullName: string;
   email: string;
   avatarUrl: string | null;
+  avatarViolation?: ProfileMediaViolationDto | null;
   role: UserRole;
 }
 
@@ -54,6 +59,7 @@ export interface AdminPostItemResponse {
   moderationReason: string | null;
   moderatedAt: string | null;
   moderatedBy: AdminPostModeratorSummary | null;
+  violationFlag?: PostViolationFlagResponse | null;
   reactionCount: number;
   commentCount: number;
   shareCount: number;

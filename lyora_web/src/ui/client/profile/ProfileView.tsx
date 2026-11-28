@@ -1,5 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, ConfirmModal, ErrorState } from "@/core";
+import {
+  ViolationDetailModal,
+  type ViolationModalTarget,
+} from "@/ui/shared/ViolationIndicators";
 import { ArrowLeftIcon } from "../home/ClientIcons";
 import { MediaLightboxModal } from "../home/MediaLightboxModal";
 import { PostDetailModal } from "../home/PostDetailModal";
@@ -38,6 +42,8 @@ const ProfileSkeleton: React.FC = () => (
 
 export const ProfileView: React.FC = () => {
   const controller = useProfileController();
+  const [violationModalTarget, setViolationModalTarget] =
+    useState<ViolationModalTarget | null>(null);
 
   if (controller.isLoading) {
     return <ProfileSkeleton />;
@@ -99,7 +105,10 @@ export const ProfileView: React.FC = () => {
       </div>
 
       {/* Header Hồ sơ: Ảnh bìa, Avatar, Hành động & Tabs */}
-      <ProfileHeader controller={controller} />
+      <ProfileHeader
+        controller={controller}
+        onInspectViolation={setViolationModalTarget}
+      />
 
       {/* Nội dung theo Tab */}
       {controller.activeTab === "overview" && (
@@ -152,6 +161,26 @@ export const ProfileView: React.FC = () => {
         isLoading={controller.isUnfriending}
         onConfirm={() => void controller.handleConfirmUnfriend()}
         onCancel={controller.handleCancelUnfriend}
+      />
+
+      <ViolationDetailModal
+        target={violationModalTarget}
+        onClose={() => setViolationModalTarget(null)}
+        primaryAction={
+          controller.isOwnProfile && violationModalTarget
+            ? {
+                label:
+                  violationModalTarget.kind === "AVATAR"
+                    ? "Thay đổi ảnh đại diện"
+                    : "Thay đổi ảnh bìa",
+                variant: "primary",
+                onClick: () => {
+                  setViolationModalTarget(null);
+                  controller.handleOpenEditModal();
+                },
+              }
+            : undefined
+        }
       />
     </div>
   );

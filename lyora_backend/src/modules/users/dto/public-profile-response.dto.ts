@@ -1,4 +1,5 @@
 import { UserRole } from '../../../common/enums/role.enum';
+import type { ProfileMediaViolationDto } from './flag-profile-media-violation.dto';
 
 export type PublicProfileFriendshipStatus =
   'SELF' | 'FRIEND' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'NONE';
@@ -7,6 +8,7 @@ export interface ProfileFriendPreviewDto {
   id: string;
   fullName: string;
   avatarUrl: string | null;
+  avatarViolation?: ProfileMediaViolationDto | null;
   headline: string | null;
   location: string | null;
   mutualFriendsCount: number;
@@ -28,6 +30,8 @@ export interface PublicProfileResponseDto {
   website: string | null;
   avatarUrl: string | null;
   coverUrl: string | null;
+  avatarViolation?: ProfileMediaViolationDto | null;
+  coverViolation?: ProfileMediaViolationDto | null;
   isActive: boolean;
   isOnline: boolean;
   createdAt: Date;

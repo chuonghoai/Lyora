@@ -1,4 +1,5 @@
 import { PostMediaItem } from './post-media.interface';
+import type { ProfileMediaViolationDto } from '../../users/dto/flag-profile-media-violation.dto';
 import {
   PostAppealStatus,
   PostModerationStatus,
@@ -6,11 +7,17 @@ import {
   PostVisibility,
 } from '../enums/post.enums';
 
+export interface PostViolationFlagResponse {
+  reason: string;
+  flaggedAt: string | null;
+}
+
 export interface PostAuthorResponse {
   id: string;
   fullName: string;
   email?: string;
   avatarUrl: string | null;
+  avatarViolation?: ProfileMediaViolationDto | null;
 }
 
 export interface PostCommentResponse {
@@ -64,6 +71,7 @@ export interface PostResponse {
   moderationStatus: PostModerationStatus;
   moderationReason?: string | null;
   moderatedAt?: string | null;
+  violationFlag?: PostViolationFlagResponse | null;
   appeal?: PostAppealSummaryResponse | null;
   appeals?: PostAppealSummaryResponse[];
   reactionCount: number;

@@ -11,6 +11,8 @@ import { Friendship } from '../friends/entities/friendship.entity';
 import { FriendshipStatus } from '../friends/enums/friendship-status.enum';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
+import type { NotificationsService } from '../notifications/notifications.service';
 
 describe('UsersService - Statistics, Profile Update & Public Profile', () => {
   let usersService: UsersService;
@@ -634,5 +636,133 @@ describe('UsersService - Statistics, Profile Update & Public Profile', () => {
         role: UserRole.CLIENT,
       }),
     ).rejects.toThrow(ConflictException);
+  });
+
+  it('flags and clears avatar/cover violations, notifies user realtime, and auto-clears when profile media changes', async () => {
+    const createModerationNotice = jest.fn().mockResolvedValue({});
+    const notificationsMock = {
+      createModerationNotice,
+    } as unknown as NotificationsService;
+
+    const serviceWithNotifs = new UsersService(
+      userRepository as Repository<User>,
+      friendshipRepository as Repository<Friendship>,
+      redisServiceMock as unknown as RedisService,
+      notificationsMock,
+    );
+
+    const adminActor = {
+      id: otherFriendId,
+      email: 'admin@lyora.vn',
+      role: UserRole.ADMIN,
+    };
+
+    const userMissingAvatar = {
+      id: targetId,
+      email: 'target@lyora.vn',
+      fullName: 'Minh Anh',
+      role: UserRole.CLIENT,
+      avatarUrl: null,
+      coverUrl: null,
+      isActive: true,
+      createdAt: new Date(),
+    } as User;
+
+    (userRepository.findOne as jest.Mock).mockResolvedValueOnce(
+      userMissingAvatar,
+    );
+    await expect(
+      serviceWithNotifs.flagAvatarViolation(adminActor, targetId, {
+        reason: 'Ảnh đại diện phản cảm',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    const userWithMedia = {
+      id: targetId,
+      email: 'target@lyora.vn',
+      fullName: 'Minh Anh',
+      role: UserRole.CLIENT,
+      avatarUrl: 'https://cdn.lyora.vn/avatar-old.jpg',
+      coverUrl: 'https://cdn.lyora.vn/cover-old.jpg',
+      isActive: true,
+      isOnline: true,
+      createdAt: new Date(),
+    } as User;
+
+    (friendshipRepository.createQueryBuilder as jest.Mock).mockReturnValue(
+      createFriendshipQbMock({ many: [] }),
+    );
+    (userRepository.save as jest.Mock).mockImplementation((u: User) =>
+      Promise.resolve(u),
+    );
+    (userRepository.findOne as jest.Mock)
+      .mockResolvedValueOnce(userWithMedia)
+      .mockResolvedValueOnce(userWithMedia);
+
+    const flaggedAvatarProfile = await serviceWithNotifs.flagAvatarViolation(
+      adminActor,
+      targetId,
+      { reason: 'Ảnh đại diện chứa nội dung phản cảm' },
+    );
+
+    expect(flaggedAvatarProfile.avatarViolation).toMatchObject({
+      reason: 'Ảnh đại diện chứa nội dung phản cảm',
+      evidenceUrl: 'https://cdn.lyora.vn/avatar-old.jpg',
+    });
+    expect(createModerationNotice).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: targetId,
+        type: NotificationType.AVATAR_VIOLATION_FLAGGED,
+        targetPath: '/me',
+      }),
+    );
+
+    createModerationNotice.mockClear();
+    (userRepository.findOne as jest.Mock)
+      .mockResolvedValueOnce(userWithMedia)
+      .mockResolvedValueOnce(userWithMedia);
+
+    const flaggedCoverProfile = await serviceWithNotifs.flagCoverViolation(
+      adminActor,
+      targetId,
+      { reason: 'Ảnh bìa chứa quảng cáo spam' },
+    );
+    expect(flaggedCoverProfile.coverViolation).toMatchObject({
+      reason: 'Ảnh bìa chứa quảng cáo spam',
+      evidenceUrl: 'https://cdn.lyora.vn/cover-old.jpg',
+    });
+    expect(createModerationNotice).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: targetId,
+        type: NotificationType.COVER_VIOLATION_FLAGGED,
+        targetPath: '/me',
+      }),
+    );
+
+    // Người dùng thay đổi avatar & cover mới -> tự động gỡ cờ vi phạm
+    (userRepository.findOne as jest.Mock)
+      .mockResolvedValueOnce(userWithMedia)
+      .mockResolvedValueOnce(userWithMedia);
+    const updatedUser = await serviceWithNotifs.updateProfile(targetId, {
+      avatarUrl: 'https://cdn.lyora.vn/avatar-new.jpg',
+      coverUrl: 'https://cdn.lyora.vn/cover-new.jpg',
+    });
+    expect(updatedUser.avatarViolationReason).toBeNull();
+    expect(updatedUser.avatarViolationEvidenceUrl).toBeNull();
+    expect(updatedUser.coverViolationReason).toBeNull();
+    expect(updatedUser.coverViolationEvidenceUrl).toBeNull();
+
+    // Admin gỡ đánh dấu thủ công
+    userWithMedia.avatarViolationReason = 'Lý do cũ';
+    userWithMedia.avatarViolationEvidenceUrl =
+      'https://cdn.lyora.vn/avatar-new.jpg';
+    (userRepository.findOne as jest.Mock)
+      .mockResolvedValueOnce(userWithMedia)
+      .mockResolvedValueOnce(userWithMedia);
+    const cleared = await serviceWithNotifs.clearAvatarViolation(
+      adminActor,
+      targetId,
+    );
+    expect(cleared.avatarViolation).toBeNull();
   });
 });

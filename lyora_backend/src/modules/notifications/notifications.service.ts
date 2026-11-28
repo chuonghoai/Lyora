@@ -13,7 +13,10 @@ export interface CreateModerationNoticeParams {
     | NotificationType.POST_REMOVED
     | NotificationType.COMMENT_REMOVED
     | NotificationType.POST_APPEAL_SUBMITTED
-    | NotificationType.POST_APPEAL_REJECTED;
+    | NotificationType.POST_APPEAL_REJECTED
+    | NotificationType.POST_VIOLATION_FLAGGED
+    | NotificationType.AVATAR_VIOLATION_FLAGGED
+    | NotificationType.COVER_VIOLATION_FLAGGED;
   title: string;
   description: string;
   targetPath?: string | null;

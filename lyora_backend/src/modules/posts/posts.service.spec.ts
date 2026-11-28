@@ -866,4 +866,64 @@ describe('PostsService (Real DB Data & Empty State)', () => {
       }),
     ).rejects.toThrow(BadRequestException);
   });
+
+  it('findAllPaginated exposes post violationFlag and author avatarViolation for viewers', async () => {
+    const postId = '88888888-8888-4888-8888-888888888888';
+    const otherAuthorId = '99999999-9999-4999-8999-999999999999';
+    const flaggedAt = new Date('2026-11-28T09:00:00.000Z');
+    const avatarFlaggedAt = new Date('2026-11-28T08:30:00.000Z');
+
+    const flaggedPost = {
+      id: postId,
+      authorId: otherAuthorId,
+      author: {
+        id: otherAuthorId,
+        fullName: 'Thành viên vi phạm',
+        email: 'vipham@lyora.vn',
+        avatarUrl: 'https://cdn.lyora.vn/bad-avatar.jpg',
+        avatarViolationReason: 'Ảnh đại diện phản cảm',
+        avatarViolationFlaggedAt: avatarFlaggedAt,
+        avatarViolationEvidenceUrl: 'https://cdn.lyora.vn/bad-avatar.jpg',
+      },
+      content: 'Nội dung bị gắn cờ vi phạm',
+      visibility: PostVisibility.PUBLIC,
+      media: [],
+      taggedUserIds: null,
+      moderationStatus: PostModerationStatus.ACTIVE,
+      isViolationFlagged: true,
+      violationReason: 'Thông tin sai sự thật',
+      violationFlaggedAt: flaggedAt,
+      reactionsCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      createdAt: new Date('2026-11-28T08:00:00.000Z'),
+      updatedAt: new Date('2026-11-28T09:00:00.000Z'),
+    } as unknown as Post;
+
+    const qbMock = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[flaggedPost], 1]),
+    };
+    (postRepo.createQueryBuilder as jest.Mock).mockReturnValue(qbMock);
+
+    const res = await service.findAllPaginated(currentUser, {
+      page: 1,
+      limit: 5,
+    });
+
+    expect(res.items[0]?.violationFlag).toEqual({
+      reason: 'Thông tin sai sự thật',
+      flaggedAt: flaggedAt.toISOString(),
+    });
+    expect(res.items[0]?.author.avatarViolation).toEqual({
+      reason: 'Ảnh đại diện phản cảm',
+      flaggedAt: avatarFlaggedAt.toISOString(),
+      evidenceUrl: 'https://cdn.lyora.vn/bad-avatar.jpg',
+    });
+  });
 });

@@ -18,6 +18,7 @@ import type { AuthenticatedUser } from '../../common/interfaces/authenticated-us
 import { VietnameseParseUUIDPipe } from '../../common/pipes/vietnamese-parse-uuid.pipe';
 import { AdminPostQueryDto } from './dto/admin-post-query.dto';
 import {
+  FlagPostViolationDto,
   HidePostModerationDto,
   RemoveModerationReasonDto,
 } from './dto/moderate-post.dto';
@@ -102,6 +103,25 @@ export class AdminPostsController {
     @Param('id', VietnameseParseUUIDPipe) id: string,
   ) {
     return this.adminPostsService.restorePost(adminUser, id);
+  }
+
+  @Patch(':id/flag-violation')
+  @ResponseMessage('Đã đánh dấu vi phạm bài viết và gửi thông báo cho tác giả')
+  async flagViolation(
+    @CurrentUser() adminUser: AuthenticatedUser,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+    @Body() dto: FlagPostViolationDto,
+  ) {
+    return this.adminPostsService.flagPostViolation(adminUser, id, dto);
+  }
+
+  @Patch(':id/unflag-violation')
+  @ResponseMessage('Đã gỡ đánh dấu vi phạm bài viết')
+  async unflagViolation(
+    @CurrentUser() adminUser: AuthenticatedUser,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+  ) {
+    return this.adminPostsService.unflagPostViolation(adminUser, id);
   }
 
   @Delete(':id')

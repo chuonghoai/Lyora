@@ -606,4 +606,32 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
       }),
     );
   });
+
+  it('flagPostViolation flags post, sends POST_VIOLATION_FLAGGED realtime notice, and unflagPostViolation clears it', async () => {
+    const { service, findOnePost, savePost, createModerationNotice } =
+      setupService();
+    const memberPost = createFixture(memberId);
+    findOnePost.mockResolvedValue(memberPost);
+    savePost.mockImplementation((entity: Post) => Promise.resolve(entity));
+
+    const flagged = await service.flagPostViolation(adminUser, postId, {
+      reason: 'Bài viết chứa thông tin sai lệch',
+    });
+
+    expect(savePost).toHaveBeenCalledTimes(1);
+    expect(flagged.violationFlag).toMatchObject({
+      reason: 'Bài viết chứa thông tin sai lệch',
+    });
+    expect(createModerationNotice).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: memberId,
+        actorId: adminUser.id,
+        type: NotificationType.POST_VIOLATION_FLAGGED,
+        targetPath: `/post/${postId}`,
+      }),
+    );
+
+    const unflagged = await service.unflagPostViolation(adminUser, postId);
+    expect(unflagged.violationFlag).toBeNull();
+  });
 });

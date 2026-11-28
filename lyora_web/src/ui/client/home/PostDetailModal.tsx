@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDateTime, formatRelativeTime } from '@/core';
+import {
+  AvatarViolationButton,
+  PostViolationBadge,
+  ViolationDetailModal,
+  type ViolationModalTarget,
+} from '@/ui/shared/ViolationIndicators';
 import type { PostFeedController } from './post-feed.controller';
 import {
   PostAvatarChip,
@@ -17,6 +23,8 @@ export interface PostDetailModalProps {
 }
 
 export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) => {
+  const [violationModalTarget, setViolationModalTarget] =
+    useState<ViolationModalTarget | null>(null);
   const post = controller.detailPost;
   if (!post || typeof document === 'undefined') {
     return null;
@@ -58,14 +66,37 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) 
           {/* Thông tin tác giả */}
           <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5">
             <div className="flex items-center gap-3 min-w-0">
-              <button
-                type="button"
-                onClick={() => controller.handleOpenUserProfile(post.author.id)}
-                aria-label={`Xem hồ sơ của ${post.author.fullName}`}
-                className="shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                <PostAvatarChip name={post.author.fullName} avatarUrl={post.author.avatarUrl} />
-              </button>
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => controller.handleOpenUserProfile(post.author.id)}
+                  aria-label={`Xem hồ sơ của ${post.author.fullName}`}
+                  className="block rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <PostAvatarChip
+                    name={post.author.fullName}
+                    avatarUrl={post.author.avatarUrl}
+                    avatarViolation={post.author.avatarViolation}
+                  />
+                </button>
+                {post.author.avatarViolation && (
+                  <AvatarViolationButton
+                    size="sm"
+                    onClick={() =>
+                      setViolationModalTarget({
+                        kind: 'AVATAR',
+                        subjectName: post.author.fullName,
+                        reason: post.author.avatarViolation!.reason,
+                        flaggedAt: post.author.avatarViolation!.flaggedAt,
+                        evidenceUrl:
+                          post.author.avatarViolation!.evidenceUrl ??
+                          post.author.avatarUrl ??
+                          null,
+                      })
+                    }
+                  />
+                )}
+              </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
@@ -79,6 +110,20 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) 
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-primary-active">
                       Bạn
                     </span>
+                  )}
+                  {post.violationFlag && (
+                    <PostViolationBadge
+                      onClick={() =>
+                        setViolationModalTarget({
+                          kind: 'POST',
+                          postId: post.id,
+                          subjectName: post.author.fullName,
+                          reason: post.violationFlag!.reason,
+                          flaggedAt: post.violationFlag!.flaggedAt,
+                          postExcerpt: post.content,
+                        })
+                      }
+                    />
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
@@ -144,7 +189,11 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) 
                 Chưa có bình luận nào. Hãy gửi bình luận đầu tiên của bạn bên dưới!
               </p>
             ) : (
-              <PostCommentsList comments={post.comments} controller={controller} />
+              <PostCommentsList
+                comments={post.comments}
+                controller={controller}
+                onInspectViolation={setViolationModalTarget}
+              />
             )}
           </section>
         </div>
@@ -163,6 +212,10 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) 
           />
         </footer>
       </article>
+      <ViolationDetailModal
+        target={violationModalTarget}
+        onClose={() => setViolationModalTarget(null)}
+      />
     </div>,
     document.body,
   );

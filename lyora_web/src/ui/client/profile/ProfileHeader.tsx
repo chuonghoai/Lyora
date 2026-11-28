@@ -16,13 +16,22 @@ import {
   UserPlusIcon,
   UsersIcon,
 } from '../home/ClientIcons';
+import {
+  AvatarViolationButton,
+  CoverViolationButton,
+  type ViolationModalTarget,
+} from '@/ui/shared/ViolationIndicators';
 import type { ProfileController } from './profile.controller';
 
 export interface ProfileHeaderProps {
   controller: ProfileController;
+  onInspectViolation?: (target: ViolationModalTarget) => void;
 }
 
-export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
+export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
+  controller,
+  onInspectViolation,
+}) => {
   const profile = controller.profile;
   if (!profile) return null;
 
@@ -39,12 +48,34 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
       className="rounded-2xl border border-border bg-card shadow-sm overflow-visible"
     >
       {/* Ảnh bìa */}
-      <div className="relative h-44 sm:h-56 lg:h-64 w-full overflow-hidden rounded-t-2xl bg-secondary border-b border-border">
+      <div
+        className={`relative h-44 sm:h-56 lg:h-64 w-full overflow-hidden rounded-t-2xl bg-secondary border-b ${
+          profile.coverViolation
+            ? 'border-error ring-2 ring-inset ring-error'
+            : 'border-border'
+        }`}
+      >
         {profile.coverUrl && (
           <AppImage
             src={profile.coverUrl}
             alt={`Ảnh bìa của ${displayName}`}
             className="h-full w-full rounded-none object-cover"
+          />
+        )}
+
+        {profile.coverViolation && onInspectViolation && (
+          <CoverViolationButton
+            onClick={() =>
+              onInspectViolation({
+                kind: 'COVER',
+                subjectName: displayName,
+                reason: profile.coverViolation!.reason,
+                flaggedAt: profile.coverViolation!.flaggedAt,
+                evidenceUrl:
+                  profile.coverViolation!.evidenceUrl ?? profile.coverUrl ?? null,
+              })
+            }
+            className="absolute right-4 top-4 z-20"
           />
         )}
 
@@ -71,12 +102,36 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ controller }) => {
                   src={profile.avatarUrl}
                   alt={displayName}
                   rounded
-                  className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-card bg-secondary shadow-sm"
+                  className={`h-24 w-24 sm:h-32 sm:w-32 border-4 border-card bg-secondary shadow-sm ${
+                    profile.avatarViolation ? 'ring-[3px] ring-error' : ''
+                  }`}
                 />
               ) : (
-                <span className="grid h-24 w-24 sm:h-32 sm:w-32 place-items-center rounded-full border-4 border-card bg-secondary text-2xl sm:text-3xl font-bold text-primary-active shadow-sm">
+                <span
+                  className={`grid h-24 w-24 sm:h-32 sm:w-32 place-items-center rounded-full border-4 border-card bg-secondary text-2xl sm:text-3xl font-bold text-primary-active shadow-sm ${
+                    profile.avatarViolation ? 'ring-[3px] ring-error' : ''
+                  }`}
+                >
                   {initials}
                 </span>
+              )}
+
+              {profile.avatarViolation && onInspectViolation && (
+                <AvatarViolationButton
+                  size="lg"
+                  onClick={() =>
+                    onInspectViolation({
+                      kind: 'AVATAR',
+                      subjectName: displayName,
+                      reason: profile.avatarViolation!.reason,
+                      flaggedAt: profile.avatarViolation!.flaggedAt,
+                      evidenceUrl:
+                        profile.avatarViolation!.evidenceUrl ??
+                        profile.avatarUrl ??
+                        null,
+                    })
+                  }
+                />
               )}
 
               {!controller.isOwnProfile && profile.isOnline && (

@@ -6,6 +6,7 @@ import type {
   AdminUsersSummaryCounts,
   AdminUserSummaryItem,
   CreateAdminUserPayload,
+  FlagProfileMediaViolationPayload,
   LockUserPayload,
   UpdateUserProfilePayload,
   UserStatistics,
@@ -23,6 +24,16 @@ export interface IUserRepository {
   createUser(payload: CreateAdminUserPayload): Promise<ApiResponse<AdminUserSummaryItem>>;
   lockUser(userId: string, payload: LockUserPayload): Promise<ApiResponse<AdminUserSummaryItem>>;
   unlockUser(userId: string): Promise<ApiResponse<AdminUserSummaryItem>>;
+  flagAvatarViolation(
+    userId: string,
+    payload: FlagProfileMediaViolationPayload,
+  ): Promise<ApiResponse<AdminUserDetail>>;
+  clearAvatarViolation(userId: string): Promise<ApiResponse<AdminUserDetail>>;
+  flagCoverViolation(
+    userId: string,
+    payload: FlagProfileMediaViolationPayload,
+  ): Promise<ApiResponse<AdminUserDetail>>;
+  clearCoverViolation(userId: string): Promise<ApiResponse<AdminUserDetail>>;
 }
 
 export class UserRepository implements IUserRepository {
@@ -96,6 +107,50 @@ export class UserRepository implements IUserRepository {
       ApiResponse<AdminUserSummaryItem>
     >(
       `${CORE_CONSTANTS.API_ENDPOINTS.USERS}/${encodeURIComponent(userId)}/unlock`,
+    );
+  }
+
+  async flagAvatarViolation(
+    userId: string,
+    payload: FlagProfileMediaViolationPayload,
+  ): Promise<ApiResponse<AdminUserDetail>> {
+    return apiClient.patch<
+      ApiResponse<AdminUserDetail>,
+      ApiResponse<AdminUserDetail>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.USERS}/${encodeURIComponent(userId)}/avatar-violation`,
+      payload,
+    );
+  }
+
+  async clearAvatarViolation(userId: string): Promise<ApiResponse<AdminUserDetail>> {
+    return apiClient.patch<
+      ApiResponse<AdminUserDetail>,
+      ApiResponse<AdminUserDetail>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.USERS}/${encodeURIComponent(userId)}/avatar-violation/clear`,
+    );
+  }
+
+  async flagCoverViolation(
+    userId: string,
+    payload: FlagProfileMediaViolationPayload,
+  ): Promise<ApiResponse<AdminUserDetail>> {
+    return apiClient.patch<
+      ApiResponse<AdminUserDetail>,
+      ApiResponse<AdminUserDetail>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.USERS}/${encodeURIComponent(userId)}/cover-violation`,
+      payload,
+    );
+  }
+
+  async clearCoverViolation(userId: string): Promise<ApiResponse<AdminUserDetail>> {
+    return apiClient.patch<
+      ApiResponse<AdminUserDetail>,
+      ApiResponse<AdminUserDetail>
+    >(
+      `${CORE_CONSTANTS.API_ENDPOINTS.USERS}/${encodeURIComponent(userId)}/cover-violation/clear`,
     );
   }
 }

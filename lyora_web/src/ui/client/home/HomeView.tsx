@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AppImage,
@@ -11,6 +11,11 @@ import {
   LoadingState,
 } from '@/core';
 import { getClientProfilePath } from '@/routes/paths';
+import {
+  AvatarViolationButton,
+  ViolationDetailModal,
+  type ViolationModalTarget,
+} from '@/ui/shared/ViolationIndicators';
 import { useHomeController } from './home.controller';
 import { PostComposer } from './PostComposer';
 import { PostCard } from './PostCard';
@@ -52,6 +57,8 @@ const PostSkeletonCard: React.FC = () => (
 
 export default function HomeView(): React.ReactElement {
   const controller = useHomeController();
+  const [violationModalTarget, setViolationModalTarget] =
+    useState<ViolationModalTarget | null>(null);
   const profileUser = controller.profileUser;
   const displayName = profileUser?.fullName?.trim() || 'Thành viên Lyora';
   const initials = displayName.charAt(0).toUpperCase();
@@ -61,23 +68,57 @@ export default function HomeView(): React.ReactElement {
       {/* CỘT TRÁI: Hồ sơ & Thông tin cá nhân */}
       <aside className="hidden lg:block sticky top-20 space-y-4">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3.5">
-          <Link
-            to={getClientProfilePath(profileUser?.id)}
-            className="group flex items-center gap-3 rounded-xl p-1 -m-1 hover:bg-background/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            {profileUser?.avatarUrl ? (
-              <AppImage
-                src={profileUser.avatarUrl}
-                alt={displayName}
-                rounded
-                className="h-14 w-14 shrink-0 border border-border"
-              />
-            ) : (
-              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-secondary text-lg font-bold text-primary-active border border-border">
-                {initials}
-              </span>
-            )}
-            <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="relative shrink-0">
+              <Link
+                to={getClientProfilePath(profileUser?.id)}
+                className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                {profileUser?.avatarUrl ? (
+                  <AppImage
+                    src={profileUser.avatarUrl}
+                    alt={displayName}
+                    rounded
+                    className={`h-14 w-14 shrink-0 ${
+                      profileUser.avatarViolation
+                        ? 'border border-error ring-2 ring-error ring-offset-1 ring-offset-card'
+                        : 'border border-border'
+                    }`}
+                  />
+                ) : (
+                  <span
+                    className={`grid h-14 w-14 shrink-0 place-items-center rounded-full bg-secondary text-lg font-bold text-primary-active ${
+                      profileUser?.avatarViolation
+                        ? 'border border-error ring-2 ring-error ring-offset-1 ring-offset-card'
+                        : 'border border-border'
+                    }`}
+                  >
+                    {initials}
+                  </span>
+                )}
+              </Link>
+              {profileUser?.avatarViolation && (
+                <AvatarViolationButton
+                  size="md"
+                  onClick={() =>
+                    setViolationModalTarget({
+                      kind: 'AVATAR',
+                      subjectName: displayName,
+                      reason: profileUser.avatarViolation!.reason,
+                      flaggedAt: profileUser.avatarViolation!.flaggedAt,
+                      evidenceUrl:
+                        profileUser.avatarViolation!.evidenceUrl ??
+                        profileUser.avatarUrl ??
+                        null,
+                    })
+                  }
+                />
+              )}
+            </div>
+            <Link
+              to={getClientProfilePath(profileUser?.id)}
+              className="group min-w-0 flex-1 rounded-lg p-1 -m-1 hover:bg-background/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
               <p className="text-sm font-bold text-foreground group-hover:text-primary group-hover:underline truncate">
                 {displayName}
               </p>
@@ -86,8 +127,8 @@ export default function HomeView(): React.ReactElement {
                 <span className="h-1.5 w-1.5 rounded-full bg-success" />
                 Đang hoạt động
               </span>
-            </div>
-          </Link>
+            </Link>
+          </div>
 
           {profileUser?.bio && (
             <p className="text-xs text-muted leading-relaxed border-t border-border pt-2.5">
@@ -543,6 +584,10 @@ export default function HomeView(): React.ReactElement {
         isSubmitting={controller.isSubmittingAppeal}
         onClose={controller.handleCloseAppealModal}
         onSubmitAppeal={controller.handleSubmitPostAppeal}
+      />
+      <ViolationDetailModal
+        target={violationModalTarget}
+        onClose={() => setViolationModalTarget(null)}
       />
     </div>
   );

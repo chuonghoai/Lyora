@@ -1,4 +1,5 @@
 import type { PaginationMeta } from '@/core';
+import { flagProfileMediaViolationSchema } from '../models/admin-user.model';
 import { userRepository, type IUserRepository } from '../repositories/user.repository';
 import type {
   AdminOnlineStatusResponse,
@@ -8,6 +9,7 @@ import type {
   AdminUsersSummaryCounts,
   AdminUserSummaryItem,
   CreateAdminUserPayload,
+  FlagProfileMediaViolationPayload,
   LockUserPayload,
   UpdateUserProfilePayload,
   UserProfile,
@@ -25,6 +27,16 @@ export interface IUserService {
   createUser(payload: CreateAdminUserPayload): Promise<AdminUserSummaryItem>;
   lockUser(userId: string, payload: LockUserPayload): Promise<AdminUserSummaryItem>;
   unlockUser(userId: string): Promise<AdminUserSummaryItem>;
+  flagAvatarViolation(
+    userId: string,
+    payload: FlagProfileMediaViolationPayload,
+  ): Promise<AdminUserDetail>;
+  clearAvatarViolation(userId: string): Promise<AdminUserDetail>;
+  flagCoverViolation(
+    userId: string,
+    payload: FlagProfileMediaViolationPayload,
+  ): Promise<AdminUserDetail>;
+  clearCoverViolation(userId: string): Promise<AdminUserDetail>;
 }
 
 const EMPTY_SUMMARY: AdminUsersSummaryCounts = {
@@ -126,6 +138,48 @@ export class UserService implements IUserService {
       password: payload.password,
       role: payload.role,
     });
+    return response.data;
+  }
+
+  async flagAvatarViolation(
+    userId: string,
+    payload: FlagProfileMediaViolationPayload,
+  ): Promise<AdminUserDetail> {
+    const parsed = flagProfileMediaViolationSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Lý do đánh dấu vi phạm chưa hợp lệ',
+      );
+    }
+    const response = await this.repository.flagAvatarViolation(userId.trim(), {
+      reason: parsed.data.reason,
+    });
+    return response.data;
+  }
+
+  async clearAvatarViolation(userId: string): Promise<AdminUserDetail> {
+    const response = await this.repository.clearAvatarViolation(userId.trim());
+    return response.data;
+  }
+
+  async flagCoverViolation(
+    userId: string,
+    payload: FlagProfileMediaViolationPayload,
+  ): Promise<AdminUserDetail> {
+    const parsed = flagProfileMediaViolationSchema.safeParse(payload);
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Lý do đánh dấu vi phạm chưa hợp lệ',
+      );
+    }
+    const response = await this.repository.flagCoverViolation(userId.trim(), {
+      reason: parsed.data.reason,
+    });
+    return response.data;
+  }
+
+  async clearCoverViolation(userId: string): Promise<AdminUserDetail> {
+    const response = await this.repository.clearCoverViolation(userId.trim());
     return response.data;
   }
 }

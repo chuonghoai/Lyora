@@ -152,6 +152,11 @@ export function useClientLayoutController() {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
+    if (!isAuthenticated) {
+      document.documentElement.style.fontSize = "";
+      document.documentElement.classList.remove("motion-reduce");
+      return;
+    }
     document.documentElement.style.fontSize =
       fontScale === "large" ? "17.5px" : "";
     document.documentElement.classList.toggle("motion-reduce", reduceMotion);
@@ -159,7 +164,7 @@ export function useClientLayoutController() {
       fontScale,
       reduceMotion,
     });
-  }, [fontScale, reduceMotion]);
+  }, [fontScale, isAuthenticated, reduceMotion]);
 
   const triggerRefreshSession = refreshSessionMutation.mutate;
   useEffect(() => {
@@ -208,6 +213,16 @@ export function useClientLayoutController() {
           typeof event.payload.type === "string"
             ? event.payload.type
             : null;
+        const notificationTitle =
+          event &&
+          typeof event === "object" &&
+          "payload" in event &&
+          event.payload &&
+          typeof event.payload === "object" &&
+          "title" in event.payload &&
+          typeof event.payload.title === "string"
+            ? event.payload.title
+            : null;
 
         if (
           !notificationType ||
@@ -221,10 +236,33 @@ export function useClientLayoutController() {
           notificationType === "POST_RESTORED" ||
           notificationType === "POST_REMOVED" ||
           notificationType === "COMMENT_REMOVED" ||
-          notificationType === "POST_APPEAL_REJECTED"
+          notificationType === "POST_APPEAL_REJECTED" ||
+          notificationType === "POST_VIOLATION_FLAGGED"
         ) {
           void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
           void queryClient.invalidateQueries({ queryKey: postKeys.details() });
+        }
+        if (notificationType === "POST_VIOLATION_FLAGGED") {
+          toast.error(
+            notificationTitle ?? "Một bài viết của bạn vừa bị đánh dấu vi phạm.",
+          );
+        }
+        if (
+          notificationType === "AVATAR_VIOLATION_FLAGGED" ||
+          notificationType === "COVER_VIOLATION_FLAGGED"
+        ) {
+          void queryClient.invalidateQueries({
+            queryKey: ["users", "profile-page"],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: ["users", "profile"],
+          });
+          void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+          void queryClient.invalidateQueries({ queryKey: postKeys.details() });
+          triggerRefreshSession();
+          toast.error(
+            notificationTitle ?? "Hồ sơ của bạn vừa nhận được cảnh báo vi phạm mới.",
+          );
         }
       },
     );

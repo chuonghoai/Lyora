@@ -38,6 +38,12 @@ import {
 } from '../home/PostCard';
 import { PostReactionsModal } from '../home/PostReactionsModal';
 import { PostAppealModal } from '../profile/PostAppealModal';
+import {
+  AvatarViolationButton,
+  PostViolationBadge,
+  ViolationDetailModal,
+  type ViolationModalTarget,
+} from '@/ui/shared/ViolationIndicators';
 import { useClientPostDetailController } from './post-detail.controller';
 
 function renderAppealStatusPill(appeal: PostAppealSummary) {
@@ -67,20 +73,47 @@ const CommentNode: React.FC<{
   isReply?: boolean;
   onInspectAuthor: (userId: string) => void;
   onOpenLightbox: (items: PostComment['media'][], index: number) => void;
-}> = ({ comment, isReply = false, onInspectAuthor, onOpenLightbox }) => (
+  onInspectViolation?: (target: ViolationModalTarget) => void;
+}> = ({
+  comment,
+  isReply = false,
+  onInspectAuthor,
+  onOpenLightbox,
+  onInspectViolation,
+}) => (
   <div className="flex items-start gap-2.5">
-    <button
-      type="button"
-      onClick={() => onInspectAuthor(comment.author.id)}
-      aria-label={`Xem hồ sơ của ${comment.author.fullName}`}
-      className="mt-0.5 shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-    >
-      <PostAvatarChip
-        name={comment.author.fullName}
-        avatarUrl={comment.author.avatarUrl}
-        sizeClass={isReply ? 'h-7 w-7 text-[11px]' : 'h-8 w-8 text-xs'}
-      />
-    </button>
+    <div className="relative mt-0.5 shrink-0">
+      <button
+        type="button"
+        onClick={() => onInspectAuthor(comment.author.id)}
+        aria-label={`Xem hồ sơ của ${comment.author.fullName}`}
+        className="block rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
+        <PostAvatarChip
+          name={comment.author.fullName}
+          avatarUrl={comment.author.avatarUrl}
+          avatarViolation={comment.author.avatarViolation}
+          sizeClass={isReply ? 'h-7 w-7 text-[11px]' : 'h-8 w-8 text-xs'}
+        />
+      </button>
+      {comment.author.avatarViolation && onInspectViolation && (
+        <AvatarViolationButton
+          size="sm"
+          onClick={() =>
+            onInspectViolation({
+              kind: 'AVATAR',
+              subjectName: comment.author.fullName,
+              reason: comment.author.avatarViolation!.reason,
+              flaggedAt: comment.author.avatarViolation!.flaggedAt,
+              evidenceUrl:
+                comment.author.avatarViolation!.evidenceUrl ??
+                comment.author.avatarUrl ??
+                null,
+            })
+          }
+        />
+      )}
+    </div>
 
     <div className="min-w-0 flex-1">
       <div className="inline-block max-w-full rounded-2xl border border-border bg-background/70 px-3.5 py-2">
@@ -138,6 +171,8 @@ const CommentNode: React.FC<{
 export const ClientPostDetailView: React.FC = () => {
   const controller = useClientPostDetailController();
   const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
+  const [violationModalTarget, setViolationModalTarget] =
+    useState<ViolationModalTarget | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -327,18 +362,38 @@ export const ClientPostDetailView: React.FC = () => {
         {/* Author Header */}
         <header className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-6 sm:pt-5">
           <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={() => controller.handleOpenUserProfile(post.author.id)}
-              aria-label={`Xem hồ sơ của ${post.author.fullName}`}
-              className="shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              <PostAvatarChip
-                name={post.author.fullName}
-                avatarUrl={post.author.avatarUrl}
-                sizeClass="h-11 w-11 text-sm"
-              />
-            </button>
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => controller.handleOpenUserProfile(post.author.id)}
+                aria-label={`Xem hồ sơ của ${post.author.fullName}`}
+                className="block rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <PostAvatarChip
+                  name={post.author.fullName}
+                  avatarUrl={post.author.avatarUrl}
+                  avatarViolation={post.author.avatarViolation}
+                  sizeClass="h-11 w-11 text-sm"
+                />
+              </button>
+              {post.author.avatarViolation && (
+                <AvatarViolationButton
+                  size="sm"
+                  onClick={() =>
+                    setViolationModalTarget({
+                      kind: 'AVATAR',
+                      subjectName: post.author.fullName,
+                      reason: post.author.avatarViolation!.reason,
+                      flaggedAt: post.author.avatarViolation!.flaggedAt,
+                      evidenceUrl:
+                        post.author.avatarViolation!.evidenceUrl ??
+                        post.author.avatarUrl ??
+                        null,
+                    })
+                  }
+                />
+              )}
+            </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -353,6 +408,20 @@ export const ClientPostDetailView: React.FC = () => {
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-primary-active">
                     Bạn
                   </span>
+                )}
+                {post.violationFlag && (
+                  <PostViolationBadge
+                    onClick={() =>
+                      setViolationModalTarget({
+                        kind: 'POST',
+                        postId: post.id,
+                        subjectName: post.author.fullName,
+                        reason: post.violationFlag!.reason,
+                        flaggedAt: post.violationFlag!.flaggedAt,
+                        postExcerpt: post.content,
+                      })
+                    }
+                  />
                 )}
               </div>
 
@@ -758,6 +827,7 @@ export const ClientPostDetailView: React.FC = () => {
                     <CommentNode
                       comment={root}
                       onInspectAuthor={controller.handleOpenUserProfile}
+                      onInspectViolation={setViolationModalTarget}
                       onOpenLightbox={(items, idx) =>
                         controller.handleOpenLightbox(
                           items.filter(
@@ -775,6 +845,7 @@ export const ClientPostDetailView: React.FC = () => {
                             comment={reply}
                             isReply
                             onInspectAuthor={controller.handleOpenUserProfile}
+                            onInspectViolation={setViolationModalTarget}
                             onOpenLightbox={(items, idx) =>
                               controller.handleOpenLightbox(
                                 items.filter(
@@ -840,6 +911,10 @@ export const ClientPostDetailView: React.FC = () => {
         isSubmitting={controller.isSubmittingAppeal}
         onClose={controller.handleCloseAppealModal}
         onSubmitAppeal={controller.handleSubmitPostAppeal}
+      />
+      <ViolationDetailModal
+        target={violationModalTarget}
+        onClose={() => setViolationModalTarget(null)}
       />
     </div>
   );

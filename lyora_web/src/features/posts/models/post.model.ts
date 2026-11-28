@@ -170,6 +170,16 @@ export const hidePostModerationSchema = z.object({
 
 export type HidePostModerationFormValues = z.infer<typeof hidePostModerationSchema>;
 
+export const flagPostViolationSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(5, 'Vui lòng nhập lý do đánh dấu vi phạm tối thiểu 5 ký tự')
+    .max(500, 'Lý do đánh dấu vi phạm tối đa 500 ký tự'),
+});
+
+export type FlagPostViolationFormValues = z.infer<typeof flagPostViolationSchema>;
+
 export const removeModerationReasonSchema = z.object({
   reason: z
     .string()

@@ -6,7 +6,14 @@ import {
   formatDateTime,
   formatRelativeTime,
   useClickOutside,
+  type MediaViolationInfo,
 } from '@/core';
+import {
+  AvatarViolationButton,
+  PostViolationBadge,
+  ViolationDetailModal,
+  type ViolationModalTarget,
+} from '@/ui/shared/ViolationIndicators';
 import {
   getReactionMeta,
   getTopReactions,
@@ -72,7 +79,8 @@ export const PostAvatarChip: React.FC<{
   name: string;
   avatarUrl?: string | null;
   sizeClass?: string;
-}> = ({ name, avatarUrl, sizeClass = 'h-10 w-10 text-sm' }) => {
+  avatarViolation?: MediaViolationInfo | null;
+}> = ({ name, avatarUrl, sizeClass = 'h-10 w-10 text-sm', avatarViolation }) => {
   const initials =
     name
       .trim()
@@ -81,20 +89,24 @@ export const PostAvatarChip: React.FC<{
       .map((part) => part.charAt(0).toUpperCase())
       .join('') || 'L';
 
+  const borderClass = avatarViolation
+    ? 'border border-error ring-2 ring-error ring-offset-1 ring-offset-card'
+    : 'border border-border';
+
   if (avatarUrl) {
     return (
       <AppImage
         src={avatarUrl}
         alt={name}
         rounded
-        className={`${sizeClass} shrink-0 border border-border`}
+        className={`${sizeClass} shrink-0 ${borderClass}`}
       />
     );
   }
 
   return (
     <span
-      className={`grid shrink-0 place-items-center rounded-full bg-secondary font-bold text-primary-active border border-border ${sizeClass}`}
+      className={`grid shrink-0 place-items-center rounded-full bg-secondary font-bold text-primary-active ${borderClass} ${sizeClass}`}
     >
       {initials}
     </span>
@@ -727,25 +739,46 @@ export const PostCommentForm: React.FC<{
 export const PostCommentsList: React.FC<{
   comments: Post['comments'];
   controller: PostFeedController;
-}> = ({ comments, controller }) => {
+  onInspectViolation?: (target: ViolationModalTarget) => void;
+}> = ({ comments, controller, onInspectViolation }) => {
   if (comments.length === 0) return null;
 
   return (
     <ul className="space-y-2.5">
       {comments.map((comment) => (
         <li key={comment.id} className="flex items-start gap-2.5">
-          <button
-            type="button"
-            onClick={() => controller.handleOpenUserProfile(comment.author.id)}
-            aria-label={`Xem hồ sơ của ${comment.author.fullName}`}
-            className="mt-0.5 shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <PostAvatarChip
-              name={comment.author.fullName}
-              avatarUrl={comment.author.avatarUrl}
-              sizeClass="h-8 w-8 text-xs"
-            />
-          </button>
+          <div className="relative mt-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => controller.handleOpenUserProfile(comment.author.id)}
+              aria-label={`Xem hồ sơ của ${comment.author.fullName}`}
+              className="block rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <PostAvatarChip
+                name={comment.author.fullName}
+                avatarUrl={comment.author.avatarUrl}
+                avatarViolation={comment.author.avatarViolation}
+                sizeClass="h-8 w-8 text-xs"
+              />
+            </button>
+            {comment.author.avatarViolation && onInspectViolation && (
+              <AvatarViolationButton
+                size="sm"
+                onClick={() =>
+                  onInspectViolation({
+                    kind: 'AVATAR',
+                    subjectName: comment.author.fullName,
+                    reason: comment.author.avatarViolation!.reason,
+                    flaggedAt: comment.author.avatarViolation!.flaggedAt,
+                    evidenceUrl:
+                      comment.author.avatarViolation!.evidenceUrl ??
+                      comment.author.avatarUrl ??
+                      null,
+                  })
+                }
+              />
+            )}
+          </div>
           <div className="min-w-0 flex-1">
             <div className="inline-block max-w-full rounded-2xl bg-card border border-border px-3.5 py-2">
               <button
@@ -805,6 +838,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 }) => {
   const [isContentExpanded, setIsContentExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [violationModalTarget, setViolationModalTarget] =
+    useState<ViolationModalTarget | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
   useClickOutside(menuRef, () => setIsMenuOpen(false));
@@ -860,14 +895,37 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Header Tác giả */}
       <header className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
         <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={() => controller.handleOpenUserProfile(post.author.id)}
-            aria-label={`Xem hồ sơ của ${post.author.fullName}`}
-            className="shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <PostAvatarChip name={post.author.fullName} avatarUrl={post.author.avatarUrl} />
-          </button>
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => controller.handleOpenUserProfile(post.author.id)}
+              aria-label={`Xem hồ sơ của ${post.author.fullName}`}
+              className="block rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <PostAvatarChip
+                name={post.author.fullName}
+                avatarUrl={post.author.avatarUrl}
+                avatarViolation={post.author.avatarViolation}
+              />
+            </button>
+            {post.author.avatarViolation && (
+              <AvatarViolationButton
+                size="sm"
+                onClick={() =>
+                  setViolationModalTarget({
+                    kind: 'AVATAR',
+                    subjectName: post.author.fullName,
+                    reason: post.author.avatarViolation!.reason,
+                    flaggedAt: post.author.avatarViolation!.flaggedAt,
+                    evidenceUrl:
+                      post.author.avatarViolation!.evidenceUrl ??
+                      post.author.avatarUrl ??
+                      null,
+                  })
+                }
+              />
+            )}
+          </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -882,6 +940,20 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-primary-active">
                   Bạn
                 </span>
+              )}
+              {post.violationFlag && (
+                <PostViolationBadge
+                  onClick={() =>
+                    setViolationModalTarget({
+                      kind: 'POST',
+                      postId: post.id,
+                      subjectName: post.author.fullName,
+                      reason: post.violationFlag!.reason,
+                      flaggedAt: post.violationFlag!.flaggedAt,
+                      postExcerpt: post.content,
+                    })
+                  }
+                />
               )}
             </div>
 
@@ -1217,7 +1289,11 @@ export const PostCard: React.FC<PostCardProps> = ({
           </button>
         )}
 
-        <PostCommentsList comments={visibleComments} controller={controller} />
+        <PostCommentsList
+          comments={visibleComments}
+          controller={controller}
+          onInspectViolation={setViolationModalTarget}
+        />
 
         <PostCommentForm
           postId={post.id}
@@ -1225,6 +1301,11 @@ export const PostCard: React.FC<PostCardProps> = ({
           controller={controller}
         />
       </section>
+
+      <ViolationDetailModal
+        target={violationModalTarget}
+        onClose={() => setViolationModalTarget(null)}
+      />
     </article>
   );
 };
