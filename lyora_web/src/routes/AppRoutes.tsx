@@ -8,6 +8,9 @@ import { getClientPostDetailPath, getClientProfilePath, ROUTES } from './paths';
 const ClientHomeView = lazy(
   () => import('@/ui/client/home/HomeView'),
 );
+const VideosView = lazy(
+  () => import('@/ui/client/videos/VideosView'),
+);
 const ProfileView = lazy(
   () => import('@/ui/client/profile/ProfileView'),
 );
@@ -118,6 +121,14 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ClientHomeView />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'videos',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <VideosView />
               </Suspense>
             ),
           },

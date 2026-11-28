@@ -125,7 +125,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
           hasPrevPage: false,
         },
       }),
-      getPostById: vi.fn(),
+      getPostById: vi.fn().mockResolvedValue({ success: true, data: MOCK_POST }),
       getPostComments: vi.fn(),
       createPostAppeal: vi.fn(),
       getFriends: vi.fn().mockResolvedValue({ success: true, data: [] }),
@@ -247,7 +247,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     };
     const mockRepo: IPostRepository = {
       getPosts: vi.fn().mockRejectedValue(serverError),
-      getPostById: vi.fn(),
+      getPostById: vi.fn().mockRejectedValue(serverError),
       getPostComments: vi.fn(),
       createPostAppeal: vi.fn(),
       getFriends: vi.fn().mockRejectedValue(serverError),

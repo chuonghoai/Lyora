@@ -447,6 +447,7 @@ export function useClientLayoutController() {
 
   const isMessagesRoute = location.pathname === ROUTES.CLIENT.MESSAGES;
   const isFriendsRoute = location.pathname === ROUTES.CLIENT.FRIENDS;
+  const isVideosRoute = location.pathname === ROUTES.CLIENT.VIDEOS;
   const isHomeRoute = location.pathname === ROUTES.CLIENT.ROOT;
   const isProfileRoute = isClientProfilePathname(location.pathname);
 
@@ -477,6 +478,16 @@ export function useClientLayoutController() {
     if (location.pathname !== ROUTES.CLIENT.FRIENDS) {
       navigate(ROUTES.CLIENT.FRIENDS);
     }
+  };
+
+  const handleNavigateVideos = () => {
+    setIsAccountMenuOpen(false);
+    setAccountMenuPanel("main");
+    setIsNotificationOpen(false);
+    if (location.pathname !== ROUTES.CLIENT.VIDEOS) {
+      navigate(ROUTES.CLIENT.VIDEOS);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSelectFontScale = (scale: FontScalePreference) => {
@@ -649,6 +660,7 @@ export function useClientLayoutController() {
     activeTab,
     isMessagesRoute,
     isFriendsRoute,
+    isVideosRoute,
     isHomeRoute,
     isProfileRoute,
     isAccountMenuOpen,
@@ -682,6 +694,7 @@ export function useClientLayoutController() {
     handleNavigateAccountPanel,
     handleNavigateMessages,
     handleNavigateFriends,
+    handleNavigateVideos,
     handleOpenProfile,
     handleSelectFontScale,
     handleToggleReduceMotion,

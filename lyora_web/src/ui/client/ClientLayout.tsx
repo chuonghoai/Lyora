@@ -23,6 +23,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
+  FilmPlayIcon,
   HelpCircleIcon,
   HomeFeedIcon,
   ICON_SCALE_ANIMATION,
@@ -49,7 +50,9 @@ export const ClientLayout: React.FC = () => {
 
   return (
     <div
-      className="min-h-dvh bg-background text-foreground flex flex-col"
+      className={`min-h-dvh bg-background text-foreground flex flex-col ${
+        controller.isVideosRoute ? "lg:h-dvh lg:overflow-hidden" : ""
+      }`}
       data-ui
     >
       {/* Top Social Header */}
@@ -268,6 +271,20 @@ export const ClientLayout: React.FC = () => {
             >
               <HomeFeedIcon className="w-4 h-4" />
               <span>Bảng tin</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={controller.handleNavigateVideos}
+              aria-current={controller.isVideosRoute ? "page" : undefined}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
+                controller.isVideosRoute
+                  ? "bg-secondary text-primary"
+                  : "text-muted hover:bg-background hover:text-foreground"
+              }`}
+            >
+              <FilmPlayIcon className="w-4 h-4" />
+              <span>Video</span>
             </button>
 
             <button
@@ -923,7 +940,9 @@ export const ClientLayout: React.FC = () => {
         className={
           controller.isMessagesRoute
             ? "flex-1 w-full pb-16 md:pb-0"
-            : "flex-1 w-full px-3 sm:px-5 lg:px-6 py-5 pb-24 md:pb-10"
+            : controller.isVideosRoute
+              ? "flex-1 min-h-0 w-full px-3 sm:px-5 lg:px-6 pt-3 pb-24 md:pb-10 lg:py-4 lg:overflow-hidden flex flex-col"
+              : "flex-1 w-full px-3 sm:px-5 lg:px-6 py-5 pb-24 md:pb-10"
         }
       >
         <Outlet />
@@ -932,9 +951,9 @@ export const ClientLayout: React.FC = () => {
       {/* Mobile Bottom Tab Bar */}
       <nav
         aria-label="Thanh điều hướng nhanh"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card px-2 py-1.5 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card px-1.5 py-1.5 md:hidden"
       >
-        <div className="grid grid-cols-5 gap-1">
+        <div className="grid grid-cols-6 gap-0.5">
           <button
             type="button"
             onClick={() => controller.handleSelectTab("all")}
@@ -946,6 +965,20 @@ export const ClientLayout: React.FC = () => {
           >
             <HomeFeedIcon className="w-5 h-5" />
             <span>Bảng tin</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={controller.handleNavigateVideos}
+            aria-current={controller.isVideosRoute ? "page" : undefined}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
+              controller.isVideosRoute
+                ? "text-primary bg-secondary/70 font-semibold"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            <FilmPlayIcon className="w-5 h-5" />
+            <span>Video</span>
           </button>
 
           <button

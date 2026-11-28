@@ -12,6 +12,7 @@ import type { ClientLayoutController } from '@/ui/client/client-layout.controlle
 import type { ClientPostDetailController } from '@/ui/client/post-detail/post-detail.controller';
 import type { AdminLayoutController } from '@/ui/admin/admin-layout.controller';
 import type { MessagesController } from '@/ui/client/messages/messages.controller';
+import type { VideosController } from '@/ui/client/videos/videos.controller';
 
 describe('View-Controller Contract & Integration Types', () => {
   it('LoginController contract has all required unified properties and handlers', () => {
@@ -226,6 +227,7 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'activeTab'
       | 'isMessagesRoute'
       | 'isFriendsRoute'
+      | 'isVideosRoute'
       | 'isHomeRoute'
       | 'isProfileRoute'
       | 'accountMenuPanel'
@@ -245,6 +247,7 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleNavigateAccountPanel'
       | 'handleNavigateMessages'
       | 'handleNavigateFriends'
+      | 'handleNavigateVideos'
       | 'handleOpenProfile'
       | 'handleSelectFontScale'
       | 'handleToggleReduceMotion'
@@ -664,6 +667,75 @@ describe('View-Controller Contract & Integration Types', () => {
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<ClientPostDetailController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('VideosController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'currentUser'
+      | 'profileUser'
+      | 'posts'
+      | 'totalItems'
+      | 'friends'
+      | 'scopeFilter'
+      | 'isAutoPlayEnabled'
+      | 'isMuted'
+      | 'activePostId'
+      | 'requestedPostId'
+      | 'isDeepLinkUnavailable'
+      | 'clipIndexByPost'
+      | 'isFeedLoading'
+      | 'isFeedError'
+      | 'isFeedRefetching'
+      | 'hasNextPage'
+      | 'isFetchingNextPage'
+      | 'loadMoreSentinelRef'
+      | 'commentDrafts'
+      | 'commentMediaDrafts'
+      | 'commentErrors'
+      | 'mobileCommentsOpenMap'
+      | 'isSubmittingComment'
+      | 'reactionsPopover'
+      | 'reactionsModalPost'
+      | 'reactionsData'
+      | 'isReactionsLoading'
+      | 'isReactionsError'
+      | 'lightbox'
+      | 'registerPostCardElement'
+      | 'handleSelectScopeFilter'
+      | 'handleClearDeepLink'
+      | 'handleRefreshVideos'
+      | 'handleLoadMore'
+      | 'handleToggleAutoPlay'
+      | 'handleToggleMute'
+      | 'handleActivatePost'
+      | 'handleStepClip'
+      | 'handleSelectClip'
+      | 'handleReactPost'
+      | 'handleSharePost'
+      | 'handleCopyVideoLink'
+      | 'handleOpenReactionsModal'
+      | 'handleCloseReactionsModal'
+      | 'handleChangeReactionsFilter'
+      | 'handleChangeReactionsPage'
+      | 'handleRetryReactions'
+      | 'handleCommentDraftChange'
+      | 'handlePickCommentMedia'
+      | 'handleRemoveCommentMedia'
+      | 'handleSubmitComment'
+      | 'handleToggleMobileComments'
+      | 'handleFocusCommentInput'
+      | 'handleOpenLightbox'
+      | 'handleCloseLightbox'
+      | 'handlePrevLightbox'
+      | 'handleNextLightbox'
+      | 'handleOpenUserProfile'
+      | 'handleOpenChatWithFriend'
+      | 'handleOpenCreateVideoPost';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<VideosController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });

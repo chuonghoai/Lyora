@@ -107,7 +107,7 @@ export class PostRepository implements IPostRepository {
 
   async getPostById(postId: string): Promise<ApiResponse<Post>> {
     return apiClient.get<ApiResponse<Post>, ApiResponse<Post>>(
-      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}`,
+      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${encodeURIComponent(postId)}`,
     );
   }
 

@@ -19,3 +19,7 @@ export * from './profile/ProfileActivitySection';
 export * from './profile/ProfileAboutSection';
 export * from './profile/ProfileFriendsSection';
 export * from './profile/ProfileEditModal';
+export * from './videos/videos.controller';
+export * from './videos/VideoPostStageCard';
+export * from './videos/VideoStagePlayer';
+export * from './videos/VideoCompanionPanel';

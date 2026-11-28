@@ -926,4 +926,191 @@ describe('PostsService (Real DB Data & Empty State)', () => {
       evidenceUrl: 'https://cdn.lyora.vn/bad-avatar.jpg',
     });
   });
+
+  it('lọc bài viết có chứa VIDEO qua toán tử JSONB khi truyền mediaType=VIDEO', async () => {
+    const qbMock = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    };
+    (postRepo.createQueryBuilder as jest.Mock).mockReturnValue(qbMock);
+
+    await service.findAllPaginated(currentUser, {
+      page: 1,
+      limit: 8,
+      mediaType: PostMediaType.VIDEO,
+    });
+
+    expect(qbMock.andWhere).toHaveBeenCalledWith(
+      'post.media @> CAST(:mediaFilter AS jsonb)',
+      {
+        mediaFilter: JSON.stringify([{ type: PostMediaType.VIDEO }]),
+      },
+    );
+  });
+
+  it('tạo mới, đổi loại và bỏ cảm xúc (toggle) qua reactToPost', async () => {
+    const postId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const postEntity = {
+      id: postId,
+      authorId: currentUser.id,
+      author: {
+        id: currentUser.id,
+        fullName: 'Người Dùng',
+        email: currentUser.email,
+        avatarUrl: null,
+      },
+      content: 'Video du lịch',
+      visibility: PostVisibility.PUBLIC,
+      moderationStatus: PostModerationStatus.ACTIVE,
+      media: [
+        {
+          id: 'vid-1',
+          type: PostMediaType.VIDEO,
+          url: 'https://res.cloudinary.com/demo/video/upload/v1/clip.mp4',
+        },
+      ],
+      taggedUserIds: null,
+      reactionsCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      createdAt: new Date('2026-11-28T10:00:00.000Z'),
+      updatedAt: new Date('2026-11-28T10:00:00.000Z'),
+    } as unknown as Post;
+
+    postRepo.update = jest.fn().mockResolvedValue({ affected: 1 });
+    (postRepo.findOne as jest.Mock).mockResolvedValue(postEntity);
+    reactionRepo.create = jest.fn(
+      (p: Partial<PostReaction>) => p as PostReaction,
+    );
+    reactionRepo.save = jest.fn().mockResolvedValue({
+      id: 'react-1',
+      postId,
+      userId: currentUser.id,
+      type: PostReactionType.LOVE,
+    });
+    reactionRepo.delete = jest.fn().mockResolvedValue({ affected: 1 });
+    reactionRepo.count = jest.fn().mockResolvedValue(1);
+
+    // 1. Tạo mới LOVE
+    reactionRepo.findOne = jest.fn().mockResolvedValueOnce(null);
+    (reactionRepo.find as jest.Mock).mockResolvedValueOnce([
+      { postId, userId: currentUser.id, type: PostReactionType.LOVE },
+    ]);
+    const resCreate = await service.reactToPost(currentUser, postId, {
+      reactionType: PostReactionType.LOVE,
+    });
+    expect(reactionRepo.save).toHaveBeenCalledTimes(1);
+    expect(resCreate.userReaction).toBe(PostReactionType.LOVE);
+    expect(resCreate.reactionCount).toBe(1);
+
+    // 2. Toggle bỏ LOVE khi bấm lại cùng loại
+    reactionRepo.findOne = jest.fn().mockResolvedValueOnce({
+      id: 'react-1',
+      postId,
+      userId: currentUser.id,
+      type: PostReactionType.LOVE,
+    });
+    reactionRepo.count = jest.fn().mockResolvedValueOnce(0);
+    (reactionRepo.find as jest.Mock).mockResolvedValueOnce([]);
+    const resToggle = await service.reactToPost(currentUser, postId, {
+      reactionType: PostReactionType.LOVE,
+    });
+    expect(reactionRepo.delete).toHaveBeenCalledWith('react-1');
+    expect(resToggle.userReaction).toBeNull();
+    expect(resToggle.reactionCount).toBe(0);
+  });
+
+  it('thêm bình luận mới hợp lệ và từ chối bình luận rỗng', async () => {
+    const postId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const postEntity = {
+      id: postId,
+      authorId: currentUser.id,
+      author: {
+        id: currentUser.id,
+        fullName: 'Người Dùng',
+        email: currentUser.email,
+        avatarUrl: null,
+      },
+      content: 'Video mới',
+      visibility: PostVisibility.PUBLIC,
+      moderationStatus: PostModerationStatus.ACTIVE,
+      media: [],
+      reactionsCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      createdAt: new Date('2026-11-28T10:00:00.000Z'),
+      updatedAt: new Date('2026-11-28T10:00:00.000Z'),
+    } as unknown as Post;
+
+    await expect(
+      service.addComment(currentUser, postId, { content: '   ' }),
+    ).rejects.toThrow(BadRequestException);
+
+    (postRepo.findOne as jest.Mock).mockResolvedValue(postEntity);
+    postRepo.update = jest.fn().mockResolvedValue({ affected: 1 });
+    commentRepo.create = jest.fn((p: Partial<PostComment>) => p as PostComment);
+    commentRepo.save = jest.fn().mockResolvedValue({
+      id: 'cmt-new',
+      postId,
+      authorId: currentUser.id,
+      parentId: null,
+      content: 'Video quá đẹp!',
+      media: null,
+      createdAt: new Date('2026-11-28T10:05:00.000Z'),
+    });
+    commentRepo.count = jest.fn().mockResolvedValue(1);
+    userRepo.findOne = jest.fn().mockResolvedValue({
+      id: currentUser.id,
+      fullName: 'Trịnh Đại Nghĩa',
+      avatarUrl: null,
+    });
+
+    const created = await service.addComment(currentUser, postId, {
+      content: '  Video quá đẹp!  ',
+    });
+
+    expect(created.id).toBe('cmt-new');
+    expect(created.content).toBe('Video quá đẹp!');
+    expect(created.author.fullName).toBe('Trịnh Đại Nghĩa');
+    expect(postRepo.update).toHaveBeenCalledWith(postId, { commentsCount: 1 });
+  });
+
+  it('ghi nhận chia sẻ bài viết và cập nhật sharesCount', async () => {
+    const postId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    const postEntity = {
+      id: postId,
+      authorId: currentUser.id,
+      author: {
+        id: currentUser.id,
+        fullName: 'Người Dùng',
+        email: currentUser.email,
+        avatarUrl: null,
+      },
+      content: 'Video chia sẻ',
+      visibility: PostVisibility.PUBLIC,
+      moderationStatus: PostModerationStatus.ACTIVE,
+      media: [],
+      reactionsCount: 0,
+      commentsCount: 0,
+      sharesCount: 1,
+      createdAt: new Date('2026-11-28T10:00:00.000Z'),
+      updatedAt: new Date('2026-11-28T10:00:00.000Z'),
+    } as unknown as Post;
+
+    (postRepo.findOne as jest.Mock).mockResolvedValue(postEntity);
+    postRepo.update = jest.fn().mockResolvedValue({ affected: 1 });
+    postShareRepo.create = jest.fn((p: Partial<PostShare>) => p as PostShare);
+    postShareRepo.save = jest.fn().mockResolvedValue({ id: 'share-new' });
+    postShareRepo.count = jest.fn().mockResolvedValue(1);
+
+    const shared = await service.sharePost(currentUser, postId);
+    expect(postShareRepo.save).toHaveBeenCalledTimes(1);
+    expect(postRepo.update).toHaveBeenCalledWith(postId, { sharesCount: 1 });
+    expect(shared.shareCount).toBe(1);
+  });
 });
