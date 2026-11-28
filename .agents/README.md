@@ -45,10 +45,10 @@ Mọi thay đổi do AI Agent thực hiện phải tuân thủ các tài liệu 
     ├── lya-analyzeTask/                    # Phân tích scope, rủi ro, tác động của task
     ├── lya-cleanup/                        # Quét và dọn dẹp file rác trong workspace
     ├── lya-createPR/                       # Chuẩn bị và tạo Pull Request
-    ├── lya-createSeedDB/                   # Audit Database Entities & tạo/cập nhật seed files trong seed/
+    ├── lya-createSeedDB/                   # Audit Code-DB & tạo/cập nhật seed files insert-only (giữ dữ liệu cũ)
     ├── lya-createTestCase/                 # Đọc code thực tế và tạo Test Cases
     ├── lya-fixbug/                         # Truy vết root cause và lập kế hoạch sửa bug
-    ├── lya-insertSeedDB/                   # Reset và nạp toàn bộ seed data chuẩn vào Database
+    ├── lya-insertSeedDB/                   # Phân tích đồng bộ DB & chèn bổ sung seed data còn thiếu (skip trùng)
     ├── lya-newFeature/                     # Phân tích yêu cầu và lập kế hoạch tính năng mới
     ├── lya-newTesting/                     # Quy chuẩn viết Integration Test Backend (Jest runner)
     ├── lya-newWeeklyReport/                # Tự động hóa audit codebase & lập 4 file báo cáo tiến độ tuần
@@ -70,8 +70,8 @@ Mọi thay đổi do AI Agent thực hiện phải tuân thủ các tài liệu 
 | `/lya-reviewPR` | **Tổng hợp:** Review toàn diện và Merge PR vào `main` | Branch name | Không | Có (merge, xóa branch) | **CÓ** (trước khi Merge) |
 | `/lya-reviewSecurityPerformance` | Đánh giá an toàn, bảo mật và hiệu năng so với `main` | Branch name | Không | Không | Không |
 | `/lya-createPR` | Push code và tạo Pull Request vào `main` | Không | Không | Có (push) | Không (chỉ tạo PR) |
-| `/lya-createSeedDB` | Audit Database Entities & tạo/cập nhật seed files trong `seed/` | Không / Option | Có (tạo/sửa seed files) | Không | **Có** (Interactive Process) |
-| `/lya-insertSeedDB` | Reset CSDL và chèn toàn bộ dữ liệu mẫu (Seed Data) | Không | Có (can thiệp DB) | Không | **Có** (Xác nhận an toàn) |
+| `/lya-createSeedDB` | Audit Code-DB, tạo/cập nhật seed files insert-only (giữ dữ liệu cũ) | Không / Option | Có (tạo/sửa seed files) | Không | **Có** (Interactive Process) |
+| `/lya-insertSeedDB` | Phân tích đồng bộ DB & bổ sung dữ liệu mẫu còn thiếu (skip row trùng) | Không | Có (chỉ insert DB) | Không | **Có** (Xác nhận an toàn) |
 | `/lya-createTestCase` | Đọc code thực tế để tạo Test Cases | Không / Mô tả | Không | Không | Không |
 | `/lya-newTesting` | Viết integration test backend qua Jest runner | Tên API / Flow | Có (khi user cho phép) | Không | **Có** (cho plan test) |
 | `/lya-newWeeklyReport` | Audit codebase & tạo 4 file báo cáo tiến độ tuần theo template | Tên tuần & Danh sách tính năng | Không (chỉ tạo file .md báo cáo) | Không | **Có** (nếu ghi đè báo cáo cũ) |
