@@ -57,7 +57,9 @@ const PersonResultCard: React.FC<PersonResultCardProps> = ({
             {person.fullName}
           </span>
           <span className="block truncate text-xs text-muted">
-            {person.workplace || person.location || "Thành viên Lyora"}
+            {person.mutualFriendsCount > 0
+              ? `${person.mutualFriendsCount} bạn chung`
+              : "Gợi ý cho bạn"}
           </span>
         </span>
       </Link>

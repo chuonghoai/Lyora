@@ -54,9 +54,7 @@ const FriendCard: React.FC<FriendCardProps> = ({
           <span className="block truncate text-xs text-muted">
             {friend.mutualFriendsCount > 0
               ? `${friend.mutualFriendsCount} bạn chung`
-              : friend.workplace ||
-              friend.location ||
-                "Thành viên cộng đồng Lyora"}
+              : "Gợi ý cho bạn"}
           </span>
         </span>
       </button>
@@ -301,19 +299,14 @@ export default function FriendsView(): React.ReactElement {
               </div>
             )}
             {platformSuggestions.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Thành viên khác trên Lyora
-                </h3>
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                  {platformSuggestions.map((friend) => (
-                    <FriendCard
-                      key={friend.id}
-                      friend={friend}
-                      controller={controller}
-                    />
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {platformSuggestions.map((friend) => (
+                  <FriendCard
+                    key={friend.id}
+                    friend={friend}
+                    controller={controller}
+                  />
+                ))}
               </div>
             )}
           </div>
