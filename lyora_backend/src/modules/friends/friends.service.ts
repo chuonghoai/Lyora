@@ -124,6 +124,10 @@ export class FriendsService {
         relationship,
       ]),
     );
+    const mutualFriendsByUserId = await this.getMutualFriendsByUserId(
+      currentUserId,
+      candidateIds,
+    );
 
     return {
       totalItems,
@@ -134,6 +138,7 @@ export class FriendsService {
             relationByUserId.get(user.id),
             currentUserId,
           ),
+          mutualFriendsByUserId.get(user.id) ?? 0,
         ),
       ),
     };
@@ -466,6 +471,57 @@ export class FriendsService {
         { currentUserId, targetUserId },
       )
       .getOne();
+  }
+
+  private async getMutualFriendsByUserId(
+    currentUserId: string,
+    candidateIds: string[],
+  ): Promise<Map<string, number>> {
+    if (candidateIds.length === 0) return new Map();
+
+    const currentFriendships = await this.friendshipRepository
+      .createQueryBuilder('friendship')
+      .where('friendship.status = :status', {
+        status: FriendshipStatus.ACCEPTED,
+      })
+      .andWhere(
+        '(friendship.userId = :currentUserId OR friendship.friendId = :currentUserId)',
+        { currentUserId },
+      )
+      .getMany();
+    const currentFriendIds = new Set(
+      currentFriendships.map((friendship) =>
+        friendship.userId === currentUserId
+          ? friendship.friendId
+          : friendship.userId,
+      ),
+    );
+    if (currentFriendIds.size === 0) return new Map();
+
+    const candidateIdSet = new Set(candidateIds);
+    const friendRelationships = await this.friendshipRepository
+      .createQueryBuilder('friendship')
+      .where('friendship.status = :status', {
+        status: FriendshipStatus.ACCEPTED,
+      })
+      .andWhere(
+        '(friendship.userId IN (:...friendIds) OR friendship.friendId IN (:...friendIds))',
+        { friendIds: [...currentFriendIds] },
+      )
+      .getMany();
+    const mutualFriendsByUserId = new Map<string, number>();
+    for (const relationship of friendRelationships) {
+      const otherUserId = currentFriendIds.has(relationship.userId)
+        ? relationship.friendId
+        : relationship.userId;
+      if (candidateIdSet.has(otherUserId)) {
+        mutualFriendsByUserId.set(
+          otherUserId,
+          (mutualFriendsByUserId.get(otherUserId) ?? 0) + 1,
+        );
+      }
+    }
+    return mutualFriendsByUserId;
   }
 
   private emitFriendshipUpdate(
