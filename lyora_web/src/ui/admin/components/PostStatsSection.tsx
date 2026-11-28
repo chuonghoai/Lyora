@@ -86,7 +86,6 @@ export const PostStatsSection: React.FC<PostStatsSectionProps> = ({
           <h2 id="post-stats-heading" className="text-base font-semibold text-foreground">
             Thống kê bài viết
           </h2>
-          <span className="text-xs text-muted">Nguồn: API quản trị bài viết</span>
         </div>
 
         <Button
