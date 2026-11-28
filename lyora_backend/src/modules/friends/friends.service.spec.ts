@@ -130,9 +130,67 @@ describe('FriendsService', () => {
         workplace: 'Lyora',
         location: 'TP. Hồ Chí Minh',
         friendshipStatus: 'FRIEND',
+        mutualFriendsCount: 0,
         isOnline: false,
       });
       expect(result[0]).not.toHaveProperty('email');
+    });
+  });
+
+  describe('getSuggestions', () => {
+    it('ưu tiên thành viên có bạn chung và loại trừ quan hệ hiện có', async () => {
+      const currentRelationships = [
+        {
+          userId: 'user-1',
+          friendId: 'friend-1',
+          status: FriendshipStatus.ACCEPTED,
+        },
+        {
+          userId: 'user-1',
+          friendId: 'pending-user',
+          status: FriendshipStatus.PENDING,
+        },
+      ] as Friendship[];
+      const friendRelationships = [
+        {
+          userId: 'friend-1',
+          friendId: 'mutual-user',
+          status: FriendshipStatus.ACCEPTED,
+        },
+      ] as Friendship[];
+      const currentQuery = {
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(currentRelationships),
+      };
+      const mutualQuery = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(friendRelationships),
+      };
+      (friendshipRepo.createQueryBuilder as jest.Mock)
+        .mockReturnValueOnce(currentQuery)
+        .mockReturnValueOnce(mutualQuery);
+      (userRepo.find as jest.Mock).mockResolvedValue([
+        { id: 'friend-1', fullName: 'Bạn trực tiếp' },
+        { id: 'pending-user', fullName: 'Đang chờ' },
+        { id: 'platform-user', fullName: 'An Nhiên' },
+        { id: 'mutual-user', fullName: 'Bạn chung' },
+      ]);
+
+      const result = await service.getSuggestions('user-1');
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          id: 'mutual-user',
+          friendshipStatus: 'NONE',
+          mutualFriendsCount: 1,
+        }),
+        expect.objectContaining({
+          id: 'platform-user',
+          friendshipStatus: 'NONE',
+          mutualFriendsCount: 0,
+        }),
+      ]);
     });
   });
 

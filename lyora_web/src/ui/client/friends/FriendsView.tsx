@@ -52,9 +52,11 @@ const FriendCard: React.FC<FriendCardProps> = ({
             {friend.fullName}
           </span>
           <span className="block truncate text-xs text-muted">
-            {friend.workplace ||
+            {friend.mutualFriendsCount > 0
+              ? `${friend.mutualFriendsCount} bạn chung`
+              : friend.workplace ||
               friend.location ||
-              "Thành viên cộng đồng Lyora"}
+                "Thành viên cộng đồng Lyora"}
           </span>
         </span>
       </button>
@@ -144,6 +146,12 @@ const FriendCard: React.FC<FriendCardProps> = ({
 export default function FriendsView(): React.ReactElement {
   const controller = useFriendsController();
   const hasSearch = controller.searchText.trim().length >= 2;
+  const mutualSuggestions = controller.suggestions.filter(
+    (friend) => friend.mutualFriendsCount > 0,
+  );
+  const platformSuggestions = controller.suggestions.filter(
+    (friend) => friend.mutualFriendsCount === 0,
+  );
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
@@ -256,12 +264,58 @@ export default function FriendsView(): React.ReactElement {
             </span>
           )}
         </div>
-        {!hasSearch ? (
+        {!hasSearch ? controller.isLoadingSuggestions ? (
+          <div className="flex min-h-32 items-center justify-center rounded-xl border border-border bg-card">
+            <LoadingSpinner size="md" />
+          </div>
+        ) : controller.suggestionsError ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-error/30 bg-error/5 p-4 text-sm text-error"
+          >
+            Không thể tải gợi ý thành viên lúc này. Vui lòng thử lại.
+          </div>
+        ) : controller.suggestions.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-background/50 p-8 text-center">
             <UsersIcon className="mx-auto h-7 w-7 text-muted" />
             <p className="mt-2 text-sm text-muted">
-              Nhập tên để tìm và kết nối với thành viên khác.
+              Chưa có gợi ý thành viên mới vào lúc này.
             </p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {mutualSuggestions.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Bạn bè chung
+                </h3>
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  {mutualSuggestions.map((friend) => (
+                    <FriendCard
+                      key={friend.id}
+                      friend={friend}
+                      controller={controller}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {platformSuggestions.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Thành viên khác trên Lyora
+                </h3>
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  {platformSuggestions.map((friend) => (
+                    <FriendCard
+                      key={friend.id}
+                      friend={friend}
+                      controller={controller}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : controller.isSearching ? (
           <div className="flex min-h-32 items-center justify-center rounded-xl border border-border bg-card">
