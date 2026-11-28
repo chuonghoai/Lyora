@@ -9,7 +9,7 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border pb-5">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border px-5 pb-5">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Tổng quan quản trị</h1>
           <p className="text-sm text-muted">
