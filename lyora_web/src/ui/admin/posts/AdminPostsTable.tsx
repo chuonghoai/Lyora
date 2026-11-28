@@ -194,13 +194,15 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
                         <button
                           type="button"
                           onClick={() => controller.handleOpenDetail(post.id)}
-                          className="block w-full text-left text-sm font-medium text-foreground hover:text-primary line-clamp-2 break-words transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+                          className="block w-full text-left text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
                         >
-                          {post.content.trim() || (
-                            <span className="italic font-normal text-muted">
-                              (Bài viết chỉ đính kèm phương tiện)
-                            </span>
-                          )}
+                          <span className="line-clamp-2 break-words">
+                            {post.content.trim() || (
+                              <span className="italic font-normal text-muted">
+                                (Bài viết chỉ đính kèm phương tiện)
+                              </span>
+                            )}
+                          </span>
                         </button>
 
                         <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
