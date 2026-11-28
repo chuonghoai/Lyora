@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ApiError, ApiResponse, PaginationMeta } from '@/core';
 import {
   buildFinalLockReason,
+  createAdminUserFormSchema,
   lockUserFormSchema,
   UserService,
   type AdminUserDetail,
@@ -133,6 +134,16 @@ describe('Admin Users Management - Model, Lock Notice & UserService', () => {
         success: true,
         data: mockDetail,
       } satisfies ApiResponse<AdminUserDetail>),
+      createUser: vi.fn().mockResolvedValue({
+        success: true,
+        data: {
+          ...mockUserItem,
+          id: 'user-created',
+          email: 'created@lyora.vn',
+          fullName: 'Quản Trị Mới',
+          role: 'ADMIN',
+        },
+      } satisfies ApiResponse<AdminUserSummaryItem>),
       lockUser: vi.fn().mockResolvedValue({
         success: true,
         data: { ...mockUserItem, isActive: false, isOnline: false, lockReason: 'Vi phạm quy định' },
@@ -170,5 +181,51 @@ describe('Admin Users Management - Model, Lock Notice & UserService', () => {
     const emptyOnlineResult = await service.getUsersOnlineStatus([]);
     expect(emptyOnlineResult.statuses).toEqual({});
     expect(repoMock.getUsersOnlineStatus).toHaveBeenCalledTimes(1);
+
+    const createdUser = await service.createUser({
+      fullName: '  Quản Trị Mới  ',
+      email: '  Created@Lyora.VN  ',
+      password: 'Password123',
+      role: 'ADMIN',
+    });
+    expect(repoMock.createUser).toHaveBeenCalledWith({
+      fullName: 'Quản Trị Mới',
+      email: 'created@lyora.vn',
+      password: 'Password123',
+      role: 'ADMIN',
+    });
+    expect(createdUser.role).toBe('ADMIN');
+  });
+
+  it('validates createAdminUserFormSchema for fullName, email, password, confirmPassword and role', () => {
+    expect(
+      createAdminUserFormSchema.safeParse({
+        fullName: '   ',
+        email: 'invalid-email',
+        password: '123',
+        confirmPassword: '456',
+        role: 'CLIENT',
+      }).success,
+    ).toBe(false);
+
+    expect(
+      createAdminUserFormSchema.safeParse({
+        fullName: 'Nguyễn Minh Anh',
+        email: 'minhanh@lyora.vn',
+        password: 'password123',
+        confirmPassword: 'differentPassword',
+        role: 'ADMIN',
+      }).success,
+    ).toBe(false);
+
+    expect(
+      createAdminUserFormSchema.safeParse({
+        fullName: 'Nguyễn Minh Anh',
+        email: 'minhanh@lyora.vn',
+        password: 'password123',
+        confirmPassword: 'password123',
+        role: 'ADMIN',
+      }).success,
+    ).toBe(true);
   });
 });

@@ -17,12 +17,14 @@ import {
   LockIcon,
   RefreshIcon,
   SearchIcon,
+  UserPlusIcon,
   UsersIcon,
 } from '../components/AdminIcons';
 import {
   useAdminUsersController,
   type AdminUserSortOption,
 } from './admin-users.controller';
+import { CreateUserModal } from './CreateUserModal';
 
 const ROLE_TABS: Array<{ id: AdminUserRoleTab; label: string }> = [
   { id: 'ALL', label: 'Tất cả' },
@@ -80,18 +82,30 @@ export const AdminUsersView: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          isLoading={ctrl.isFetching && !ctrl.isLoading}
-          onClick={() => void ctrl.handleRefresh()}
-          className="h-9 px-3 py-1.5 text-xs gap-1.5 border-border bg-card text-foreground hover:bg-background self-start sm:self-auto"
-        >
-          {!(ctrl.isFetching && !ctrl.isLoading) && (
-            <RefreshIcon className="w-3.5 h-3.5 text-muted" />
-          )}
-          <span>Làm mới</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          <Button
+            type="button"
+            variant="outline"
+            isLoading={ctrl.isFetching && !ctrl.isLoading}
+            onClick={() => void ctrl.handleRefresh()}
+            className="h-9 px-3 py-1.5 text-xs gap-1.5 border-border bg-card text-foreground hover:bg-background"
+          >
+            {!(ctrl.isFetching && !ctrl.isLoading) && (
+              <RefreshIcon className="w-3.5 h-3.5 text-muted" />
+            )}
+            <span>Làm mới</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={ctrl.handleOpenCreateModal}
+            className="h-9 px-3.5 py-1.5 text-xs gap-1.5"
+          >
+            <UserPlusIcon className="w-3.5 h-3.5" />
+            <span>Tạo tài khoản</span>
+          </Button>
+        </div>
       </header>
 
       {/* Underline Role Tabs */}
@@ -617,6 +631,15 @@ export const AdminUsersView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Create User Modal */}
+      <CreateUserModal
+        isOpen={ctrl.isCreateModalOpen}
+        isSubmitting={ctrl.isCreatingUser}
+        apiError={ctrl.createUserError}
+        onClose={ctrl.handleCloseCreateModal}
+        onSubmit={ctrl.handleCreateUser}
+      />
     </div>
   );
 };

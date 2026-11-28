@@ -7,6 +7,7 @@ import type {
   AdminUsersQueryParams,
   AdminUsersSummaryCounts,
   AdminUserSummaryItem,
+  CreateAdminUserPayload,
   LockUserPayload,
   UpdateUserProfilePayload,
   UserProfile,
@@ -21,6 +22,7 @@ export interface IUserService {
   getAdminUsers(params: AdminUsersQueryParams): Promise<AdminUsersListResult>;
   getUsersOnlineStatus(ids: string[]): Promise<AdminOnlineStatusResponse>;
   getAdminUserDetail(userId: string): Promise<AdminUserDetail>;
+  createUser(payload: CreateAdminUserPayload): Promise<AdminUserSummaryItem>;
   lockUser(userId: string, payload: LockUserPayload): Promise<AdminUserSummaryItem>;
   unlockUser(userId: string): Promise<AdminUserSummaryItem>;
 }
@@ -114,6 +116,16 @@ export class UserService implements IUserService {
 
   async unlockUser(userId: string): Promise<AdminUserSummaryItem> {
     const response = await this.repository.unlockUser(userId.trim());
+    return response.data;
+  }
+
+  async createUser(payload: CreateAdminUserPayload): Promise<AdminUserSummaryItem> {
+    const response = await this.repository.createUser({
+      fullName: payload.fullName.trim(),
+      email: payload.email.trim().toLowerCase(),
+      password: payload.password,
+      role: payload.role,
+    });
     return response.data;
   }
 }

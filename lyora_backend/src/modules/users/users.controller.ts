@@ -27,6 +27,7 @@ import { VietnameseParseUUIDPipe } from '../../common/pipes/vietnamese-parse-uui
 import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
 import { AdminOnlineStatusQueryDto } from './dto/admin-online-status-query.dto';
 import { AdminUsersQueryDto } from './dto/admin-users-query.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { LockUserDto } from './dto/lock-user.dto';
 import { UserStatisticsQueryDto } from './dto/user-statistics-query.dto';
 import {
@@ -58,6 +59,14 @@ export class UsersController {
       },
       result.meta,
     );
+  }
+
+  @Post()
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Tạo tài khoản người dùng thành công')
+  async create(@Body() dto: CreateUserDto) {
+    return this.usersService.createUser(dto);
   }
 
   @Get('statistics')
