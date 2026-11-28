@@ -1,13 +1,20 @@
 import { apiClient, CORE_CONSTANTS, type ApiResponse } from '@/core';
 import type {
+  AdminPostAppealHistoryItem,
+  AdminPostAppealHistoryQueryParams,
+  AdminPostAppealItem,
+  AdminPostAppealsQueryParams,
   AdminPostDetail,
   AdminPostItem,
   AdminPostsQueryParams,
   AdminPostStatistics,
+  CreatePostAppealPayload,
   CreatePostPayload,
   Post,
+  PostAppealSummary,
   PostAuthor,
   PostComment,
+  PostCommentsQueryParams,
   PostMediaItem,
   PostReactionUser,
   PostReactionsQueryParams,
@@ -21,6 +28,14 @@ import type {
 
 export interface IPostRepository {
   getPosts(params: PostsQueryParams): Promise<ApiResponse<Post[]>>;
+  getPostById(postId: string): Promise<ApiResponse<Post>>;
+  getPostComments(
+    postId: string,
+    params: PostCommentsQueryParams,
+  ): Promise<ApiResponse<PostComment[]>>;
+  createPostAppeal(
+    payload: CreatePostAppealPayload,
+  ): Promise<ApiResponse<PostAppealSummary>>;
   getFriends(): Promise<ApiResponse<PostAuthor[]>>;
   uploadMedia(files: File[]): Promise<ApiResponse<PostMediaItem[]>>;
   createPost(payload: CreatePostPayload): Promise<ApiResponse<Post>>;
@@ -56,6 +71,20 @@ export interface IPostRepository {
     commentId: string,
     reason?: string,
   ): Promise<ApiResponse<null>>;
+  getAdminPostAppeals(
+    params: AdminPostAppealsQueryParams,
+  ): Promise<ApiResponse<AdminPostAppealItem[]>>;
+  getAdminPostAppealsHistory(
+    postId: string,
+    params: AdminPostAppealHistoryQueryParams,
+  ): Promise<ApiResponse<AdminPostAppealHistoryItem[]>>;
+  restoreAdminPostAppeal(
+    appealId: string,
+  ): Promise<ApiResponse<AdminPostAppealItem>>;
+  rejectAdminPostAppeal(
+    appealId: string,
+    evidence: string,
+  ): Promise<ApiResponse<AdminPostAppealItem>>;
 }
 
 export class PostRepository implements IPostRepository {
@@ -64,6 +93,34 @@ export class PostRepository implements IPostRepository {
       CORE_CONSTANTS.API_ENDPOINTS.POSTS,
       { params },
     );
+  }
+
+  async getPostById(postId: string): Promise<ApiResponse<Post>> {
+    return apiClient.get<ApiResponse<Post>, ApiResponse<Post>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}`,
+    );
+  }
+
+  async getPostComments(
+    postId: string,
+    params: PostCommentsQueryParams,
+  ): Promise<ApiResponse<PostComment[]>> {
+    return apiClient.get<ApiResponse<PostComment[]>, ApiResponse<PostComment[]>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}/comments`,
+      { params },
+    );
+  }
+
+  async createPostAppeal(
+    payload: CreatePostAppealPayload,
+  ): Promise<ApiResponse<PostAppealSummary>> {
+    return apiClient.post<
+      ApiResponse<PostAppealSummary>,
+      ApiResponse<PostAppealSummary>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${payload.postId}/appeals`, {
+      reasonCategory: payload.reasonCategory,
+      reasonDetail: payload.reasonDetail,
+    });
   }
 
   async getFriends(): Promise<ApiResponse<PostAuthor[]>> {
@@ -256,6 +313,48 @@ export class PostRepository implements IPostRepository {
       `${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}/comments/${commentId}`,
       reason ? { data: { reason } } : undefined,
     );
+  }
+
+  async getAdminPostAppeals(
+    params: AdminPostAppealsQueryParams,
+  ): Promise<ApiResponse<AdminPostAppealItem[]>> {
+    return apiClient.get<
+      ApiResponse<AdminPostAppealItem[]>,
+      ApiResponse<AdminPostAppealItem[]>
+    >(CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POST_APPEALS, { params });
+  }
+
+  async getAdminPostAppealsHistory(
+    postId: string,
+    params: AdminPostAppealHistoryQueryParams,
+  ): Promise<ApiResponse<AdminPostAppealHistoryItem[]>> {
+    return apiClient.get<
+      ApiResponse<AdminPostAppealHistoryItem[]>,
+      ApiResponse<AdminPostAppealHistoryItem[]>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}/appeals`, {
+      params,
+    });
+  }
+
+  async restoreAdminPostAppeal(
+    appealId: string,
+  ): Promise<ApiResponse<AdminPostAppealItem>> {
+    return apiClient.patch<
+      ApiResponse<AdminPostAppealItem>,
+      ApiResponse<AdminPostAppealItem>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POST_APPEALS}/${appealId}/restore`);
+  }
+
+  async rejectAdminPostAppeal(
+    appealId: string,
+    evidence: string,
+  ): Promise<ApiResponse<AdminPostAppealItem>> {
+    return apiClient.patch<
+      ApiResponse<AdminPostAppealItem>,
+      ApiResponse<AdminPostAppealItem>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POST_APPEALS}/${appealId}/reject`, {
+      evidence,
+    });
   }
 }
 

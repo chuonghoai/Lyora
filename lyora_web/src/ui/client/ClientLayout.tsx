@@ -399,17 +399,7 @@ export const ClientLayout: React.FC = () => {
                         >
                           <button
                             type="button"
-                            onClick={() => {
-                              controller.handleMarkNotificationRead(item.id);
-                              controller.handleCloseNotifications();
-                              if (item.targetRoute === "profile") {
-                                controller.handleOpenProfile();
-                              } else if (item.targetRoute === "friends") {
-                                controller.handleNavigateFriends();
-                              } else if (item.targetTab) {
-                                controller.handleSelectTab(item.targetTab);
-                              }
-                            }}
+                            onClick={() => controller.handleSelectNotification(item)}
                             className="flex min-w-0 flex-1 items-start gap-3 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg"
                           >
                             {item.actorName ? (

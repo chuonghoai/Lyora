@@ -18,6 +18,7 @@ import { PostDetailModal } from './PostDetailModal';
 import { PostReactionsModal } from './PostReactionsModal';
 import { AllFriendsModal } from './AllFriendsModal';
 import { MediaLightboxModal } from './MediaLightboxModal';
+import { PostAppealModal } from '../profile/PostAppealModal';
 import {
   CalendarIcon,
   ChatBubbleOutlineIcon,
@@ -383,7 +384,12 @@ export default function HomeView(): React.ReactElement {
           ) : (
             <div className="space-y-4">
               {controller.posts.map((post) => (
-                <PostCard key={post.id} post={post} controller={controller} />
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  controller={controller}
+                  onOpenAppealModal={controller.handleOpenAppealModal}
+                />
               ))}
 
               <div ref={controller.loadMoreSentinelRef} className="py-4 text-center">
@@ -524,6 +530,12 @@ export default function HomeView(): React.ReactElement {
       <PostReactionsModal controller={controller} />
       <AllFriendsModal controller={controller} />
       <MediaLightboxModal controller={controller} />
+      <PostAppealModal
+        post={controller.appealTargetPost}
+        isSubmitting={controller.isSubmittingAppeal}
+        onClose={controller.handleCloseAppealModal}
+        onSubmitAppeal={controller.handleSubmitPostAppeal}
+      />
     </div>
   );
 }

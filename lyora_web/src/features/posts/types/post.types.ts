@@ -34,12 +34,32 @@ export interface PostComment {
 
 export type ReactionBreakdown = Record<ReactionType, number>;
 
+export type PostAppealStatus = 'PENDING' | 'RESTORED' | 'REJECTED';
+
+export type AdminPostAppealStatusFilter = 'ALL' | PostAppealStatus;
+
+export interface PostAppealSummary {
+  id: string;
+  status: PostAppealStatus;
+  reasonCategory: string;
+  reasonDetail: string;
+  adminEvidence: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolvedBy: { id: string; fullName: string } | null;
+}
+
 export interface Post {
   id: string;
   author: PostAuthor;
   content: string;
   visibility: PostVisibility;
   media: PostMediaItem[];
+  moderationStatus?: PostModerationStatus;
+  moderationReason?: string | null;
+  moderatedAt?: string | null;
+  appeal?: PostAppealSummary | null;
+  appeals?: PostAppealSummary[];
   reactionCount: number;
   reactionBreakdown: ReactionBreakdown;
   userReaction: ReactionType | null;
@@ -50,6 +70,22 @@ export interface Post {
   isBookmarked: boolean;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface PostCommentsQueryParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedPostCommentsResult {
+  items: PostComment[];
+  meta: PaginationMeta;
+}
+
+export interface CreatePostAppealPayload {
+  postId: string;
+  reasonCategory: string;
+  reasonDetail: string;
 }
 
 export type PostsFeedFilter = 'all' | 'mine' | 'saved';
@@ -171,6 +207,7 @@ export interface AdminPostStatistics {
   totalPosts: number;
   activePosts: number;
   hiddenPosts: number;
+  pendingAppealsCount: number;
   postsToday: number;
   postsThisMonth: number;
   withMediaCount: number;
@@ -252,4 +289,73 @@ export interface RemoveAdminCommentPayload {
   postId: string;
   commentId: string;
   reason?: string;
+}
+
+export interface AdminPostAppealItem {
+  id: string;
+  postId: string;
+  post: {
+    id: string;
+    content: string;
+    visibility: PostVisibility;
+    media: PostMediaItem[];
+    moderationStatus: PostModerationStatus;
+    moderationReason: string | null;
+    moderatedAt: string | null;
+    createdAt: string;
+  };
+  appellant: AdminPostAuthor;
+  reasonCategory: string;
+  reasonDetail: string;
+  status: PostAppealStatus;
+  adminEvidence: string | null;
+  resolvedAt: string | null;
+  resolvedBy: AdminPostModeratorSummary | null;
+  totalAppealsCount: number;
+  hasEvidence: boolean;
+  recentAppeals: PostAppealSummary[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPostAppealsQueryParams {
+  page?: number;
+  limit?: number;
+  status?: AdminPostAppealStatusFilter;
+  search?: string;
+}
+
+export interface PaginatedAdminPostAppealsResult {
+  items: AdminPostAppealItem[];
+  meta: PaginationMeta;
+}
+
+export interface AdminPostAppealHistoryItem {
+  id: string;
+  postId: string;
+  roundNumber: number;
+  appellant: AdminPostAuthor;
+  reasonCategory: string;
+  reasonDetail: string;
+  status: PostAppealStatus;
+  adminEvidence: string | null;
+  resolvedAt: string | null;
+  resolvedBy: AdminPostModeratorSummary | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPostAppealHistoryQueryParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedAdminPostAppealHistoryResult {
+  items: AdminPostAppealHistoryItem[];
+  meta: PaginationMeta;
+}
+
+export interface RejectPostAppealPayload {
+  appealId: string;
+  evidence: string;
 }

@@ -23,3 +23,9 @@ export enum PostModerationStatus {
   ACTIVE = 'ACTIVE',
   HIDDEN = 'HIDDEN',
 }
+
+export enum PostAppealStatus {
+  PENDING = 'PENDING',
+  RESTORED = 'RESTORED',
+  REJECTED = 'REJECTED',
+}

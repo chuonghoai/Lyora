@@ -8,7 +8,22 @@ import { ChatBubbleOutlineIcon, CloseIcon, ReactionIcon } from './ClientIcons';
 import { PostAvatarChip } from './PostCard';
 
 export interface PostReactionsModalProps {
-  controller: PostFeedController;
+  controller: Pick<
+    PostFeedController,
+    | 'reactionsModalPost'
+    | 'reactionsPopover'
+    | 'reactionsData'
+    | 'isReactionsLoading'
+    | 'isReactionsError'
+    | 'friends'
+    | 'profileUser'
+    | 'handleCloseReactionsModal'
+    | 'handleChangeReactionsFilter'
+    | 'handleChangeReactionsPage'
+    | 'handleRetryReactions'
+    | 'handleOpenUserProfile'
+    | 'handleOpenChatWithFriend'
+  >;
 }
 
 export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controller }) => {

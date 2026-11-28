@@ -6,11 +6,13 @@ export interface AdminPostCommentsSectionProps {
   postId: string;
   comments: PostComment[];
   totalCount: number;
-  isExpanded: boolean;
-  onToggleExpand: (postId: string) => void;
+  onOpenPostDetail: (postId: string) => void;
   onInspectAuthor: (userId: string) => void;
   onRequestRemoveComment?: (postId: string, comment: PostComment) => void;
 }
+
+const MAX_INLINE_ROOT_COMMENTS = 2;
+const MAX_INLINE_REPLIES_PER_ROOT = 1;
 
 const AvatarCircle: React.FC<{
   name: string;
@@ -37,7 +39,7 @@ const AvatarCircle: React.FC<{
   );
 };
 
-const CommentBubbleItem: React.FC<{
+export const AdminCommentBubbleItem: React.FC<{
   postId: string;
   comment: PostComment;
   isReply?: boolean;
@@ -131,8 +133,7 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
   postId,
   comments,
   totalCount,
-  isExpanded,
-  onToggleExpand,
+  onOpenPostDetail,
   onInspectAuthor,
   onRequestRemoveComment,
 }) => {
@@ -149,7 +150,11 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
   const rootComments: PostComment[] = [];
 
   for (const comment of comments) {
-    if (comment.parentId && commentIds.has(comment.parentId) && comment.parentId !== comment.id) {
+    if (
+      comment.parentId &&
+      commentIds.has(comment.parentId) &&
+      comment.parentId !== comment.id
+    ) {
       const group = repliesByParentId.get(comment.parentId) ?? [];
       group.push(comment);
       repliesByParentId.set(comment.parentId, group);
@@ -158,15 +163,11 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
     }
   }
 
-  const hasHiddenReplies =
-    !isExpanded &&
-    rootComments.some((root) => (repliesByParentId.get(root.id)?.length ?? 0) > 2);
-  const canToggle = rootComments.length > 2 || hasHiddenReplies || isExpanded;
-  const visibleRoots = isExpanded ? rootComments : rootComments.slice(0, 2);
+  const visibleRoots = rootComments.slice(0, MAX_INLINE_ROOT_COMMENTS);
 
   return (
     <section
-      aria-label="Danh sách bình luận và phản hồi"
+      aria-label="Xem trước bình luận bài viết"
       className="rounded-b-xl border-t border-border bg-background/35 px-4 py-3.5 sm:px-5 space-y-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -174,28 +175,24 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
           Bình luận &amp; phản hồi ({totalCount.toLocaleString('vi-VN')})
         </span>
 
-        {canToggle && (
-          <button
-            type="button"
-            onClick={() => onToggleExpand(postId)}
-            className="text-xs font-semibold text-primary hover:text-primary-hover hover:underline cursor-pointer"
-          >
-            {isExpanded
-              ? 'Thu gọn bình luận'
-              : `Xem tất cả ${totalCount.toLocaleString('vi-VN')} bình luận`}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => onOpenPostDetail(postId)}
+          className="text-xs font-semibold text-primary hover:text-primary-hover hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        >
+          Xem tất cả bình luận
+        </button>
       </div>
 
       <ul className="space-y-3">
         {visibleRoots.map((root) => {
           const replies = repliesByParentId.get(root.id) ?? [];
-          const visibleReplies = isExpanded ? replies : replies.slice(0, 2);
+          const visibleReplies = replies.slice(0, MAX_INLINE_REPLIES_PER_ROOT);
           const hiddenRepliesCount = Math.max(0, replies.length - visibleReplies.length);
 
           return (
             <li key={root.id} className="space-y-2">
-              <CommentBubbleItem
+              <AdminCommentBubbleItem
                 postId={postId}
                 comment={root}
                 onInspectAuthor={onInspectAuthor}
@@ -205,7 +202,7 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
               {replies.length > 0 && (
                 <div className="ml-5 sm:ml-6 border-l-2 border-border pl-3.5 space-y-2.5">
                   {visibleReplies.map((reply) => (
-                    <CommentBubbleItem
+                    <AdminCommentBubbleItem
                       key={reply.id}
                       postId={postId}
                       comment={reply}
@@ -218,10 +215,10 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
                   {hiddenRepliesCount > 0 && (
                     <button
                       type="button"
-                      onClick={() => onToggleExpand(postId)}
+                      onClick={() => onOpenPostDetail(postId)}
                       className="text-xs font-semibold text-primary hover:text-primary-hover hover:underline cursor-pointer"
                     >
-                      Xem thêm {hiddenRepliesCount} phản hồi
+                      Xem thêm {hiddenRepliesCount} phản hồi trong chi tiết bài viết
                     </button>
                   )}
                 </div>

@@ -9,6 +9,7 @@ import {
 import type { IFriendsRepository } from '@/features/friends/repositories/friends.repository';
 import { PostService, type IPostRepository } from '@/features/posts';
 import {
+  getClientPostDetailPath,
   getClientProfilePath,
   isClientProfilePathname,
   ROUTES,
@@ -19,15 +20,19 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
   it('defines centralized /{userId} profile routes and path helper', () => {
     expect(ROUTES.CLIENT.PROFILE).toBe('/me');
     expect(ROUTES.CLIENT.PROFILE_DETAIL).toBe('/:userId');
+    expect(ROUTES.CLIENT.POST_DETAIL).toBe('/post/:postId');
     expect(getClientProfilePath()).toBe('/me');
     expect(getClientProfilePath(undefined, 'user-real-1')).toBe('/user-real-1');
     expect(getClientProfilePath('me', 'user-real-1')).toBe('/user-real-1');
     expect(getClientProfilePath('sample-user-1')).toBe('/sample-user-1');
+    expect(getClientPostDetailPath('post-1')).toBe('/post/post-1');
 
     expect(isClientProfilePathname('/sample-user-1')).toBe(true);
     expect(isClientProfilePathname('/11111111-1111-4111-8111-111111111111')).toBe(true);
     expect(isClientProfilePathname('/profile/sample-user-1')).toBe(true);
     expect(isClientProfilePathname('/')).toBe(false);
+    expect(isClientProfilePathname('/post/post-1')).toBe(false);
+    expect(isClientProfilePathname('/posts/post-1')).toBe(false);
     expect(isClientProfilePathname('/messages')).toBe(false);
     expect(isClientProfilePathname('/admin')).toBe(false);
     expect(isClientProfilePathname('/login')).toBe(false);

@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isUUID } from 'class-validator';
 import { Brackets, DataSource, In, Repository } from 'typeorm';
 import { PaginationMetaDto } from '../../../common/dto/api-response.dto';
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { UserRole } from '../../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { NotificationType } from '../../notifications/entities/notification.entity';
@@ -13,22 +19,33 @@ import {
   HidePostModerationDto,
   RemoveModerationReasonDto,
 } from '../dto/moderate-post.dto';
+import {
+  AdminPostAppealsQueryDto,
+  RejectPostAppealDto,
+} from '../dto/post-appeal.dto';
+import { PostAppeal } from '../entities/post-appeal.entity';
 import { PostComment } from '../entities/post-comment.entity';
 import { PostReaction } from '../entities/post-reaction.entity';
 import { Post } from '../entities/post.entity';
 import {
+  PostAppealStatus,
   PostModerationStatus,
   PostReactionType,
   PostVisibility,
 } from '../enums/post.enums';
 import {
+  AdminPostAppealHistoryItemResponse,
+  AdminPostAppealItemResponse,
   AdminPostCommentResponse,
   AdminPostDetailResponse,
   AdminPostItemResponse,
   AdminPostModeratorSummary,
   AdminPostStatistics,
+  PaginatedAdminPostAppealHistory,
+  PaginatedAdminPostAppeals,
   PaginatedAdminPosts,
 } from '../interfaces/admin-post.interface';
+import { PostAppealSummaryResponse } from '../interfaces/post-response.interface';
 
 interface RawPostStatisticsRow {
   totalPosts?: string | number;
@@ -83,6 +100,9 @@ export class AdminPostsService {
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
     private readonly notificationsService: NotificationsService,
+    @Optional()
+    @InjectRepository(PostAppeal)
+    private readonly postAppealRepository?: Repository<PostAppeal>,
   ) {}
 
   async getStatistics(): Promise<AdminPostStatistics> {
@@ -146,10 +166,27 @@ export class AdminPostsService {
       })
       .getRawOne<RawPostStatisticsRow>();
 
+    let pendingAppealsCount = 0;
+    if (this.postAppealRepository) {
+      const pendingRaw = await this.postAppealRepository
+        .createQueryBuilder('appeal')
+        .innerJoin('appeal.post', 'post')
+        .select('COUNT(DISTINCT appeal.postId)', 'pendingCount')
+        .where('appeal.status = :pendingStatus', {
+          pendingStatus: PostAppealStatus.PENDING,
+        })
+        .andWhere('post.moderationStatus = :hiddenStatus', {
+          hiddenStatus: PostModerationStatus.HIDDEN,
+        })
+        .getRawOne<{ pendingCount?: string | number }>();
+      pendingAppealsCount = toCount(pendingRaw?.pendingCount);
+    }
+
     return {
       totalPosts: toCount(raw?.totalPosts),
       activePosts: toCount(raw?.activePosts),
       hiddenPosts: toCount(raw?.hiddenPosts),
+      pendingAppealsCount,
       postsToday: toCount(raw?.postsToday),
       postsThisMonth: toCount(raw?.postsThisMonth),
       withMediaCount: toCount(raw?.withMediaCount),
@@ -266,6 +303,8 @@ export class AdminPostsService {
   ): Promise<AdminPostDetailResponse> {
     const post = await this.getPostOrThrow(id);
     const reason = dto.reason.trim();
+    const wasAlreadyHidden =
+      post.moderationStatus === PostModerationStatus.HIDDEN;
 
     post.moderationStatus = PostModerationStatus.HIDDEN;
     post.moderationReason = reason;
@@ -273,6 +312,10 @@ export class AdminPostsService {
     post.moderatedById = adminUser.id;
 
     await this.postRepository.save(post);
+
+    if (this.postAppealRepository && !wasAlreadyHidden) {
+      await this.postAppealRepository.softDelete({ postId: post.id });
+    }
 
     if (post.authorId !== adminUser.id) {
       const excerpt = summarizePostExcerpt(post.content);
@@ -282,7 +325,7 @@ export class AdminPostsService {
         type: NotificationType.POST_HIDDEN,
         title: 'Bài viết của bạn đã bị ẩn bởi Quản trị viên',
         description: `Bài viết ${excerpt} đã bị ẩn do vi phạm tiêu chuẩn cộng đồng. Lý do: ${reason}`,
-        targetPath: '/me',
+        targetPath: `/post/${post.id}`,
       });
     }
 
@@ -302,6 +345,17 @@ export class AdminPostsService {
 
     await this.postRepository.save(post);
 
+    if (this.postAppealRepository) {
+      await this.postAppealRepository.update(
+        { postId: post.id, status: PostAppealStatus.PENDING },
+        {
+          status: PostAppealStatus.RESTORED,
+          resolvedById: adminUser.id,
+          resolvedAt: new Date(),
+        },
+      );
+    }
+
     if (post.authorId !== adminUser.id) {
       const excerpt = summarizePostExcerpt(post.content);
       await this.notificationsService.createModerationNotice({
@@ -310,7 +364,7 @@ export class AdminPostsService {
         type: NotificationType.POST_RESTORED,
         title: 'Bài viết của bạn đã được khôi phục hiển thị',
         description: `Bài viết ${excerpt} đã được Quản trị viên khôi phục và hiển thị trở lại trên cộng đồng.`,
-        targetPath: '/me',
+        targetPath: `/post/${post.id}`,
       });
     }
 
@@ -336,7 +390,7 @@ export class AdminPostsService {
         type: NotificationType.POST_REMOVED,
         title: 'Bài viết của bạn đã bị gỡ bỏ',
         description: `Bài viết ${excerpt} đã bị Quản trị viên gỡ bỏ theo quy định tiêu chuẩn cộng đồng.${reasonSuffix}`,
-        targetPath: '/me',
+        targetPath: `/post/${post.id}`,
       });
     }
   }
@@ -385,9 +439,356 @@ export class AdminPostsService {
         type: NotificationType.COMMENT_REMOVED,
         title: 'Bình luận của bạn đã bị gỡ bỏ',
         description: `Bình luận ${excerpt} đã bị Quản trị viên gỡ bỏ do không phù hợp tiêu chuẩn cộng đồng.${reasonSuffix}`,
-        targetPath: '/me',
+        targetPath: `/post/${post.id}`,
       });
     }
+  }
+
+  async getAppeals(
+    query: AdminPostAppealsQueryDto,
+  ): Promise<PaginatedAdminPostAppeals> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    if (!this.postAppealRepository) {
+      return { items: [], meta: new PaginationMetaDto(page, limit, 0) };
+    }
+
+    const allAppeals = await this.postAppealRepository
+      .createQueryBuilder('appeal')
+      .innerJoinAndSelect('appeal.post', 'post')
+      .leftJoinAndSelect('appeal.appellant', 'appellant')
+      .leftJoinAndSelect('appeal.resolvedBy', 'resolvedBy')
+      .orderBy('appeal.createdAt', 'DESC')
+      .addOrderBy('appeal.id', 'DESC')
+      .getMany();
+
+    const groupsByPost = new Map<string, PostAppeal[]>();
+    for (const appeal of allAppeals) {
+      const list = groupsByPost.get(appeal.postId) ?? [];
+      list.push(appeal);
+      groupsByPost.set(appeal.postId, list);
+    }
+
+    const keyword = query.search?.trim().toLowerCase();
+    const statusFilter = query.status ?? 'ALL';
+
+    const filteredGroups = Array.from(groupsByPost.values()).filter((group) => {
+      const latest = group[0];
+      if (!latest) return false;
+
+      const isPostRestored =
+        latest.post?.moderationStatus === PostModerationStatus.ACTIVE ||
+        latest.status === PostAppealStatus.RESTORED;
+      const isPending =
+        !isPostRestored && latest.status === PostAppealStatus.PENDING;
+      const isRejectedHidden =
+        !isPostRestored && latest.status === PostAppealStatus.REJECTED;
+
+      if (statusFilter === PostAppealStatus.PENDING && !isPending) return false;
+      if (statusFilter === PostAppealStatus.RESTORED && !isPostRestored) {
+        return false;
+      }
+      if (statusFilter === PostAppealStatus.REJECTED && !isRejectedHidden) {
+        return false;
+      }
+
+      if (keyword) {
+        const matchesPost = (latest.post?.content ?? '')
+          .toLowerCase()
+          .includes(keyword);
+        const matchesAppellant =
+          (latest.appellant?.fullName ?? '').toLowerCase().includes(keyword) ||
+          (latest.appellant?.email ?? '').toLowerCase().includes(keyword);
+        const matchesAnyRound = group.some(
+          (item) =>
+            item.reasonCategory.toLowerCase().includes(keyword) ||
+            item.reasonDetail.toLowerCase().includes(keyword) ||
+            (item.adminEvidence ?? '').toLowerCase().includes(keyword),
+        );
+        if (!matchesPost && !matchesAppellant && !matchesAnyRound) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    filteredGroups.sort((groupA, groupB) => {
+      const latestA = groupA[0];
+      const latestB = groupB[0];
+      const aPending =
+        latestA.post?.moderationStatus === PostModerationStatus.HIDDEN &&
+        latestA.status === PostAppealStatus.PENDING
+          ? 0
+          : 1;
+      const bPending =
+        latestB.post?.moderationStatus === PostModerationStatus.HIDDEN &&
+        latestB.status === PostAppealStatus.PENDING
+          ? 0
+          : 1;
+      if (aPending !== bPending) return aPending - bPending;
+      return latestB.createdAt.getTime() - latestA.createdAt.getTime();
+    });
+
+    const totalItems = filteredGroups.length;
+    const offset = (page - 1) * limit;
+    const pagedGroups = filteredGroups.slice(offset, offset + limit);
+
+    return {
+      items: pagedGroups.map((group) => this.mapAppealItem(group[0], group)),
+      meta: new PaginationMetaDto(page, limit, totalItems),
+    };
+  }
+
+  async getPostAppealsHistory(
+    postId: string,
+    query: PaginationQueryDto,
+  ): Promise<PaginatedAdminPostAppealHistory> {
+    const post = await this.getPostOrThrow(postId);
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    if (!this.postAppealRepository) {
+      return { items: [], meta: new PaginationMetaDto(page, limit, 0) };
+    }
+
+    const [appeals, totalItems] = await this.postAppealRepository.findAndCount({
+      where: { postId: post.id },
+      relations: { appellant: true, resolvedBy: true },
+      order: { createdAt: 'DESC', id: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const offset = (page - 1) * limit;
+    const items: AdminPostAppealHistoryItemResponse[] = appeals.map(
+      (appeal, index) => ({
+        id: appeal.id,
+        postId: appeal.postId,
+        roundNumber: Math.max(1, totalItems - (offset + index)),
+        appellant: {
+          id: appeal.appellant?.id ?? appeal.appellantId,
+          fullName: appeal.appellant?.fullName ?? 'Người dùng Lyora',
+          email: appeal.appellant?.email ?? '',
+          avatarUrl: appeal.appellant?.avatarUrl ?? null,
+          role: appeal.appellant?.role ?? UserRole.CLIENT,
+        },
+        reasonCategory: appeal.reasonCategory,
+        reasonDetail: appeal.reasonDetail,
+        status: appeal.status,
+        adminEvidence: appeal.adminEvidence ?? null,
+        resolvedAt: appeal.resolvedAt ? appeal.resolvedAt.toISOString() : null,
+        resolvedBy: appeal.resolvedBy
+          ? {
+              id: appeal.resolvedBy.id,
+              fullName: appeal.resolvedBy.fullName,
+              email: appeal.resolvedBy.email,
+            }
+          : null,
+        createdAt: appeal.createdAt.toISOString(),
+        updatedAt: appeal.updatedAt.toISOString(),
+      }),
+    );
+
+    return {
+      items,
+      meta: new PaginationMetaDto(page, limit, totalItems),
+    };
+  }
+
+  async restoreAppeal(
+    adminUser: AuthenticatedUser,
+    appealId: string,
+  ): Promise<AdminPostAppealItemResponse> {
+    const appeal = await this.getAppealOrThrow(appealId);
+    if (
+      appeal.status === PostAppealStatus.RESTORED &&
+      appeal.post?.moderationStatus === PostModerationStatus.ACTIVE
+    ) {
+      throw new BadRequestException('Khiếu nại này đã được khôi phục trước đó');
+    }
+
+    const now = new Date();
+    const post = await this.postRepository.findOne({
+      where: { id: appeal.postId },
+    });
+    if (post && post.moderationStatus === PostModerationStatus.HIDDEN) {
+      post.moderationStatus = PostModerationStatus.ACTIVE;
+      post.moderationReason = null;
+      post.moderatedAt = now;
+      post.moderatedById = adminUser.id;
+      await this.postRepository.save(post);
+    }
+
+    await this.postAppealRepository!.update(
+      { postId: appeal.postId, status: PostAppealStatus.PENDING },
+      {
+        status: PostAppealStatus.RESTORED,
+        resolvedById: adminUser.id,
+        resolvedAt: now,
+      },
+    );
+    if (appeal.status !== PostAppealStatus.PENDING) {
+      await this.postAppealRepository!.update(appeal.id, {
+        status: PostAppealStatus.RESTORED,
+        resolvedById: adminUser.id,
+        resolvedAt: now,
+      });
+    }
+
+    if (appeal.appellantId !== adminUser.id) {
+      const excerpt = summarizePostExcerpt(
+        post?.content ?? appeal.post?.content ?? '',
+      );
+      await this.notificationsService.createModerationNotice({
+        recipientId: appeal.appellantId,
+        actorId: adminUser.id,
+        type: NotificationType.POST_RESTORED,
+        title: 'Khiếu nại được chấp nhận — Bài viết đã được khôi phục',
+        description: `Quản trị viên đã xem xét khiếu nại và khôi phục bài viết ${excerpt} hiển thị trở lại trên hồ sơ của bạn.`,
+        targetPath: `/post/${appeal.postId}`,
+      });
+    }
+
+    const [updated, postAppeals] = await Promise.all([
+      this.getAppealOrThrow(appeal.id),
+      this.postAppealRepository!.find({
+        where: { postId: appeal.postId },
+        relations: { resolvedBy: true },
+        order: { createdAt: 'DESC', id: 'DESC' },
+      }),
+    ]);
+    return this.mapAppealItem(updated, postAppeals);
+  }
+
+  async rejectAppeal(
+    adminUser: AuthenticatedUser,
+    appealId: string,
+    dto: RejectPostAppealDto,
+  ): Promise<AdminPostAppealItemResponse> {
+    const appeal = await this.getAppealOrThrow(appealId);
+    if (appeal.status !== PostAppealStatus.PENDING) {
+      throw new BadRequestException('Khiếu nại này đã được xử lý trước đó');
+    }
+
+    const now = new Date();
+    const evidence = dto.evidence.trim();
+
+    appeal.status = PostAppealStatus.REJECTED;
+    appeal.adminEvidence = evidence;
+    appeal.resolvedById = adminUser.id;
+    appeal.resolvedAt = now;
+
+    await this.postAppealRepository!.save(appeal);
+
+    if (appeal.appellantId !== adminUser.id) {
+      const excerpt = summarizePostExcerpt(appeal.post?.content ?? '');
+      await this.notificationsService.createModerationNotice({
+        recipientId: appeal.appellantId,
+        actorId: adminUser.id,
+        type: NotificationType.POST_APPEAL_REJECTED,
+        title: 'Quản trị viên đã phản hồi minh chứng cho khiếu nại của bạn',
+        description: `Bài viết ${excerpt} vẫn tiếp tục bị ẩn. Minh chứng từ Quản trị viên: ${evidence}`,
+        targetPath: `/post/${appeal.postId}`,
+      });
+    }
+
+    const [updated, postAppeals] = await Promise.all([
+      this.getAppealOrThrow(appeal.id),
+      this.postAppealRepository!.find({
+        where: { postId: appeal.postId },
+        relations: { resolvedBy: true },
+        order: { createdAt: 'DESC', id: 'DESC' },
+      }),
+    ]);
+    return this.mapAppealItem(updated, postAppeals);
+  }
+
+  private async getAppealOrThrow(appealId: string): Promise<PostAppeal> {
+    if (!this.postAppealRepository || !isUUID(appealId, '4')) {
+      throw new NotFoundException('Không tìm thấy khiếu nại bài viết');
+    }
+    const appeal = await this.postAppealRepository.findOne({
+      where: { id: appealId },
+      relations: { post: true, appellant: true, resolvedBy: true },
+    });
+    if (!appeal) {
+      throw new NotFoundException('Không tìm thấy khiếu nại bài viết');
+    }
+    return appeal;
+  }
+
+  private mapAppealSummary(appeal: PostAppeal): PostAppealSummaryResponse {
+    return {
+      id: appeal.id,
+      status: appeal.status,
+      reasonCategory: appeal.reasonCategory,
+      reasonDetail: appeal.reasonDetail,
+      adminEvidence: appeal.adminEvidence ?? null,
+      createdAt: appeal.createdAt.toISOString(),
+      resolvedAt: appeal.resolvedAt ? appeal.resolvedAt.toISOString() : null,
+      resolvedBy: appeal.resolvedBy
+        ? {
+            id: appeal.resolvedBy.id,
+            fullName: appeal.resolvedBy.fullName,
+          }
+        : null,
+    };
+  }
+
+  private mapAppealItem(
+    appeal: PostAppeal,
+    postAppeals?: PostAppeal[],
+  ): AdminPostAppealItemResponse {
+    const group =
+      postAppeals && postAppeals.length > 0 ? postAppeals : [appeal];
+
+    return {
+      id: appeal.id,
+      postId: appeal.postId,
+      post: {
+        id: appeal.post?.id ?? appeal.postId,
+        content: appeal.post?.content ?? '',
+        visibility: appeal.post?.visibility ?? PostVisibility.PUBLIC,
+        media: appeal.post?.media ?? [],
+        moderationStatus:
+          appeal.post?.moderationStatus ?? PostModerationStatus.HIDDEN,
+        moderationReason: appeal.post?.moderationReason ?? null,
+        moderatedAt: appeal.post?.moderatedAt
+          ? appeal.post.moderatedAt.toISOString()
+          : null,
+        createdAt: appeal.post?.createdAt
+          ? appeal.post.createdAt.toISOString()
+          : appeal.createdAt.toISOString(),
+      },
+      appellant: {
+        id: appeal.appellant?.id ?? appeal.appellantId,
+        fullName: appeal.appellant?.fullName ?? 'Người dùng Lyora',
+        email: appeal.appellant?.email ?? '',
+        avatarUrl: appeal.appellant?.avatarUrl ?? null,
+        role: appeal.appellant?.role ?? UserRole.CLIENT,
+      },
+      reasonCategory: appeal.reasonCategory,
+      reasonDetail: appeal.reasonDetail,
+      status: appeal.status,
+      adminEvidence: appeal.adminEvidence ?? null,
+      resolvedAt: appeal.resolvedAt ? appeal.resolvedAt.toISOString() : null,
+      resolvedBy: appeal.resolvedBy
+        ? {
+            id: appeal.resolvedBy.id,
+            fullName: appeal.resolvedBy.fullName,
+            email: appeal.resolvedBy.email,
+          }
+        : null,
+      totalAppealsCount: group.length,
+      hasEvidence: group.some((item) => Boolean(item.adminEvidence?.trim())),
+      recentAppeals: group
+        .slice(0, 2)
+        .map((item) => this.mapAppealSummary(item)),
+      createdAt: appeal.createdAt.toISOString(),
+      updatedAt: appeal.updatedAt.toISOString(),
+    };
   }
 
   private async getPostOrThrow(id: string): Promise<Post> {

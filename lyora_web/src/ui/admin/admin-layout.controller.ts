@@ -2,6 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore, useClickOutside, toast } from '@/core';
 import { useLogoutMutation } from '@/features/auth';
+import {
+  useMarkAllNotificationsReadMutation,
+  useMarkNotificationReadMutation,
+  useNotificationsQuery,
+  type AppNotification,
+} from '@/features/notifications';
+import { ROUTES } from '@/routes/paths';
 import { filterAdminNavItems, type AdminNavItem } from './adminNav';
 
 export function useAdminLayoutController() {
@@ -11,18 +18,35 @@ export function useAdminLayoutController() {
 
   const user = useAuthStore((s) => s.user);
   const logoutMutation = useLogoutMutation();
+  const notificationsQuery = useNotificationsQuery();
+  const markNotificationReadMutation = useMarkNotificationReadMutation();
+  const markAllReadMutation = useMarkAllNotificationsReadMutation();
 
   // Header local feature finder
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Header Notifications popover
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Sidebar collapse & mobile drawer
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(searchContainerRef, () => setIsSearchOpen(false));
+  useClickOutside(notificationsRef, () => setIsNotificationsOpen(false));
+
+  const notifications = useMemo(
+    () => notificationsQuery.data ?? [],
+    [notificationsQuery.data],
+  );
+  const unreadNotificationsCount = useMemo(
+    () => notifications.filter((item) => !item.isRead).length,
+    [notifications],
+  );
 
   const searchResults = useMemo(
     () => filterAdminNavItems(headerSearchQuery),
@@ -33,13 +57,15 @@ export function useAdminLayoutController() {
   useEffect(() => {
     setIsMobileSidebarOpen(false);
     setIsSearchOpen(false);
-  }, [location.pathname]);
+    setIsNotificationsOpen(false);
+  }, [location.pathname, location.search]);
 
   // Đóng nhanh các overlay bằng phím Escape
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsSearchOpen(false);
+        setIsNotificationsOpen(false);
         setIsMobileSidebarOpen(false);
       }
     };
@@ -100,6 +126,29 @@ export function useAdminLayoutController() {
     setIsMobileSidebarOpen(false);
   };
 
+  const handleToggleNotifications = () => {
+    setIsNotificationsOpen((prev) => !prev);
+    setIsSearchOpen(false);
+  };
+
+  const handleSelectNotification = async (notification: AppNotification) => {
+    setIsNotificationsOpen(false);
+    if (!notification.isRead) {
+      try {
+        await markNotificationReadMutation.mutateAsync(notification.id);
+      } catch {
+        // Không chặn điều hướng nếu đánh dấu đọc thất bại tạm thời
+      }
+    }
+    const targetPath = notification.targetPath || `${ROUTES.ADMIN.POSTS}?tab=appeals`;
+    navigate(targetPath);
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    if (unreadNotificationsCount === 0 || markAllReadMutation.isPending) return;
+    await markAllReadMutation.mutateAsync();
+  };
+
   return {
     location,
     appTitle,
@@ -109,6 +158,12 @@ export function useAdminLayoutController() {
     isSearchOpen,
     searchResults,
     searchContainerRef,
+    notifications,
+    unreadNotificationsCount,
+    isNotificationsOpen,
+    isLoadingNotifications: notificationsQuery.isLoading,
+    isMarkingAllNotificationsRead: markAllReadMutation.isPending,
+    notificationsRef,
     isSidebarCollapsed,
     isMobileSidebarOpen,
     handleLogout,
@@ -117,6 +172,9 @@ export function useAdminLayoutController() {
     handleHeaderSearchSubmit,
     handleSelectSearchItem,
     handleClearHeaderSearch,
+    handleToggleNotifications,
+    handleSelectNotification,
+    handleMarkAllNotificationsRead,
     handleToggleSidebarCollapse,
     handleOpenMobileSidebar,
     handleCloseMobileSidebar,

@@ -35,6 +35,7 @@ export interface ClientNotificationItem {
   description: string;
   timeLabel: string;
   isRead: boolean;
+  targetPath?: string | null;
   targetTab?: PostsFeedFilter;
   targetRoute?: "profile" | "friends";
   actorName?: string;
@@ -384,10 +385,13 @@ export function useClientLayoutController() {
       description: notification.description,
       timeLabel: formatNotificationTime(notification.createdAt),
       isRead: notification.isRead,
+      targetPath: notification.targetPath,
       targetRoute:
         notification.targetPath === ROUTES.CLIENT.FRIENDS
           ? "friends"
-          : undefined,
+          : notification.targetPath === ROUTES.CLIENT.PROFILE
+            ? "profile"
+            : undefined,
       actorName: requester?.fullName,
       actorAvatarUrl: requester?.avatarUrl,
       friendRequestUserId: isFriendRequest ? requester?.id : undefined,
@@ -400,6 +404,35 @@ export function useClientLayoutController() {
     );
     if (!notification || notification.isRead) return;
     markNotificationReadMutation.mutate(notificationId);
+  };
+
+  const handleSelectNotification = (item: ClientNotificationItem) => {
+    handleMarkNotificationRead(item.id);
+    handleCloseNotifications();
+
+    const rawPath = item.targetPath?.trim();
+    if (rawPath?.startsWith("/post/")) {
+      navigate(rawPath);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (rawPath?.startsWith("/posts/")) {
+      const normalized = rawPath.replace(/^\/posts\//, "/post/").split("?")[0];
+      navigate(normalized);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (rawPath === ROUTES.CLIENT.FRIENDS || item.targetRoute === "friends") {
+      handleNavigateFriends();
+      return;
+    }
+    if (rawPath === ROUTES.CLIENT.PROFILE || item.targetRoute === "profile") {
+      handleOpenProfile();
+      return;
+    }
+    if (item.targetTab) {
+      handleSelectTab(item.targetTab);
+    }
   };
 
   const handleMarkAllNotificationsRead = async () => {
@@ -506,6 +539,7 @@ export function useClientLayoutController() {
     handleToggleNotifications,
     handleCloseNotifications,
     handleRetryNotifications,
+    handleSelectNotification,
     handleMarkNotificationRead,
     handleMarkAllNotificationsRead,
     handleAcceptFriendRequestFromNotification,

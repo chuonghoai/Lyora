@@ -10,6 +10,7 @@ import { ProfileEditModal } from "./ProfileEditModal";
 import { ProfileFriendsSection } from "./ProfileFriendsSection";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
+import { PostAppealModal } from "./PostAppealModal";
 import { useProfileController } from "./profile.controller";
 
 const ProfileSkeleton: React.FC = () => (
@@ -118,6 +119,12 @@ export const ProfileView: React.FC = () => {
       <PostDetailModal controller={controller} />
       <PostReactionsModal controller={controller} />
       <MediaLightboxModal controller={controller} />
+      <PostAppealModal
+        post={controller.appealTargetPost}
+        isSubmitting={controller.isSubmittingAppeal}
+        onClose={controller.handleCloseAppealModal}
+        onSubmitAppeal={controller.handleSubmitPostAppeal}
+      />
 
       <ConfirmModal
         isOpen={Boolean(controller.unfriendTarget)}

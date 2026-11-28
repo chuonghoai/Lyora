@@ -18,6 +18,7 @@ import {
   BriefcaseIcon,
   CalendarIcon,
   CommentIcon,
+  EyeOffIcon,
   FlagIcon,
   LinkIcon,
   LockIcon,
@@ -29,32 +30,30 @@ import {
   UnlockIcon,
   UsersIcon,
 } from '../components/AdminIcons';
+import { AdminPostVisibilityChip } from '../components/AdminPostVisibilityChip';
 import { AdminPostCommentsSection } from './AdminPostCommentsSection';
 import { AdminPostReactionsModal } from './AdminPostReactionsModal';
 import { AdminPostSharesModal } from './AdminPostSharesModal';
+import { AdminUserAppealEvidenceModal } from './AdminUserAppealEvidenceModal';
 import { AdminUserPostActionMenu } from './AdminUserPostActionMenu';
+import { AdminUserPostDetailModal } from './AdminUserPostDetailModal';
 import { AdminUserPostModerationModal } from './AdminUserPostModerationModal';
+import { AdminUserPostModerationNotice } from './AdminUserPostModerationNotice';
 import {
   useAdminUserDetailController,
   type AdminUserPostVisibilityFilter,
 } from './admin-user-detail.controller';
 import { LockUserModal } from './LockUserModal';
 
-const VISIBILITY_LABELS: Record<'PUBLIC' | 'FRIENDS' | 'PRIVATE', string> = {
-  PUBLIC: 'Công khai',
-  FRIENDS: 'Bạn bè',
-  PRIVATE: 'Riêng tư',
-};
-
 const VISIBILITY_FILTER_OPTIONS: Array<{
   value: AdminUserPostVisibilityFilter;
   label: string;
 }> = [
-    { value: 'ALL', label: 'Tất cả' },
-    { value: 'PUBLIC', label: 'Công khai' },
-    { value: 'FRIENDS', label: 'Bạn bè' },
-    { value: 'PRIVATE', label: 'Riêng tư' },
-  ];
+  { value: 'ALL', label: 'Tất cả' },
+  { value: 'PUBLIC', label: 'Công khai' },
+  { value: 'FRIENDS', label: 'Bạn bè' },
+  { value: 'PRIVATE', label: 'Riêng tư' },
+];
 
 export const AdminUserDetailView: React.FC = () => {
   const ctrl = useAdminUserDetailController();
@@ -475,7 +474,7 @@ export const AdminUserDetailView: React.FC = () => {
                 const authorAvatar = post.author.avatarUrl ?? user.avatarUrl;
                 const authorInitial = authorName.charAt(0).toUpperCase();
                 const topReactions = getTopReactions(post.reactionBreakdown, 3);
-                const isCommentsExpanded = Boolean(ctrl.expandedCommentsMap[post.id]);
+                const isPostHidden = post.moderationStatus === 'HIDDEN';
 
                 return (
                   <article
@@ -503,9 +502,13 @@ export const AdminUserDetailView: React.FC = () => {
                               <span className="text-sm font-semibold text-foreground truncate">
                                 {authorName}
                               </span>
-                              <span className="rounded-md border border-border bg-background px-2 py-0.5 text-xs text-muted">
-                                {VISIBILITY_LABELS[post.visibility] ?? post.visibility}
-                              </span>
+                              <AdminPostVisibilityChip visibility={post.visibility} />
+                              {isPostHidden && (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning whitespace-nowrap">
+                                  <EyeOffIcon className="w-3 h-3" />
+                                  <span>Đã ẩn</span>
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs text-muted tabular-nums">
                               Đăng lúc {formatDateTime(post.createdAt)}
@@ -515,12 +518,28 @@ export const AdminUserDetailView: React.FC = () => {
 
                         <AdminUserPostActionMenu
                           postId={post.id}
+                          moderationStatus={post.moderationStatus}
                           disabled={ctrl.isModeratingPost}
+                          isRestoring={ctrl.restoringPostId === post.id}
                           onHidePost={() => ctrl.handleOpenHidePostModal(post)}
+                          onRestorePost={() => void ctrl.handleRestorePost(post)}
                           onFlagViolation={ctrl.handleFlagPostViolation}
                           onRemovePost={() => ctrl.handleOpenRemovePostModal(post)}
                         />
                       </header>
+
+                      <AdminUserPostModerationNotice
+                        post={post}
+                        mode="compact"
+                        onOpenAppealHistory={(targetPostId) =>
+                          ctrl.handleOpenPostDetail(targetPostId, {
+                            expandAppeals: true,
+                          })
+                        }
+                        onRequestRestoreAppeal={ctrl.handleRequestRestoreAppeal}
+                        onOpenEvidenceModal={ctrl.handleOpenEvidenceModal}
+                        isRestoringAppeal={ctrl.isRestoringAppeal}
+                      />
 
                       {post.content && (
                         <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
@@ -587,7 +606,7 @@ export const AdminUserDetailView: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-4">
                           <button
                             type="button"
-                            onClick={() => ctrl.handleTogglePostComments(post.id)}
+                            onClick={() => ctrl.handleOpenPostDetail(post.id)}
                             className="inline-flex items-center gap-1.5 hover:text-foreground hover:underline cursor-pointer"
                           >
                             <CommentIcon className="w-3.5 h-3.5" />
@@ -610,8 +629,7 @@ export const AdminUserDetailView: React.FC = () => {
                       postId={post.id}
                       comments={post.comments}
                       totalCount={post.commentCount}
-                      isExpanded={isCommentsExpanded}
-                      onToggleExpand={ctrl.handleTogglePostComments}
+                      onOpenPostDetail={ctrl.handleOpenPostDetail}
                       onInspectAuthor={ctrl.handleInspectUserProfile}
                       onRequestRemoveComment={ctrl.handleOpenRemoveCommentModal}
                     />
@@ -699,6 +717,46 @@ export const AdminUserDetailView: React.FC = () => {
         onInspectUser={ctrl.handleInspectUserProfile}
       />
 
+      {/* Post Detail Modal (?postId=...) */}
+      <AdminUserPostDetailModal
+        isOpen={Boolean(ctrl.detailPostId)}
+        postId={ctrl.detailPostId}
+        post={ctrl.detailPost}
+        isAppealsExpanded={ctrl.detailAppealsExpanded}
+        fallbackAuthorName={displayName}
+        fallbackAuthorAvatarUrl={user.avatarUrl}
+        isLoading={ctrl.isDetailPostLoading}
+        isError={ctrl.isDetailPostError}
+        isNotFound={ctrl.isDetailPostNotFound}
+        comments={ctrl.detailComments}
+        totalRootComments={ctrl.totalDetailRootComments}
+        isLoadingComments={ctrl.isDetailCommentsLoading}
+        isCommentsError={ctrl.isDetailCommentsError}
+        hasNextCommentsPage={ctrl.hasNextDetailCommentsPage}
+        isFetchingNextComments={ctrl.isFetchingNextDetailComments}
+        isFetchNextCommentsError={ctrl.isFetchNextDetailCommentsError}
+        isModeratingPost={ctrl.isModeratingPost}
+        isRestoringPost={Boolean(
+          ctrl.detailPost && ctrl.restoringPostId === ctrl.detailPost.id,
+        )}
+        isRestoringAppeal={ctrl.isRestoringAppeal}
+        onClose={ctrl.handleClosePostDetail}
+        onToggleAppealsExpanded={ctrl.handleToggleDetailAppealsExpanded}
+        onRetryDetail={ctrl.handleRetryDetail}
+        onRetryComments={ctrl.handleRetryDetailComments}
+        onLoadMoreComments={ctrl.handleLoadMoreDetailComments}
+        onInspectAuthor={ctrl.handleInspectUserProfile}
+        onOpenReactionsModal={ctrl.handleOpenReactionsModal}
+        onOpenSharesModal={ctrl.handleOpenSharesModal}
+        onHidePost={ctrl.handleOpenHidePostModal}
+        onRestorePost={(targetPost) => void ctrl.handleRestorePost(targetPost)}
+        onFlagViolation={ctrl.handleFlagPostViolation}
+        onRemovePost={ctrl.handleOpenRemovePostModal}
+        onRequestRemoveComment={ctrl.handleOpenRemoveCommentModal}
+        onRequestRestoreAppeal={ctrl.handleRequestRestoreAppeal}
+        onOpenEvidenceModal={ctrl.handleOpenEvidenceModal}
+      />
+
       {/* Post & Comment Moderation Modal */}
       <AdminUserPostModerationModal
         target={ctrl.moderationTarget}
@@ -710,6 +768,31 @@ export const AdminUserDetailView: React.FC = () => {
         onSelectPreset={ctrl.handleSelectModerationReasonPreset}
         onClose={ctrl.handleCloseModerationModal}
         onConfirm={(e) => void ctrl.handleConfirmModeration(e)}
+      />
+
+      {/* Appeal Evidence Modal */}
+      <AdminUserAppealEvidenceModal
+        target={ctrl.evidenceAppealTarget}
+        fallbackAuthorName={displayName}
+        evidence={ctrl.evidenceText}
+        error={ctrl.evidenceError}
+        isSubmitting={ctrl.isRejectingAppeal}
+        onEvidenceChange={ctrl.handleEvidenceTextChange}
+        onClose={ctrl.handleCloseEvidenceModal}
+        onConfirm={(e) => void ctrl.handleConfirmRejectAppeal(e)}
+      />
+
+      {/* Appeal Restore Confirm Modal */}
+      <ConfirmModal
+        isOpen={Boolean(ctrl.restoreAppealTarget)}
+        title="Khôi phục bài viết từ khiếu nại?"
+        description="Bài viết sẽ được mở hiển thị trở lại trên hồ sơ người dùng và bảng tin, đồng thời hệ thống sẽ gửi thông báo khôi phục tới tác giả."
+        confirmLabel="Xác nhận khôi phục"
+        cancelLabel="Hủy"
+        variant="primary"
+        isLoading={ctrl.isRestoringAppeal}
+        onConfirm={() => void ctrl.handleConfirmRestoreAppeal()}
+        onCancel={ctrl.handleCancelRestoreAppeal}
       />
     </div>
   );

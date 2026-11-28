@@ -1,16 +1,23 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { isApiError, toast, useAuthStore } from '@/core';
 import {
   hidePostModerationSchema,
+  rejectPostAppealSchema,
   removeModerationReasonSchema,
   useHideAdminPostMutation,
+  useInfinitePostCommentsQuery,
   useInfinitePostsQuery,
+  usePostDetailQuery,
   usePostReactionsQuery,
   usePostSharesQuery,
+  useRejectAdminPostAppealMutation,
   useRemoveAdminCommentMutation,
   useRemoveAdminPostMutation,
+  useRestoreAdminPostAppealMutation,
+  useRestoreAdminPostMutation,
   type Post,
+  type PostAppealSummary,
   type PostComment,
   type PostVisibility,
   type ReactionType,
@@ -22,6 +29,7 @@ import {
 } from '@/features/user';
 import { getAdminUserDetailPath, ROUTES } from '@/routes/paths';
 import type { AdminPostReactionsModalState } from './AdminPostReactionsModal';
+import type { AdminUserAppealEvidenceTarget } from './AdminUserAppealEvidenceModal';
 import type { AdminUserModerationTarget } from './AdminUserPostModerationModal';
 
 export type AdminUserPostVisibilityFilter = 'ALL' | PostVisibility;
@@ -33,16 +41,23 @@ export interface AdminPostSharesModalState {
 
 export function useAdminUserDetailController() {
   const { userId } = useParams<{ userId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const currentAdmin = useAuthStore((s) => s.user);
+
+  const detailPostId = useMemo(
+    () => searchParams.get('postId')?.trim() || null,
+    [searchParams],
+  );
+  const detailAppealsExpanded = useMemo(
+    () => searchParams.get('appeals') === 'expanded',
+    [searchParams],
+  );
 
   const [visibilityFilter, setVisibilityFilter] =
     useState<AdminUserPostVisibilityFilter>('ALL');
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
   const [isUnlockConfirmOpen, setIsUnlockConfirmOpen] = useState(false);
-  const [expandedCommentsMap, setExpandedCommentsMap] = useState<
-    Record<string, boolean>
-  >({});
   const [reactionsModal, setReactionsModal] =
     useState<AdminPostReactionsModalState | null>(null);
   const [sharesModal, setSharesModal] =
@@ -51,6 +66,13 @@ export function useAdminUserDetailController() {
     useState<AdminUserModerationTarget | null>(null);
   const [moderationReason, setModerationReason] = useState('');
   const [moderationError, setModerationError] = useState<string | null>(null);
+  const [restoringPostId, setRestoringPostId] = useState<string | null>(null);
+  const [restoreAppealTarget, setRestoreAppealTarget] =
+    useState<AdminUserAppealEvidenceTarget | null>(null);
+  const [evidenceAppealTarget, setEvidenceAppealTarget] =
+    useState<AdminUserAppealEvidenceTarget | null>(null);
+  const [evidenceText, setEvidenceText] = useState('');
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
 
   const userQuery = useAdminUserDetailQuery(userId);
   const postsQuery = useInfinitePostsQuery(
@@ -61,6 +83,9 @@ export function useAdminUserDetailController() {
     },
     { enabled: Boolean(userId) },
   );
+
+  const detailPostQuery = usePostDetailQuery(detailPostId);
+  const detailCommentsQuery = useInfinitePostCommentsQuery(detailPostId, 10);
 
   const reactionsQuery = usePostReactionsQuery(reactionsModal?.postId ?? null, {
     page: reactionsModal?.page ?? 1,
@@ -76,11 +101,15 @@ export function useAdminUserDetailController() {
   const lockMutation = useLockUserMutation();
   const unlockMutation = useUnlockUserMutation();
   const hidePostMutation = useHideAdminPostMutation();
+  const restorePostMutation = useRestoreAdminPostMutation();
   const removePostMutation = useRemoveAdminPostMutation();
   const removeCommentMutation = useRemoveAdminCommentMutation();
+  const restoreAppealMutation = useRestoreAdminPostAppealMutation();
+  const rejectAppealMutation = useRejectAdminPostAppealMutation();
 
   const isModeratingPost =
     hidePostMutation.isPending ||
+    restorePostMutation.isPending ||
     removePostMutation.isPending ||
     removeCommentMutation.isPending;
 
@@ -91,27 +120,106 @@ export function useAdminUserDetailController() {
   );
   const totalPosts = postsQuery.data?.pages[0]?.meta.totalItems ?? posts.length;
 
+  const detailComments = useMemo(
+    () => detailCommentsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [detailCommentsQuery.data],
+  );
+  const totalDetailRootComments =
+    detailCommentsQuery.data?.pages[0]?.meta.totalItems ?? 0;
+
+  const isDetailPostNotFound = Boolean(
+    detailPostId &&
+      detailPostQuery.isError &&
+      isApiError(detailPostQuery.error) &&
+      detailPostQuery.error.statusCode === 404,
+  );
+
   const reactionsModalPost = useMemo<Post | null>(() => {
     if (!reactionsModal) return null;
+    if (detailPostQuery.data && detailPostQuery.data.id === reactionsModal.postId) {
+      return detailPostQuery.data;
+    }
     return posts.find((item) => item.id === reactionsModal.postId) ?? null;
-  }, [posts, reactionsModal]);
+  }, [posts, reactionsModal, detailPostQuery.data]);
 
   const sharesModalPost = useMemo<Post | null>(() => {
     if (!sharesModal) return null;
+    if (detailPostQuery.data && detailPostQuery.data.id === sharesModal.postId) {
+      return detailPostQuery.data;
+    }
     return posts.find((item) => item.id === sharesModal.postId) ?? null;
-  }, [posts, sharesModal]);
+  }, [posts, sharesModal, detailPostQuery.data]);
+
+  const handleOpenPostDetail = useCallback(
+    (postId: string, openOptions?: { expandAppeals?: boolean }) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('postId', postId);
+          if (openOptions?.expandAppeals) {
+            next.set('appeals', 'expanded');
+          } else {
+            next.delete('appeals');
+          }
+          return next;
+        },
+        { replace: false },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const handleClosePostDetail = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        if (!prev.has('postId') && !prev.has('appeals')) return prev;
+        const next = new URLSearchParams(prev);
+        next.delete('postId');
+        next.delete('appeals');
+        return next;
+      },
+      { replace: false },
+    );
+  }, [setSearchParams]);
+
+  const handleToggleDetailAppealsExpanded = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (next.get('appeals') === 'expanded') {
+          next.delete('appeals');
+        } else {
+          next.set('appeals', 'expanded');
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
 
   useEffect(() => {
-    if (!reactionsModal && !sharesModal) return;
+    if (!reactionsModal && !sharesModal && !detailPostId && !restoreAppealTarget && !evidenceAppealTarget) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (reactionsModal) setReactionsModal(null);
-        else if (sharesModal) setSharesModal(null);
-      }
+      if (event.key !== 'Escape') return;
+      if (moderationTarget || evidenceAppealTarget) return;
+      if (restoreAppealTarget) {
+        if (!restoreAppealMutation.isPending) setRestoreAppealTarget(null);
+      } else if (reactionsModal) setReactionsModal(null);
+      else if (sharesModal) setSharesModal(null);
+      else if (detailPostId) handleClosePostDetail();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [reactionsModal, sharesModal]);
+  }, [
+    reactionsModal,
+    sharesModal,
+    detailPostId,
+    moderationTarget,
+    restoreAppealTarget,
+    evidenceAppealTarget,
+    restoreAppealMutation.isPending,
+    handleClosePostDetail,
+  ]);
 
   const isSelfAccount = Boolean(
     user && currentAdmin?.id && user.id === currentAdmin.id,
@@ -128,6 +236,10 @@ export function useAdminUserDetailController() {
   const handleRefreshAll = () => {
     void userQuery.refetch();
     void postsQuery.refetch();
+    if (detailPostId) {
+      void detailPostQuery.refetch();
+      void detailCommentsQuery.refetch();
+    }
   };
 
   const handleOpenLockModal = () => {
@@ -292,6 +404,7 @@ export function useAdminUserDetailController() {
         setModerationError(null);
         if (reactionsModal?.postId === targetPostId) setReactionsModal(null);
         if (sharesModal?.postId === targetPostId) setSharesModal(null);
+        if (detailPostId === targetPostId) handleClosePostDetail();
         toast.success('Đã gỡ bỏ bài viết khỏi hệ thống.');
       } catch (err) {
         toast.error(
@@ -318,11 +431,108 @@ export function useAdminUserDetailController() {
     }
   };
 
-  const handleTogglePostComments = (postId: string) => {
-    setExpandedCommentsMap((prev) => ({
-      ...prev,
-      [postId]: !prev[postId],
-    }));
+  const handleRestorePost = async (post: Post) => {
+    if (restorePostMutation.isPending) return;
+    setRestoringPostId(post.id);
+    try {
+      await restorePostMutation.mutateAsync(post.id);
+      toast.success('Đã khôi phục hiển thị bài viết.');
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : 'Không thể khôi phục bài viết lúc này.',
+      );
+    } finally {
+      setRestoringPostId(null);
+    }
+  };
+
+  const handleLoadMoreDetailComments = useCallback(() => {
+    if (
+      detailCommentsQuery.hasNextPage &&
+      !detailCommentsQuery.isFetchingNextPage
+    ) {
+      void detailCommentsQuery.fetchNextPage();
+    }
+  }, [detailCommentsQuery]);
+
+  const handleRetryDetail = () => {
+    void detailPostQuery.refetch();
+  };
+
+  const handleRetryDetailComments = () => {
+    void detailCommentsQuery.refetch();
+  };
+
+  const handleRequestRestoreAppeal = (post: Post, appeal: PostAppealSummary) => {
+    setRestoreAppealTarget({ post, appeal });
+  };
+
+  const handleCancelRestoreAppeal = () => {
+    if (restoreAppealMutation.isPending) return;
+    setRestoreAppealTarget(null);
+  };
+
+  const handleConfirmRestoreAppeal = async () => {
+    if (!restoreAppealTarget || restoreAppealMutation.isPending) return;
+    try {
+      await restoreAppealMutation.mutateAsync(restoreAppealTarget.appeal.id);
+      setRestoreAppealTarget(null);
+      toast.success('Đã khôi phục bài viết và gửi thông báo tới thành viên.');
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : 'Không thể khôi phục bài viết từ khiếu nại lúc này.',
+      );
+    }
+  };
+
+  const handleOpenEvidenceModal = (post: Post, appeal: PostAppealSummary) => {
+    setEvidenceAppealTarget({ post, appeal });
+    setEvidenceText('');
+    setEvidenceError(null);
+  };
+
+  const handleCloseEvidenceModal = useCallback(() => {
+    if (rejectAppealMutation.isPending) return;
+    setEvidenceAppealTarget(null);
+    setEvidenceText('');
+    setEvidenceError(null);
+  }, [rejectAppealMutation.isPending]);
+
+  const handleEvidenceTextChange = (value: string) => {
+    setEvidenceText(value);
+    if (evidenceError) setEvidenceError(null);
+  };
+
+  const handleConfirmRejectAppeal = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!evidenceAppealTarget || rejectAppealMutation.isPending) return;
+
+    const parsed = rejectPostAppealSchema.safeParse({ evidence: evidenceText });
+    if (!parsed.success) {
+      setEvidenceError(
+        parsed.error.issues[0]?.message ?? 'Minh chứng chưa hợp lệ',
+      );
+      return;
+    }
+
+    try {
+      await rejectAppealMutation.mutateAsync({
+        appealId: evidenceAppealTarget.appeal.id,
+        evidence: parsed.data.evidence,
+      });
+      setEvidenceAppealTarget(null);
+      setEvidenceText('');
+      setEvidenceError(null);
+      toast.success('Đã gửi minh chứng phản hồi khiếu nại tới thành viên.');
+    } catch (err) {
+      setEvidenceError(
+        isApiError(err) ? err.message : 'Không thể gửi minh chứng lúc này.',
+      );
+    }
   };
 
   const handleOpenReactionsModal = (postId: string) => {
@@ -389,7 +599,26 @@ export function useAdminUserDetailController() {
     isLockingUser: lockMutation.isPending,
     isUnlockConfirmOpen,
     isUnlockingUser: unlockMutation.isPending,
-    expandedCommentsMap,
+    detailPostId,
+    detailAppealsExpanded,
+    detailPost: detailPostQuery.data ?? null,
+    isDetailPostLoading: detailPostQuery.isLoading,
+    isDetailPostError: detailPostQuery.isError && !isDetailPostNotFound,
+    isDetailPostNotFound,
+    detailComments,
+    totalDetailRootComments,
+    isDetailCommentsLoading: detailCommentsQuery.isLoading,
+    isDetailCommentsError: detailCommentsQuery.isError,
+    hasNextDetailCommentsPage: Boolean(detailCommentsQuery.hasNextPage),
+    isFetchingNextDetailComments: detailCommentsQuery.isFetchingNextPage,
+    isFetchNextDetailCommentsError: detailCommentsQuery.isFetchNextPageError,
+    restoringPostId,
+    restoreAppealTarget,
+    isRestoringAppeal: restoreAppealMutation.isPending,
+    evidenceAppealTarget,
+    evidenceText,
+    evidenceError,
+    isRejectingAppeal: rejectAppealMutation.isPending,
     reactionsModal,
     reactionsModalPost,
     reactionsData: reactionsQuery.data,
@@ -425,7 +654,20 @@ export function useAdminUserDetailController() {
     handleModerationReasonChange,
     handleSelectModerationReasonPreset,
     handleConfirmModeration,
-    handleTogglePostComments,
+    handleRestorePost,
+    handleOpenPostDetail,
+    handleClosePostDetail,
+    handleToggleDetailAppealsExpanded,
+    handleRetryDetail,
+    handleRetryDetailComments,
+    handleLoadMoreDetailComments,
+    handleRequestRestoreAppeal,
+    handleCancelRestoreAppeal,
+    handleConfirmRestoreAppeal,
+    handleOpenEvidenceModal,
+    handleCloseEvidenceModal,
+    handleEvidenceTextChange,
+    handleConfirmRejectAppeal,
     handleOpenReactionsModal,
     handleCloseReactionsModal,
     handleChangeReactionsFilter,

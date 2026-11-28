@@ -26,7 +26,7 @@ import {
   type PostVisibility,
   type ReactionType,
 } from '@/features/posts';
-import { getClientProfilePath, ROUTES } from '@/routes/paths';
+import { getClientPostDetailPath, getClientProfilePath, ROUTES } from '@/routes/paths';
 import { usePostAiAssistant } from './post-ai-assistant.controller';
 
 export interface MediaLightboxState {
@@ -730,7 +730,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   const handleSharePost = async (postId: string) => {
     try {
       await sharePostMutation.mutateAsync(postId);
-      const shareUrl = `${window.location.origin}/?post=${encodeURIComponent(postId)}`;
+      const shareUrl = `${window.location.origin}${getClientPostDetailPath(postId)}`;
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl).catch(() => undefined);
       }
@@ -777,7 +777,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   };
 
   const handleCopyPostLink = async (postId: string) => {
-    const shareUrl = `${window.location.origin}/?post=${encodeURIComponent(postId)}`;
+    const shareUrl = `${window.location.origin}${getClientPostDetailPath(postId)}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl);
@@ -790,6 +790,16 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
 
   const handleOpenPostDetail = (postId: string) => {
     setDetailPostId(postId);
+  };
+
+  const handleOpenPostDetailPage = (
+    postId: string,
+    openOptions?: { expandAppeals?: boolean },
+  ) => {
+    navigate(getClientPostDetailPath(postId), {
+      state: openOptions?.expandAppeals ? { expandAppeals: true } : undefined,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleClosePostDetail = () => {
@@ -1061,6 +1071,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     handleUndoHidePost,
     handleCopyPostLink,
     handleOpenPostDetail,
+    handleOpenPostDetailPage,
     handleClosePostDetail,
     handleOpenUserProfile,
     handleOpenChatWithFriend,

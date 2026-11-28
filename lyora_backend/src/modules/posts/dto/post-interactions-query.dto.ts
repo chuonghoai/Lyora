@@ -9,3 +9,5 @@ export class PostReactionsQueryDto extends PaginationQueryDto {
 }
 
 export class PostSharesQueryDto extends PaginationQueryDto {}
+
+export class PostCommentsQueryDto extends PaginationQueryDto {}

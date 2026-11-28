@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, ErrorState } from '@/core';
+import { Button, ConfirmModal, ErrorState } from '@/core';
 import type {
   AdminPostAuthorRoleFilter,
   AdminPostMediaFilter,
@@ -13,8 +13,11 @@ import {
   SearchIcon,
 } from '../components/AdminIcons';
 import { useAdminPostsController } from './admin-posts.controller';
+import { AdminAppealEvidenceModal } from './AdminAppealEvidenceModal';
 import { AdminCreatePostModal } from './AdminCreatePostModal';
 import { AdminModerationModal } from './AdminModerationModal';
+import { AdminPostAppealHistoryModal } from './AdminPostAppealHistoryModal';
+import { AdminPostAppealsTab } from './AdminPostAppealsTab';
 import { AdminPostDetailModal } from './AdminPostDetailModal';
 import { AdminPostsTable } from './AdminPostsTable';
 
@@ -224,11 +227,55 @@ export const AdminPostsView: React.FC = () => {
         </section>
       ) : null}
 
-      {/* Main List Card (Filters + Adaptive Table) */}
-      <section
-        aria-label="Danh sách bài viết hệ thống"
-        className="rounded-xl border border-border bg-card overflow-hidden"
+      {/* Top-level Management Mode Tabs */}
+      <div
+        role="tablist"
+        aria-label="Chế độ quản lý bài viết"
+        className="inline-flex items-center rounded-xl border border-border bg-card p-1 gap-1"
       >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={controller.activeMainTab === 'posts'}
+          onClick={() => controller.handleSelectMainTab('posts')}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
+            controller.activeMainTab === 'posts'
+              ? 'bg-secondary text-primary-active border border-secondary-strong'
+              : 'text-muted hover:text-foreground'
+          }`}
+        >
+          <span>Danh sách bài viết</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={controller.activeMainTab === 'appeals'}
+          onClick={() => controller.handleSelectMainTab('appeals')}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
+            controller.activeMainTab === 'appeals'
+              ? 'bg-secondary text-primary-active border border-secondary-strong'
+              : 'text-muted hover:text-foreground'
+          }`}
+        >
+          <span>Khiếu nại bài viết</span>
+          {(stats?.pendingAppealsCount ?? 0) > 0 && (
+            <span className="inline-flex items-center justify-center rounded-full bg-warning/15 border border-warning/35 px-2 py-0.5 text-[11px] font-bold text-warning tabular-nums">
+              {stats!.pendingAppealsCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {controller.activeMainTab === 'appeals' ? (
+        <AdminPostAppealsTab controller={controller} />
+      ) : (
+        <>
+          {/* Main List Card (Filters + Adaptive Table) */}
+          <section
+            aria-label="Danh sách bài viết hệ thống"
+            className="rounded-xl border border-border bg-card overflow-hidden"
+          >
         {/* Filter Toolbar */}
         <div className="border-b border-border p-4 sm:p-5 space-y-3 bg-card">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -408,11 +455,49 @@ export const AdminPostsView: React.FC = () => {
           <AdminPostsTable controller={controller} />
         )}
       </section>
+        </>
+      )}
 
       {/* Native Top-Layer Modals */}
       <AdminPostDetailModal controller={controller} />
       <AdminModerationModal controller={controller} />
       <AdminCreatePostModal controller={controller} />
+      <AdminAppealEvidenceModal
+        appeal={controller.evidenceModalTarget}
+        evidence={controller.evidenceText}
+        error={controller.evidenceError}
+        isSubmitting={controller.isRejectingAppeal}
+        onEvidenceChange={controller.handleEvidenceTextChange}
+        onClose={controller.handleCloseEvidenceModal}
+        onConfirm={(e) => void controller.handleConfirmRejectAppeal(e)}
+      />
+      <AdminPostAppealHistoryModal
+        appealTarget={controller.appealHistoryTarget}
+        items={controller.appealHistoryItems}
+        totalItems={controller.appealHistoryTotalItems}
+        isLoading={controller.isAppealHistoryLoading}
+        isError={controller.isAppealHistoryError}
+        hasNextPage={controller.hasNextAppealHistoryPage}
+        isFetchingNextPage={controller.isFetchingNextAppealHistory}
+        isFetchNextError={controller.isFetchNextAppealHistoryError}
+        isRestoringAppeal={controller.isRestoringAppeal}
+        onClose={controller.handleCloseAppealHistoryModal}
+        onRetry={controller.handleRetryAppealHistory}
+        onLoadMore={controller.handleLoadMoreAppealHistory}
+        onRequestRestoreAppeal={controller.handleRequestRestoreAppeal}
+        onOpenEvidenceModal={controller.handleOpenEvidenceModal}
+      />
+      <ConfirmModal
+        isOpen={Boolean(controller.restoreAppealTarget)}
+        title="Khôi phục bài viết từ khiếu nại?"
+        description="Bài viết sẽ được mở hiển thị trở lại trên hồ sơ người dùng và bảng tin, đồng thời hệ thống sẽ gửi thông báo khôi phục tới tác giả."
+        confirmLabel="Xác nhận khôi phục"
+        cancelLabel="Hủy"
+        variant="primary"
+        isLoading={controller.isRestoringAppeal}
+        onConfirm={() => void controller.handleConfirmRestoreAppeal()}
+        onCancel={controller.handleCancelRestoreAppeal}
+      />
     </div>
   );
 };

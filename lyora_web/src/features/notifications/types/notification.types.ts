@@ -4,7 +4,9 @@ export type NotificationKind =
   | "POST_HIDDEN"
   | "POST_RESTORED"
   | "POST_REMOVED"
-  | "COMMENT_REMOVED";
+  | "COMMENT_REMOVED"
+  | "POST_APPEAL_SUBMITTED"
+  | "POST_APPEAL_REJECTED";
 
 export interface AppNotification {
   id: string;

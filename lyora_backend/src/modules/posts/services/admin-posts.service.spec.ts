@@ -1,14 +1,19 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { UserRole } from '../../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { User } from '../../users/entities/user.entity';
+import { PostAppeal } from '../entities/post-appeal.entity';
 import { PostComment } from '../entities/post-comment.entity';
 import { PostReaction } from '../entities/post-reaction.entity';
 import { Post } from '../entities/post.entity';
-import { PostModerationStatus, PostVisibility } from '../enums/post.enums';
+import {
+  PostAppealStatus,
+  PostModerationStatus,
+  PostVisibility,
+} from '../enums/post.enums';
 import { AdminPostsService } from './admin-posts.service';
 
 describe('AdminPostsService (Post Supervision & Moderation)', () => {
@@ -110,6 +115,25 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
       createModerationNotice,
     } as unknown as NotificationsService;
 
+    const appealFindOne = jest.fn();
+    const appealFind = jest.fn().mockResolvedValue([]);
+    const appealFindAndCount = jest.fn().mockResolvedValue([[], 0]);
+    const appealSave = jest.fn((entity: PostAppeal) => Promise.resolve(entity));
+    const appealUpdate = jest.fn().mockResolvedValue(undefined);
+    const appealSoftDelete = jest.fn().mockResolvedValue(undefined);
+    const appealCount = jest.fn().mockResolvedValue(2);
+    const appealCreateQb = jest.fn();
+    const appealRepo = {
+      findOne: appealFindOne,
+      find: appealFind,
+      findAndCount: appealFindAndCount,
+      save: appealSave,
+      update: appealUpdate,
+      softDelete: appealSoftDelete,
+      count: appealCount,
+      createQueryBuilder: appealCreateQb,
+    } as unknown as Repository<PostAppeal>;
+
     const service = new AdminPostsService(
       postRepo,
       reactionRepo,
@@ -117,6 +141,7 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
       userRepo,
       dataSource,
       notificationsService,
+      appealRepo,
     );
 
     return {
@@ -130,11 +155,19 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
       txSoftDelete,
       txUpdateExecute,
       createModerationNotice,
+      appealFindOne,
+      appealFind,
+      appealFindAndCount,
+      appealSave,
+      appealUpdate,
+      appealSoftDelete,
+      appealCount,
+      appealCreateQb,
     };
   }
 
   it('getStatistics aggregates real counts and visibility breakdown', async () => {
-    const { service, createPostQb } = setupService();
+    const { service, createPostQb, appealCreateQb } = setupService();
     const qbMock = {
       leftJoin: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
@@ -154,12 +187,20 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
       }),
     };
     createPostQb.mockReturnValue(qbMock);
+    appealCreateQb.mockReturnValue({
+      innerJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ pendingCount: '2' }),
+    });
 
     const stats = await service.getStatistics();
     expect(stats).toEqual({
       totalPosts: 15,
       activePosts: 13,
       hiddenPosts: 2,
+      pendingAppealsCount: 2,
       postsToday: 3,
       postsThisMonth: 11,
       withMediaCount: 6,
@@ -202,9 +243,14 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
     expect(res.items[0]?.author.role).toBe(UserRole.CLIENT);
   });
 
-  it('hidePost sets HIDDEN status, stores reason, and notifies member author (but not self)', async () => {
-    const { service, findOnePost, savePost, createModerationNotice } =
-      setupService();
+  it('hidePost sets HIDDEN status, resets prior appeals on new cycle, stores reason, and notifies member author', async () => {
+    const {
+      service,
+      findOnePost,
+      savePost,
+      appealSoftDelete,
+      createModerationNotice,
+    } = setupService();
     const memberPost = createFixture(memberId);
     findOnePost.mockResolvedValue(memberPost);
     savePost.mockImplementation((entity: Post) => Promise.resolve(entity));
@@ -214,6 +260,7 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
     });
 
     expect(savePost).toHaveBeenCalledTimes(1);
+    expect(appealSoftDelete).toHaveBeenCalledWith({ postId });
     expect(hidden.moderationStatus).toBe(PostModerationStatus.HIDDEN);
     expect(hidden.moderationReason).toBe('Ngôn từ thiếu chuẩn mực cộng đồng');
     expect(createModerationNotice).toHaveBeenCalledWith(
@@ -221,8 +268,19 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
         recipientId: memberId,
         actorId: adminUser.id,
         type: NotificationType.POST_HIDDEN,
+        targetPath: `/post/${postId}`,
       }),
     );
+
+    appealSoftDelete.mockClear();
+    createModerationNotice.mockClear();
+    const alreadyHiddenPost = createFixture(memberId);
+    alreadyHiddenPost.moderationStatus = PostModerationStatus.HIDDEN;
+    findOnePost.mockResolvedValue(alreadyHiddenPost);
+    await service.hidePost(adminUser, postId, {
+      reason: 'Cập nhật lý do ẩn bổ sung',
+    });
+    expect(appealSoftDelete).not.toHaveBeenCalled();
 
     createModerationNotice.mockClear();
     const adminOwnPost = createFixture(adminUser.id);
@@ -249,6 +307,7 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
       expect.objectContaining({
         recipientId: memberId,
         type: NotificationType.POST_RESTORED,
+        targetPath: `/post/${postId}`,
       }),
     );
   });
@@ -267,6 +326,7 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
       expect.objectContaining({
         recipientId: memberId,
         type: NotificationType.POST_REMOVED,
+        targetPath: `/post/${postId}`,
       }),
     );
   });
@@ -305,6 +365,244 @@ describe('AdminPostsService (Post Supervision & Moderation)', () => {
       expect.objectContaining({
         recipientId: memberId,
         type: NotificationType.COMMENT_REMOVED,
+        targetPath: `/post/${postId}`,
+      }),
+    );
+  });
+
+  it('supports getStatistics pendingAppealsCount, grouped getAppeals, getPostAppealsHistory, restoreAppeal and rejectAppeal with evidence', async () => {
+    const {
+      service,
+      createPostQb,
+      findOnePost,
+      savePost,
+      createModerationNotice,
+      appealCreateQb,
+      appealFindOne,
+      appealFind,
+      appealFindAndCount,
+      appealSave,
+      appealUpdate,
+    } = setupService();
+
+    const statsQb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        totalPosts: '5',
+        activePosts: '3',
+        hiddenPosts: '2',
+        postsToday: '1',
+        postsThisMonth: '5',
+        withMediaCount: '2',
+        adminPostsCount: '1',
+        publicCount: '3',
+        friendsCount: '1',
+        privateCount: '1',
+      }),
+    };
+    createPostQb.mockReturnValue(statsQb);
+    appealCreateQb.mockReturnValueOnce({
+      innerJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ pendingCount: '3' }),
+    });
+    const stats = await service.getStatistics();
+    expect(stats.pendingAppealsCount).toBe(3);
+
+    const appealId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+    const appealOlderId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+    const restoredPostId = '11111111-1111-4111-8111-111111111111';
+    const hiddenPost = createFixture(memberId);
+    hiddenPost.moderationStatus = PostModerationStatus.HIDDEN;
+    hiddenPost.moderationReason = 'Spam';
+    const restoredWithEvidencePost = {
+      ...createFixture(memberId),
+      id: restoredPostId,
+      moderationStatus: PostModerationStatus.ACTIVE,
+      moderationReason: null,
+    } as Post;
+
+    const appealFixture = {
+      id: appealId,
+      postId,
+      post: hiddenPost,
+      appellantId: memberId,
+      appellant: hiddenPost.author,
+      reasonCategory: 'Nhầm lẫn',
+      reasonDetail: 'Bài viết chia sẻ kinh nghiệm học tập',
+      status: PostAppealStatus.PENDING,
+      adminEvidence: null,
+      resolvedById: null,
+      resolvedBy: null,
+      resolvedAt: null,
+      createdAt: new Date('2026-11-28T02:00:00.000Z'),
+      updatedAt: new Date('2026-11-28T02:00:00.000Z'),
+    } as PostAppeal;
+
+    const olderRejectedRound = {
+      ...appealFixture,
+      id: appealOlderId,
+      status: PostAppealStatus.REJECTED,
+      adminEvidence: 'Minh chứng lần 1 cho bài viết',
+      createdAt: new Date('2026-11-28T01:00:00.000Z'),
+      updatedAt: new Date('2026-11-28T01:30:00.000Z'),
+      resolvedAt: new Date('2026-11-28T01:30:00.000Z'),
+    } as PostAppeal;
+
+    const restoredPostEvidenceAppeal = {
+      ...appealFixture,
+      id: '22222222-2222-4222-8222-222222222222',
+      postId: restoredPostId,
+      post: restoredWithEvidencePost,
+      status: PostAppealStatus.REJECTED,
+      adminEvidence: 'Minh chứng cũ trước khi khôi phục',
+      createdAt: new Date('2026-11-28T01:45:00.000Z'),
+      updatedAt: new Date('2026-11-28T01:50:00.000Z'),
+      resolvedAt: new Date('2026-11-28T01:50:00.000Z'),
+    } as PostAppeal;
+
+    const appealsQb = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      getMany: jest
+        .fn()
+        .mockResolvedValue([
+          appealFixture,
+          olderRejectedRound,
+          restoredPostEvidenceAppeal,
+        ]),
+    };
+    appealCreateQb.mockReturnValueOnce(appealsQb);
+    const listRes = await service.getAppeals({ page: 1, limit: 10 });
+    expect(listRes.items).toHaveLength(2);
+    expect(listRes.items[0]?.id).toBe(appealId);
+    expect(listRes.items[0]?.totalAppealsCount).toBe(2);
+    expect(listRes.items[0]?.hasEvidence).toBe(true);
+    expect(listRes.items[0]?.recentAppeals).toHaveLength(2);
+    expect(listRes.items[0]?.recentAppeals[0]?.adminEvidence).toBeNull();
+    expect(listRes.items[0]?.recentAppeals[1]?.adminEvidence).toBe(
+      'Minh chứng lần 1 cho bài viết',
+    );
+
+    // Filter RESTORED includes post that had evidence sent and was later restored
+    appealCreateQb.mockReturnValueOnce(appealsQb);
+    const restoredOnly = await service.getAppeals({
+      page: 1,
+      limit: 10,
+      status: PostAppealStatus.RESTORED,
+    });
+    expect(restoredOnly.items.map((item) => item.postId)).toEqual([
+      restoredPostId,
+    ]);
+    expect(restoredOnly.items[0]?.hasEvidence).toBe(true);
+
+    // Filter REJECTED excludes posts that have already been restored
+    appealCreateQb.mockReturnValueOnce(appealsQb);
+    const rejectedOnly = await service.getAppeals({
+      page: 1,
+      limit: 10,
+      status: PostAppealStatus.REJECTED,
+    });
+    expect(rejectedOnly.items).toHaveLength(0);
+
+    // Paginated post appeal history includes accurate roundNumber
+    findOnePost.mockResolvedValueOnce(hiddenPost);
+    appealFindAndCount.mockResolvedValueOnce([
+      [appealFixture, olderRejectedRound],
+      2,
+    ]);
+    const historyRes = await service.getPostAppealsHistory(postId, {
+      page: 1,
+      limit: 10,
+    });
+    expect(historyRes.items.map((item) => item.roundNumber)).toEqual([2, 1]);
+
+    // Reject with concrete evidence
+    appealFindOne
+      .mockResolvedValueOnce({ ...appealFixture })
+      .mockResolvedValueOnce({
+        ...appealFixture,
+        status: PostAppealStatus.REJECTED,
+        adminEvidence: 'Nội dung chứa liên kết quảng cáo trái phép ở đoạn 2.',
+        resolvedAt: new Date('2026-11-28T03:00:00.000Z'),
+        resolvedBy: {
+          id: adminUser.id,
+          fullName: adminFullName,
+          email: adminUser.email,
+        },
+      });
+    appealFind.mockResolvedValueOnce([
+      {
+        ...appealFixture,
+        status: PostAppealStatus.REJECTED,
+        adminEvidence: 'Nội dung chứa liên kết quảng cáo trái phép ở đoạn 2.',
+      },
+    ]);
+    const rejected = await service.rejectAppeal(adminUser, appealId, {
+      evidence: 'Nội dung chứa liên kết quảng cáo trái phép ở đoạn 2.',
+    });
+    expect(appealSave).toHaveBeenCalledTimes(1);
+    expect(rejected.status).toBe(PostAppealStatus.REJECTED);
+    expect(rejected.adminEvidence).toBe(
+      'Nội dung chứa liên kết quảng cáo trái phép ở đoạn 2.',
+    );
+    expect(createModerationNotice).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: memberId,
+        type: NotificationType.POST_APPEAL_REJECTED,
+        targetPath: `/post/${postId}`,
+      }),
+    );
+
+    // Rejecting non-pending appeal fails
+    appealFindOne.mockResolvedValueOnce({
+      ...appealFixture,
+      status: PostAppealStatus.REJECTED,
+    });
+    await expect(
+      service.rejectAppeal(adminUser, appealId, {
+        evidence: 'Thử gửi lại lần hai không hợp lệ',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    // Restore from appeal (even after REJECTED evidence was sent, preserving evidence)
+    appealFindOne
+      .mockResolvedValueOnce({
+        ...appealFixture,
+        status: PostAppealStatus.REJECTED,
+        adminEvidence: 'Minh chứng cũ',
+      })
+      .mockResolvedValueOnce({
+        ...appealFixture,
+        status: PostAppealStatus.RESTORED,
+        adminEvidence: 'Minh chứng cũ',
+        resolvedAt: new Date('2026-11-28T04:00:00.000Z'),
+      });
+    appealFind.mockResolvedValueOnce([
+      {
+        ...appealFixture,
+        status: PostAppealStatus.RESTORED,
+        adminEvidence: 'Minh chứng cũ',
+      },
+    ]);
+    findOnePost.mockResolvedValueOnce({ ...hiddenPost });
+    savePost.mockImplementation((entity: Post) => Promise.resolve(entity));
+
+    const restored = await service.restoreAppeal(adminUser, appealId);
+    expect(appealUpdate).toHaveBeenCalledTimes(2);
+    expect(restored.status).toBe(PostAppealStatus.RESTORED);
+    expect(createModerationNotice).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: memberId,
+        type: NotificationType.POST_RESTORED,
+        targetPath: `/post/${postId}`,
       }),
     );
   });

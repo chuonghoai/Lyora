@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppImage, Button, EmptyState, formatDateTime } from '@/core';
-import type { AdminPostItem, PostVisibility } from '@/features/posts';
+import type { AdminPostItem } from '@/features/posts';
 import {
   EyeIcon,
   EyeOffIcon,
@@ -8,17 +8,12 @@ import {
   RotateCcwIcon,
   TrashIcon,
 } from '../components/AdminIcons';
+import { AdminPostVisibilityChip } from '../components/AdminPostVisibilityChip';
 import type { AdminPostsController } from './admin-posts.controller';
 
 export interface AdminPostsTableProps {
   controller: AdminPostsController;
 }
-
-const VISIBILITY_LABELS: Record<PostVisibility, string> = {
-  PUBLIC: 'Công khai',
-  FRIENDS: 'Bạn bè',
-  PRIVATE: 'Riêng tư',
-};
 
 function renderModerationBadge(post: AdminPostItem) {
   if (post.moderationStatus === 'HIDDEN') {
@@ -259,9 +254,7 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
                   </td>
 
                   <td className="border-b border-border py-3.5 px-3 align-top whitespace-nowrap">
-                    <span className="inline-flex items-center rounded-md border border-border bg-background px-2 py-0.5 text-xs text-foreground">
-                      {VISIBILITY_LABELS[post.visibility]}
-                    </span>
+                    <AdminPostVisibilityChip visibility={post.visibility} />
                   </td>
 
                   <td className="border-b border-border py-3.5 px-3 align-top">

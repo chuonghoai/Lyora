@@ -1,5 +1,10 @@
 import { PostMediaItem } from './post-media.interface';
-import { PostReactionType, PostVisibility } from '../enums/post.enums';
+import {
+  PostAppealStatus,
+  PostModerationStatus,
+  PostReactionType,
+  PostVisibility,
+} from '../enums/post.enums';
 
 export interface PostAuthorResponse {
   id: string;
@@ -20,14 +25,27 @@ export interface PostCommentResponse {
 export interface PostReactionUserResponse {
   id: string;
   user: PostAuthorResponse;
-  reactionType: PostReactionType;
+  reactionType: ReactionTypeAlias;
   createdAt: string;
 }
+
+type ReactionTypeAlias = PostReactionType;
 
 export interface PostShareUserResponse {
   id: string;
   user: PostAuthorResponse;
   createdAt: string;
+}
+
+export interface PostAppealSummaryResponse {
+  id: string;
+  status: PostAppealStatus;
+  reasonCategory: string;
+  reasonDetail: string;
+  adminEvidence: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolvedBy: { id: string; fullName: string } | null;
 }
 
 export interface PostResponse {
@@ -37,6 +55,11 @@ export interface PostResponse {
   visibility: PostVisibility;
   media: PostMediaItem[];
   taggedUserIds: string[];
+  moderationStatus: PostModerationStatus;
+  moderationReason?: string | null;
+  moderatedAt?: string | null;
+  appeal?: PostAppealSummaryResponse | null;
+  appeals?: PostAppealSummaryResponse[];
   reactionCount: number;
   reactionBreakdown: Record<PostReactionType, number>;
   userReaction: PostReactionType | null;
