@@ -14,6 +14,7 @@ import type {
   Post,
   PostComment,
   PostReactionsQueryParams,
+  PostSharesQueryParams,
   PostsQueryParams,
   ReactPostPayload,
 } from '../types/post.types';
@@ -67,6 +68,23 @@ export function usePostReactionsQuery(
   return useQuery({
     queryKey: postKeys.reactions(postId ?? '', normalized),
     queryFn: () => postService.getPostReactions(postId!, normalized),
+    enabled: Boolean(postId),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function usePostSharesQuery(
+  postId: string | null,
+  params: PostSharesQueryParams = {},
+) {
+  const normalized: PostSharesQueryParams = {
+    page: params.page ?? 1,
+    limit: params.limit ?? 10,
+  };
+
+  return useQuery({
+    queryKey: postKeys.shares(postId ?? '', normalized),
+    queryFn: () => postService.getPostShares(postId!, normalized),
     enabled: Boolean(postId),
     staleTime: 30 * 1000,
   });

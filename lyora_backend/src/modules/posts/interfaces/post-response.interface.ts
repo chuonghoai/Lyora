@@ -10,9 +10,23 @@ export interface PostAuthorResponse {
 
 export interface PostCommentResponse {
   id: string;
+  parentId: string | null;
   author: PostAuthorResponse;
   content: string;
   media: PostMediaItem | null;
+  createdAt: string;
+}
+
+export interface PostReactionUserResponse {
+  id: string;
+  user: PostAuthorResponse;
+  reactionType: PostReactionType;
+  createdAt: string;
+}
+
+export interface PostShareUserResponse {
+  id: string;
+  user: PostAuthorResponse;
   createdAt: string;
 }
 

@@ -193,7 +193,7 @@ export const AdminPostsView: React.FC = () => {
                   className="absolute inset-x-0 top-0 h-0.5 bg-primary"
                 />
               )}
-              <p className="text-xs font-medium text-muted">Đã ẩn kiểm duyệt</p>
+              <p className="text-xs font-medium text-muted">Đã ẩn</p>
               <p
                 className={`text-[28px] leading-tight font-semibold tracking-tight tabular-nums ${
                   stats.hiddenPosts > 0 ? 'text-warning' : 'text-foreground'

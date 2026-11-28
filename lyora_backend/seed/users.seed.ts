@@ -9,6 +9,8 @@ export interface SeedUserItem {
   fullName: string;
   role: UserRole;
   isActive: boolean;
+  isOnline?: boolean;
+  lockReason?: string | null;
   phoneNumber?: string | null;
   bio?: string | null;
   location?: string | null;
@@ -49,6 +51,8 @@ export const SEED_USERS_DATA: SeedUserItem[] = [
     fullName: 'Khách Hàng Tạm Khóa',
     role: UserRole.CLIENT,
     isActive: false,
+    isOnline: false,
+    lockReason: 'Tài khoản tạm khóa do vi phạm tiêu chuẩn cộng đồng Lyora.',
     phoneNumber: '0909999888',
     bio: null,
     location: 'Hà Nội',
@@ -121,6 +125,9 @@ export async function seedUsers(dataSource: DataSource): Promise<{
       user.fullName = item.fullName;
       user.role = item.role;
       user.isActive = item.isActive;
+      user.isOnline = item.isOnline ?? false;
+      user.lockReason = item.isActive ? null : (item.lockReason ?? null);
+      user.lockedAt = item.isActive ? null : new Date();
       user.phoneNumber = item.phoneNumber ?? null;
       user.bio = item.bio ?? null;
       user.location = item.location ?? null;
@@ -135,6 +142,9 @@ export async function seedUsers(dataSource: DataSource): Promise<{
         fullName: item.fullName,
         role: item.role,
         isActive: item.isActive,
+        isOnline: item.isOnline ?? false,
+        lockReason: item.isActive ? null : (item.lockReason ?? null),
+        lockedAt: item.isActive ? null : new Date(),
         phoneNumber: item.phoneNumber ?? null,
         bio: item.bio ?? null,
         location: item.location ?? null,

@@ -11,7 +11,7 @@ import {
   type UserRoleFilter,
   type UserStatistics,
 } from '@/features/user';
-import { ROUTES } from '@/routes/paths';
+import { getAdminUserDetailPath, ROUTES } from '@/routes/paths';
 
 export type { UserRoleFilter };
 
@@ -96,6 +96,14 @@ export function useDashboardController() {
     setActiveRoleFilter(filter);
   };
 
+  const handleViewAllUsers = () => {
+    navigate(ROUTES.ADMIN.USERS);
+  };
+
+  const handleOpenAdminUserDetail = (userId: string) => {
+    navigate(getAdminUserDetailPath(userId));
+  };
+
   const handleCheckHealth = async () => {
     if (isCheckingHealth) return;
     setIsCheckingHealth(true);
@@ -166,6 +174,8 @@ export function useDashboardController() {
     handleNavigateAdminPosts,
     handleCheckHealth,
     handleSelectRoleFilter,
+    handleViewAllUsers,
+    handleOpenAdminUserDetail,
     setFilterQuery,
   };
 }
