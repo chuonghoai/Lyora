@@ -3,6 +3,7 @@ import { Button, formatDateTime } from '@/core';
 import { useDashboardController } from './dashboard.controller';
 import { RefreshIcon } from '../components/AdminIcons';
 import { UserStatsSection } from '../components/UserStatsSection';
+import { FutureStatsSection } from '../components/FutureStatsSection';
 
 export const DashboardView: React.FC = () => {
   const ctrl = useDashboardController();
@@ -51,9 +52,13 @@ export const DashboardView: React.FC = () => {
         onFilterChange={ctrl.handleFilterChange}
         onClearFilter={() => ctrl.setFilterQuery('')}
         onSelectRoleFilter={ctrl.handleSelectRoleFilter}
+        onViewAllUsers={ctrl.handleViewAllUsers}
+        onSelectUser={ctrl.handleOpenAdminUserDetail}
         onCheckHealth={ctrl.handleCheckHealth}
         onRefresh={ctrl.handleRetryStats}
       />
+
+      <FutureStatsSection />
     </div>
   );
 };

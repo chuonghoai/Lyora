@@ -166,16 +166,31 @@ code {
   animation: lyora-emote-pop 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes lyora-indeterminate-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.animate-indeterminate-bar {
+  animation: lyora-indeterminate-bar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 html.motion-reduce .animate-slide-up,
 html.motion-reduce .animate-emote-dock-in,
-html.motion-reduce .animate-emote-pop {
+html.motion-reduce .animate-emote-pop,
+html.motion-reduce .animate-indeterminate-bar {
   animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-up,
   .animate-emote-dock-in,
-  .animate-emote-pop {
+  .animate-emote-pop,
+  .animate-indeterminate-bar {
     animation: none !important;
   }
 }
