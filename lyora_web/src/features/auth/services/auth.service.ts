@@ -1,4 +1,4 @@
-import { isApiError, logger, TokenStorage } from '@/core';
+import { clearClientSessionArtifacts, isApiError, logger, TokenStorage } from '@/core';
 import { authRepository, type IAuthRepository } from '../repositories/auth.repository';
 import type {
   AuthSession,
@@ -112,6 +112,8 @@ export class AuthService implements IAuthService {
         };
       } catch (err) {
         if (isApiError(err) && (err.statusCode === 401 || err.statusCode === 403)) {
+          this.lastRefreshAt = 0;
+          clearClientSessionArtifacts();
           TokenStorage.clearAuth();
           return null;
         }
@@ -133,6 +135,8 @@ export class AuthService implements IAuthService {
     } catch (err) {
       logger.warn('AuthService', 'Logout API request failed, clearing local session.', err);
     } finally {
+      this.lastRefreshAt = 0;
+      clearClientSessionArtifacts();
       TokenStorage.clearAuth();
     }
   }

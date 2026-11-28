@@ -17,6 +17,7 @@ export function useLoginMutation(options?: UseLoginMutationOptions) {
       return authService.login(credentials);
     },
     onSuccess: (...args) => {
+      queryClient.clear();
       queryClient.invalidateQueries({ queryKey: authKeys.session() });
       options?.onSuccess?.(...args);
     },

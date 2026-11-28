@@ -107,6 +107,7 @@ export function useAdminLayoutController() {
     if (logoutMutation.isPending) return;
     await logoutMutation.mutateAsync();
     toast.info('Bạn đã đăng xuất khỏi trung tâm quản trị.');
+    navigate(ROUTES.AUTH.LOGIN, { replace: true });
   };
 
   const handleOpenSearch = () => {

@@ -26,7 +26,14 @@ export class TokenStorage {
     this.isListeningToStorage = true;
 
     window.addEventListener('storage', (event) => {
-      if (event.key?.includes(STORAGE_KEYS.ACCESS_TOKEN)) {
+      if (event.key === null) {
+        if (!this.hasToken()) {
+          this.notifyListeners('logout');
+        }
+        return;
+      }
+
+      if (event.key.includes(STORAGE_KEYS.ACCESS_TOKEN)) {
         if (!event.newValue) {
           this.notifyListeners('logout');
         } else {

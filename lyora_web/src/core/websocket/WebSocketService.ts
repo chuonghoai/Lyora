@@ -4,7 +4,7 @@ import type {
   WebSocketEventHandler,
   WebSocketStatus,
 } from './websocket.types';
-import { TokenStorage } from '@/core/storage';
+import { TokenStorage } from '@/core/storage/tokenStorage';
 import { logger } from '@/core/utils/logger';
 
 export class WebSocketService {
