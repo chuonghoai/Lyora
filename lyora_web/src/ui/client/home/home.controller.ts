@@ -230,8 +230,7 @@ export function useHomeController() {
   };
 
   const handleOpenAllFriendsModal = () => {
-    setFriendSearchQuery('');
-    setIsAllFriendsModalOpen(true);
+    navigate(ROUTES.CLIENT.FRIENDS);
   };
 
   const handleCloseAllFriendsModal = () => {

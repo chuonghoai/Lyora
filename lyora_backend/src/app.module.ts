@@ -27,6 +27,7 @@ import { HealthModule } from './modules/health/health.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PostsModule } from './modules/posts/posts.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 import { UsersModule } from './modules/users/users.module';
 
 import { RedisModule } from './redis/redis.module';
@@ -66,6 +67,7 @@ import { RedisModule } from './redis/redis.module';
     AuthModule,
     FriendsModule,
     NotificationsModule,
+    RealtimeModule,
     ConversationsModule,
     PostsModule,
   ],

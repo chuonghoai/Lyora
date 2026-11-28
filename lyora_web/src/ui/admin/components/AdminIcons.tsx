@@ -134,6 +134,12 @@ export const ExternalArrowIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.
   </svg>
 );
 
+export const ArrowRightIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+
 export const LockIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
   <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -203,6 +209,25 @@ export const SparklesIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => 
   <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3Z" />
     <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
+  </svg>
+);
+
+export const ChevronLeftIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 18l-6-6 6-6" />
+  </svg>
+);
+
+export const ChevronRightIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 18l6-6-6-6" />
+  </svg>
+);
+
+export const ZoomInIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="7" />
+    <path d="m21 21-4.35-4.35M11 8v6M8 11h6" />
   </svg>
 );
 
