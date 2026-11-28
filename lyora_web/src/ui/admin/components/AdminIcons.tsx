@@ -386,3 +386,10 @@ export const MoreHorizontalIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' 
   </svg>
 );
 
+export const GlobeIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3.5 9.5h17M3.5 14.5h17M12 3a13.5 13.5 0 0 1 0 18M12 3a13.5 13.5 0 0 0 0 18" />
+  </svg>
+);
+

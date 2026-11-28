@@ -176,3 +176,90 @@ export const removeModerationReasonSchema = z.object({
 });
 
 export type RemoveModerationReasonFormValues = z.infer<typeof removeModerationReasonSchema>;
+
+export const POST_APPEAL_REASON_OPTIONS = [
+  {
+    key: 'MISUNDERSTOOD_CONTEXT',
+    label: 'Nội dung bị hiểu nhầm ngữ cảnh',
+    description:
+      'Bài viết mang tính chia sẻ trải nghiệm, thảo luận lành mạnh hoặc trích dẫn thông tin không nhằm công kích hay vi phạm.',
+  },
+  {
+    key: 'NOT_VIOLATION',
+    label: 'Bài viết tuân thủ tiêu chuẩn cộng đồng',
+    description:
+      'Tôi đã rà soát lại nội dung và hình ảnh đính kèm, bài viết không vi phạm quy định của Lyora.',
+  },
+  {
+    key: 'EDITED_OR_CLARIFIED',
+    label: 'Thông tin chính xác và có nguồn rõ ràng',
+    description:
+      'Nội dung bài viết dựa trên thông tin xác thực, không gây hiểu nhầm hoặc ảnh hưởng tiêu cực tới cộng đồng.',
+  },
+  {
+    key: 'SYSTEM_MISTAKE',
+    label: 'Nhầm lẫn trong quá trình kiểm duyệt',
+    description:
+      'Tôi cho rằng bài viết bị ẩn do nhầm lẫn kỹ thuật hoặc báo cáo sai từ người dùng khác.',
+  },
+  {
+    key: 'OTHER',
+    label: 'Khác',
+    description: 'Tự nhập mô tả lý do khiếu nại cụ thể của bạn.',
+  },
+] as const;
+
+export type PostAppealReasonKey =
+  (typeof POST_APPEAL_REASON_OPTIONS)[number]['key'];
+
+export const createPostAppealFormSchema = z
+  .object({
+    reasonKey: z.enum([
+      'MISUNDERSTOOD_CONTEXT',
+      'NOT_VIOLATION',
+      'EDITED_OR_CLARIFIED',
+      'SYSTEM_MISTAKE',
+      'OTHER',
+    ]),
+    detail: z.string().trim().max(1000, 'Nội dung khiếu nại tối đa 1000 ký tự').optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.reasonKey === 'OTHER') {
+      const len = (data.detail ?? '').trim().length;
+      if (len < 10) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['detail'],
+          message: 'Vui lòng nhập nội dung khiếu nại cụ thể tối thiểu 10 ký tự',
+        });
+      }
+    }
+  });
+
+export function buildFinalPostAppealPayload(
+  reasonKey: PostAppealReasonKey,
+  detail?: string,
+): { reasonCategory: string; reasonDetail: string } {
+  const matched =
+    POST_APPEAL_REASON_OPTIONS.find((opt) => opt.key === reasonKey) ??
+    POST_APPEAL_REASON_OPTIONS[0];
+  if (reasonKey === 'OTHER') {
+    return {
+      reasonCategory: matched.label,
+      reasonDetail: (detail ?? '').trim(),
+    };
+  }
+  const extra = (detail ?? '').trim();
+  return {
+    reasonCategory: matched.label,
+    reasonDetail: extra ? `${matched.description} (${extra})` : matched.description,
+  };
+}
+
+export const rejectPostAppealSchema = z.object({
+  evidence: z
+    .string()
+    .trim()
+    .min(10, 'Vui lòng nhập minh chứng cụ thể tối thiểu 10 ký tự')
+    .max(1000, 'Minh chứng tối đa 1000 ký tự'),
+});

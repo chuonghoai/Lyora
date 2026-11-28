@@ -82,9 +82,18 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) 
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
-                  <time dateTime={post.createdAt} title={formatDateTime(post.createdAt)}>
-                    {formatRelativeTime(post.createdAt)}
-                  </time>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      controller.handleClosePostDetail();
+                      controller.handleOpenPostDetailPage(post.id);
+                    }}
+                    className="hover:underline cursor-pointer"
+                  >
+                    <time dateTime={post.createdAt} title={formatDateTime(post.createdAt)}>
+                      {formatRelativeTime(post.createdAt)}
+                    </time>
+                  </button>
                   <span aria-hidden="true">·</span>
                   <PostVisibilityBadge visibility={post.visibility} />
                 </div>

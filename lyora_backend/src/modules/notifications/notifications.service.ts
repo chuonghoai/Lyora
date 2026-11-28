@@ -10,7 +10,9 @@ export interface CreateModerationNoticeParams {
     | NotificationType.POST_HIDDEN
     | NotificationType.POST_RESTORED
     | NotificationType.POST_REMOVED
-    | NotificationType.COMMENT_REMOVED;
+    | NotificationType.COMMENT_REMOVED
+    | NotificationType.POST_APPEAL_SUBMITTED
+    | NotificationType.POST_APPEAL_REJECTED;
   title: string;
   description: string;
   targetPath?: string | null;

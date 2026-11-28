@@ -4,6 +4,7 @@ export const ROUTES = {
     SEARCH: '/search',
     FRIENDS: '/friends',
     MESSAGES: '/messages',
+    POST_DETAIL: '/post/:postId',
     PROFILE: '/me',
     PROFILE_DETAIL: '/:userId',
   },
@@ -39,6 +40,10 @@ export function getClientProfilePath(userId?: string, selfId?: string): string {
   return ROUTES.CLIENT.PROFILE;
 }
 
+export function getClientPostDetailPath(postId: string): string {
+  return `/post/${encodeURIComponent(postId.trim())}`;
+}
+
 const RESERVED_TOP_LEVEL_PATHS = new Set<string>([
   ROUTES.CLIENT.ROOT,
   ROUTES.CLIENT.SEARCH,
@@ -51,7 +56,14 @@ const RESERVED_TOP_LEVEL_PATHS = new Set<string>([
 ]);
 
 export function isClientProfilePathname(pathname: string): boolean {
-  if (RESERVED_TOP_LEVEL_PATHS.has(pathname) || pathname.startsWith(`${ROUTES.ADMIN.ROOT}/`)) {
+  if (
+    RESERVED_TOP_LEVEL_PATHS.has(pathname) ||
+    pathname.startsWith(`${ROUTES.ADMIN.ROOT}/`) ||
+    pathname === '/post' ||
+    pathname.startsWith('/post/') ||
+    pathname === '/posts' ||
+    pathname.startsWith('/posts/')
+  ) {
     return false;
   }
   return /^\/[^/]+$/.test(pathname) || /^\/profile(\/[^/]+)?$/.test(pathname);

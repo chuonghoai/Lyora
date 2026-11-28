@@ -5,10 +5,11 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  formatDateTime,
   formatRelativeTime,
   LoadingState,
 } from '@/core';
-import { getClientProfilePath } from '@/routes/paths';
+import { getClientPostDetailPath, getClientProfilePath } from '@/routes/paths';
 import { SearchIcon, UsersIcon } from '../home/ClientIcons';
 import { useSearchController, type SearchResultTab } from './search.controller';
 
@@ -178,9 +179,13 @@ export default function SearchResultsView(): React.ReactElement {
                       </Link>
                     </div>
                     {post.createdAt && (
-                      <span className="text-xs text-muted shrink-0">
+                      <Link
+                        to={getClientPostDetailPath(post.id)}
+                        title={formatDateTime(post.createdAt)}
+                        className="text-xs text-muted hover:text-primary hover:underline shrink-0"
+                      >
                         {formatRelativeTime(post.createdAt)}
-                      </span>
+                      </Link>
                     )}
                   </div>
                   {post.content && (

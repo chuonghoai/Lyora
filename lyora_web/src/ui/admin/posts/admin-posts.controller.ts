@@ -1,21 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { isApiError, toast, useDebounce } from '@/core';
 import {
   createPostSchema,
   hidePostModerationSchema,
   postKeys,
+  rejectPostAppealSchema,
   removeModerationReasonSchema,
   suggestPostContentSchema,
+  useAdminPostAppealsQuery,
   useAdminPostDetailQuery,
   useAdminPostsQuery,
   useAdminPostStatisticsQuery,
   useCreatePostMutation,
   useHideAdminPostMutation,
+  useInfiniteAdminPostAppealsHistoryQuery,
+  useRejectAdminPostAppealMutation,
   useRemoveAdminCommentMutation,
   useRemoveAdminPostMutation,
+  useRestoreAdminPostAppealMutation,
   useRestoreAdminPostMutation,
   useSuggestPostContentMutation,
   useUploadPostMediaMutation,
+  type AdminPostAppealItem,
+  type AdminPostAppealStatusFilter,
   type AdminPostAuthorRoleFilter,
   type AdminPostComment,
   type AdminPostItem,
@@ -30,6 +38,8 @@ import {
 } from '@/features/posts';
 import { useQueryClient } from '@tanstack/react-query';
 
+export type AdminPostsMainTab = 'posts' | 'appeals';
+
 const ADMIN_POSTS_PAGE_SIZE = 10;
 const MAX_COMPOSER_MEDIA = 8;
 const MAX_AI_INLINE_MEDIA_BYTES = 18 * 1024 * 1024;
@@ -43,8 +53,12 @@ export interface RemoveCommentDialogState {
 
 export function useAdminPostsController() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Filter & Pagination States
+  const activeMainTab: AdminPostsMainTab =
+    searchParams.get('tab') === 'appeals' ? 'appeals' : 'posts';
+
+  // Filter & Pagination States (Posts)
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 350);
   const [statusFilter, setStatusFilter] = useState<AdminPostStatusFilter>('ALL');
@@ -55,6 +69,25 @@ export function useAdminPostsController() {
   const [mediaFilter, setMediaFilter] = useState<AdminPostMediaFilter>('ALL');
   const [page, setPage] = useState(1);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  // Filter & Pagination States (Appeals)
+  const [appealStatusFilter, setAppealStatusFilter] =
+    useState<AdminPostAppealStatusFilter>('ALL');
+  const [appealSearchQuery, setAppealSearchQuery] = useState('');
+  const debouncedAppealSearch = useDebounce(appealSearchQuery, 350);
+  const [appealPage, setAppealPage] = useState(1);
+  const [restoreAppealTarget, setRestoreAppealTarget] =
+    useState<AdminPostAppealItem | null>(null);
+  const [evidenceModalTarget, setEvidenceModalTarget] =
+    useState<AdminPostAppealItem | null>(null);
+  const [evidenceText, setEvidenceText] = useState('');
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+  const [appealHistoryTarget, setAppealHistoryTarget] =
+    useState<AdminPostAppealItem | null>(null);
+
+  useEffect(() => {
+    setAppealPage(1);
+  }, [appealStatusFilter, debouncedAppealSearch]);
 
   // Reset về trang 1 khi thay đổi điều kiện lọc/tìm kiếm
   useEffect(() => {
@@ -96,15 +129,30 @@ export function useAdminPostsController() {
   // Queries & Mutations
   const statsQuery = useAdminPostStatisticsQuery();
   const postsQuery = useAdminPostsQuery(queryParams);
+  const appealsQuery = useAdminPostAppealsQuery(
+    {
+      page: appealPage,
+      limit: ADMIN_POSTS_PAGE_SIZE,
+      status: appealStatusFilter,
+      search: debouncedAppealSearch.trim() || undefined,
+    },
+    { enabled: activeMainTab === 'appeals' },
+  );
 
   const [detailPostId, setDetailPostId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const detailQuery = useAdminPostDetailQuery(detailPostId);
+  const appealHistoryQuery = useInfiniteAdminPostAppealsHistoryQuery(
+    appealHistoryTarget?.postId ?? null,
+    10,
+  );
 
   const hidePostMutation = useHideAdminPostMutation();
   const restorePostMutation = useRestoreAdminPostMutation();
   const removePostMutation = useRemoveAdminPostMutation();
   const removeCommentMutation = useRemoveAdminCommentMutation();
+  const restoreAppealMutation = useRestoreAdminPostAppealMutation();
+  const rejectAppealMutation = useRejectAdminPostAppealMutation();
   const uploadMediaMutation = useUploadPostMediaMutation();
   const createPostMutation = useCreatePostMutation({
     onSuccess: () => {
@@ -209,6 +257,135 @@ export function useAdminPostsController() {
     setPage(nextPage);
   };
 
+  const handleSelectMainTab = (tab: AdminPostsMainTab) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (tab === 'appeals') next.set('tab', 'appeals');
+        else next.delete('tab');
+        return next;
+      },
+      { replace: false },
+    );
+  };
+
+  const handleAppealStatusFilterChange = (status: AdminPostAppealStatusFilter) => {
+    setAppealStatusFilter(status);
+  };
+
+  const handleAppealSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAppealSearchQuery(e.target.value);
+  };
+
+  const handleClearAppealSearch = () => {
+    setAppealSearchQuery('');
+  };
+
+  const handleAppealPageChange = (nextPage: number) => {
+    const totalPages = appealsQuery.data?.meta.totalPages ?? 1;
+    if (nextPage < 1 || nextPage > totalPages) return;
+    setAppealPage(nextPage);
+  };
+
+  const handleRetryAppeals = () => {
+    void appealsQuery.refetch();
+  };
+
+  const handleRequestRestoreAppeal = (appeal: AdminPostAppealItem) => {
+    setRestoreAppealTarget(appeal);
+  };
+
+  const handleCancelRestoreAppeal = () => {
+    if (restoreAppealMutation.isPending) return;
+    setRestoreAppealTarget(null);
+  };
+
+  const handleConfirmRestoreAppeal = async () => {
+    if (!restoreAppealTarget || restoreAppealMutation.isPending) return;
+    try {
+      await restoreAppealMutation.mutateAsync(restoreAppealTarget.id);
+      setRestoreAppealTarget(null);
+      toast.success('Đã khôi phục bài viết và gửi thông báo tới thành viên.');
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : 'Không thể khôi phục bài viết từ khiếu nại lúc này.',
+      );
+    }
+  };
+
+  const handleOpenEvidenceModal = (appeal: AdminPostAppealItem) => {
+    setEvidenceModalTarget(appeal);
+    setEvidenceText('');
+    setEvidenceError(null);
+  };
+
+  const handleOpenAppealHistoryModal = (appeal: AdminPostAppealItem) => {
+    setAppealHistoryTarget(appeal);
+  };
+
+  const handleCloseAppealHistoryModal = useCallback(() => {
+    setAppealHistoryTarget(null);
+  }, []);
+
+  const handleRetryAppealHistory = () => {
+    void appealHistoryQuery.refetch();
+  };
+
+  const handleLoadMoreAppealHistory = useCallback(() => {
+    if (
+      appealHistoryQuery.hasNextPage &&
+      !appealHistoryQuery.isFetchingNextPage
+    ) {
+      void appealHistoryQuery.fetchNextPage();
+    }
+  }, [appealHistoryQuery]);
+
+  const handleCloseEvidenceModal = useCallback(() => {
+    if (rejectAppealMutation.isPending) return;
+    setEvidenceModalTarget(null);
+    setEvidenceText('');
+    setEvidenceError(null);
+  }, [rejectAppealMutation.isPending]);
+
+  const handleEvidenceTextChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    setEvidenceText(e.target.value);
+    if (evidenceError) setEvidenceError(null);
+  };
+
+  const handleConfirmRejectAppeal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!evidenceModalTarget || rejectAppealMutation.isPending) return;
+
+    const parsed = rejectPostAppealSchema.safeParse({ evidence: evidenceText });
+    if (!parsed.success) {
+      setEvidenceError(
+        parsed.error.issues[0]?.message ?? 'Minh chứng chưa hợp lệ',
+      );
+      return;
+    }
+
+    try {
+      await rejectAppealMutation.mutateAsync({
+        appealId: evidenceModalTarget.id,
+        evidence: parsed.data.evidence,
+      });
+      setEvidenceModalTarget(null);
+      setEvidenceText('');
+      setEvidenceError(null);
+      toast.success('Đã gửi minh chứng phản hồi khiếu nại tới thành viên.');
+    } catch (err) {
+      setEvidenceError(
+        isApiError(err)
+          ? err.message
+          : 'Không thể gửi minh chứng lúc này.',
+      );
+    }
+  };
+
   const handleRefreshAll = async () => {
     setIsManualRefreshing(true);
     try {
@@ -216,6 +393,9 @@ export function useAdminPostsController() {
         statsQuery.refetch(),
         postsQuery.refetch(),
       ]);
+      if (activeMainTab === 'appeals') {
+        await appealsQuery.refetch();
+      }
       if (detailPostId) {
         await detailQuery.refetch();
       }
@@ -732,7 +912,28 @@ export function useAdminPostsController() {
     hasPrevPage: false,
   };
 
+  const appeals = appealsQuery.data?.items ?? [];
+  const appealsPaginationMeta = appealsQuery.data?.meta ?? {
+    page: appealPage,
+    limit: ADMIN_POSTS_PAGE_SIZE,
+    totalItems: appeals.length,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  };
+  const appealHistoryItems = useMemo(
+    () => appealHistoryQuery.data?.pages.flatMap((pageData) => pageData.items) ?? [],
+    [appealHistoryQuery.data],
+  );
+  const appealHistoryTotalItems =
+    appealHistoryQuery.data?.pages[0]?.meta.totalItems ??
+    appealHistoryTarget?.totalAppealsCount ??
+    appealHistoryItems.length;
+
   return {
+    // Main Tab
+    activeMainTab,
+
     // Statistics & List Data
     stats: statsQuery.data ?? null,
     isStatsLoading: statsQuery.isLoading,
@@ -743,6 +944,29 @@ export function useAdminPostsController() {
     isPostsFetching: postsQuery.isFetching,
     isPostsError: postsQuery.isError,
     isManualRefreshing,
+
+    // Appeals Tab Data
+    appeals,
+    appealsPaginationMeta,
+    isAppealsLoading: appealsQuery.isLoading,
+    isAppealsFetching: appealsQuery.isFetching,
+    isAppealsError: appealsQuery.isError,
+    appealStatusFilter,
+    appealSearchQuery,
+    restoreAppealTarget,
+    isRestoringAppeal: restoreAppealMutation.isPending,
+    evidenceModalTarget,
+    evidenceText,
+    evidenceError,
+    isRejectingAppeal: rejectAppealMutation.isPending,
+    appealHistoryTarget,
+    appealHistoryItems,
+    appealHistoryTotalItems,
+    isAppealHistoryLoading: appealHistoryQuery.isLoading,
+    isAppealHistoryError: appealHistoryQuery.isError,
+    hasNextAppealHistoryPage: Boolean(appealHistoryQuery.hasNextPage),
+    isFetchingNextAppealHistory: appealHistoryQuery.isFetchingNextPage,
+    isFetchNextAppealHistoryError: appealHistoryQuery.isFetchNextPageError,
 
     // Filters
     searchQuery,
@@ -794,6 +1018,7 @@ export function useAdminPostsController() {
     canUndoAiApply: aiPreviousContent !== null,
 
     // Handlers
+    handleSelectMainTab,
     handleSearchChange,
     handleClearSearch,
     handleSelectStatusFilter,
@@ -802,6 +1027,22 @@ export function useAdminPostsController() {
     handleSelectMediaFilter,
     handleResetFilters,
     handleChangePage,
+    handleAppealStatusFilterChange,
+    handleAppealSearchChange,
+    handleClearAppealSearch,
+    handleAppealPageChange,
+    handleRetryAppeals,
+    handleRequestRestoreAppeal,
+    handleCancelRestoreAppeal,
+    handleConfirmRestoreAppeal,
+    handleOpenEvidenceModal,
+    handleCloseEvidenceModal,
+    handleEvidenceTextChange,
+    handleConfirmRejectAppeal,
+    handleOpenAppealHistoryModal,
+    handleCloseAppealHistoryModal,
+    handleRetryAppealHistory,
+    handleLoadMoreAppealHistory,
     handleRefreshAll,
     handleRetryLoad,
     handleOpenDetail,

@@ -11,6 +11,7 @@ import {
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
@@ -20,6 +21,10 @@ import {
   HidePostModerationDto,
   RemoveModerationReasonDto,
 } from './dto/moderate-post.dto';
+import {
+  AdminPostAppealsQueryDto,
+  RejectPostAppealDto,
+} from './dto/post-appeal.dto';
 import { AdminPostsService } from './services/admin-posts.service';
 
 @Controller('admin/posts')
@@ -34,10 +39,44 @@ export class AdminPostsController {
     return this.adminPostsService.getStatistics();
   }
 
+  @Get('appeals')
+  @ResponseMessage('Lấy danh sách khiếu nại bài viết thành công')
+  async getAppeals(@Query() query: AdminPostAppealsQueryDto) {
+    return this.adminPostsService.getAppeals(query);
+  }
+
+  @Patch('appeals/:appealId/restore')
+  @ResponseMessage('Đã khôi phục bài viết từ khiếu nại')
+  async restoreAppeal(
+    @CurrentUser() adminUser: AuthenticatedUser,
+    @Param('appealId', VietnameseParseUUIDPipe) appealId: string,
+  ) {
+    return this.adminPostsService.restoreAppeal(adminUser, appealId);
+  }
+
+  @Patch('appeals/:appealId/reject')
+  @ResponseMessage('Đã gửi minh chứng phản hồi khiếu nại')
+  async rejectAppeal(
+    @CurrentUser() adminUser: AuthenticatedUser,
+    @Param('appealId', VietnameseParseUUIDPipe) appealId: string,
+    @Body() dto: RejectPostAppealDto,
+  ) {
+    return this.adminPostsService.rejectAppeal(adminUser, appealId, dto);
+  }
+
   @Get()
   @ResponseMessage('Lấy danh sách bài viết quản trị thành công')
   async findAll(@Query() query: AdminPostQueryDto) {
     return this.adminPostsService.findAllPaginated(query);
+  }
+
+  @Get(':postId/appeals')
+  @ResponseMessage('Lấy lịch sử khiếu nại bài viết thành công')
+  async getPostAppealsHistory(
+    @Param('postId', VietnameseParseUUIDPipe) postId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.adminPostsService.getPostAppealsHistory(postId, query);
   }
 
   @Get(':id')

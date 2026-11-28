@@ -3,13 +3,16 @@ import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-
 import { ClientLayout } from '@/ui/client/ClientLayout';
 import { AdminLayout } from '@/ui/admin/AdminLayout';
 import { RoleRoute, GuestRoute, LoadingSpinner, useAuthStore } from '@/core';
-import { getClientProfilePath, ROUTES } from './paths';
+import { getClientPostDetailPath, getClientProfilePath, ROUTES } from './paths';
 
 const ClientHomeView = lazy(
   () => import('@/ui/client/home/HomeView'),
 );
 const ProfileView = lazy(
   () => import('@/ui/client/profile/ProfileView'),
+);
+const ClientPostDetailView = lazy(
+  () => import('@/ui/client/post-detail/ClientPostDetailView'),
 );
 const MessagesPage = lazy(
   () => import('@/ui/client/messages/MessagesPage'),
@@ -52,6 +55,12 @@ const LegacyProfileRedirect: React.FC = () => {
   const { userId } = useParams<{ userId?: string }>();
   const currentUser = useAuthStore((s) => s.user);
   return <Navigate to={getClientProfilePath(userId, currentUser?.id)} replace />;
+};
+
+const LegacyPostDetailRedirect: React.FC = () => {
+  const { postId } = useParams<{ postId?: string }>();
+  const target = postId ? getClientPostDetailPath(postId) : ROUTES.CLIENT.ROOT;
+  return <Navigate to={target} replace />;
 };
 
 export const router = createBrowserRouter([
@@ -131,6 +140,18 @@ export const router = createBrowserRouter([
           {
             path: 'search',
             element: <Suspense fallback={<PageLoader />}><SearchResultsView /></Suspense>,
+          },
+          {
+            path: 'post/:postId',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ClientPostDetailView />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'posts/:postId',
+            element: <LegacyPostDetailRedirect />,
           },
           {
             path: 'profile',

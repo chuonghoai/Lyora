@@ -414,7 +414,16 @@ export const ProfileOverviewSection: React.FC<ProfileOverviewSectionProps> = ({
         ) : (
           <div className="space-y-4">
             {controller.posts.map((post) => (
-              <PostCard key={post.id} post={post} controller={controller} />
+              <PostCard
+                key={post.id}
+                post={post}
+                controller={controller}
+                onOpenAppealModal={
+                  controller.isOwnProfile
+                    ? controller.handleOpenAppealModal
+                    : undefined
+                }
+              />
             ))}
 
             <div ref={controller.loadMoreSentinelRef} className="py-3 text-center">

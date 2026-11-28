@@ -1,14 +1,18 @@
 import {
   keepPreviousData,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { postService } from '../services/post.service';
 import type {
+  AdminPostAppealItem,
+  AdminPostAppealsQueryParams,
   AdminPostDetail,
   AdminPostsQueryParams,
   HideAdminPostPayload,
+  RejectPostAppealPayload,
   RemoveAdminCommentPayload,
   RemoveAdminPostPayload,
 } from '../types/post.types';
@@ -63,7 +67,11 @@ export function useHideAdminPostMutation() {
       );
       void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
       void queryClient.invalidateQueries({ queryKey: postKeys.adminStats() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
       void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: postKeys.detail(updatedDetail.id),
+      });
     },
   });
 }
@@ -80,7 +88,11 @@ export function useRestoreAdminPostMutation() {
       );
       void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
       void queryClient.invalidateQueries({ queryKey: postKeys.adminStats() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
       void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: postKeys.detail(updatedDetail.id),
+      });
     },
   });
 }
@@ -93,8 +105,11 @@ export function useRemoveAdminPostMutation() {
       postService.removePostAsAdmin(postId, reason),
     onSuccess: (_res, { postId }) => {
       queryClient.removeQueries({ queryKey: postKeys.adminDetail(postId) });
+      queryClient.removeQueries({ queryKey: postKeys.detail(postId) });
+      queryClient.removeQueries({ queryKey: postKeys.comments(postId) });
       void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
       void queryClient.invalidateQueries({ queryKey: postKeys.adminStats() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
       void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
     },
   });
@@ -110,8 +125,88 @@ export function useRemoveAdminCommentMutation() {
       void queryClient.invalidateQueries({
         queryKey: postKeys.adminDetail(postId),
       });
+      void queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
+      void queryClient.invalidateQueries({ queryKey: postKeys.comments(postId) });
       void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
       void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+    },
+  });
+}
+
+export function useAdminPostAppealsQuery(
+  params: AdminPostAppealsQueryParams = {},
+  options?: { enabled?: boolean },
+) {
+  const normalized: AdminPostAppealsQueryParams = {
+    page: params.page ?? 1,
+    limit: params.limit ?? 10,
+    status: params.status && params.status !== 'ALL' ? params.status : undefined,
+    search: params.search?.trim() || undefined,
+  };
+
+  return useQuery({
+    queryKey: postKeys.adminAppealList(normalized),
+    queryFn: () => postService.getAdminPostAppeals(normalized),
+    placeholderData: keepPreviousData,
+    enabled: options?.enabled ?? true,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useInfiniteAdminPostAppealsHistoryQuery(
+  postId: string | null,
+  limit = 10,
+) {
+  return useInfiniteQuery({
+    queryKey: postKeys.adminPostAppealHistory(postId ?? ''),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      postService.getAdminPostAppealsHistory(postId!, {
+        page: pageParam,
+        limit,
+      }),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.hasNextPage ? lastPage.meta.page + 1 : undefined,
+    enabled: Boolean(postId),
+    staleTime: 15 * 1000,
+  });
+}
+
+export function useRestoreAdminPostAppealMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<AdminPostAppealItem, unknown, string>({
+    mutationFn: (appealId: string) =>
+      postService.restorePostAppealAsAdmin(appealId),
+    onSuccess: (updated) => {
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminStats() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: postKeys.detail(updated.postId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: postKeys.adminDetail(updated.postId),
+      });
+    },
+  });
+}
+
+export function useRejectAdminPostAppealMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<AdminPostAppealItem, unknown, RejectPostAppealPayload>({
+    mutationFn: ({ appealId, evidence }: RejectPostAppealPayload) =>
+      postService.rejectPostAppealAsAdmin(appealId, evidence),
+    onSuccess: (updated) => {
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminStats() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: postKeys.detail(updated.postId),
+      });
     },
   });
 }

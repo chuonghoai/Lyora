@@ -12,21 +12,21 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  @Roles(UserRole.CLIENT)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @ResponseMessage('Lấy thông báo thành công')
   findMine(@CurrentUser() user: AuthenticatedUser) {
     return this.notificationsService.findMine(user.id);
   }
 
   @Patch('read-all')
-  @Roles(UserRole.CLIENT)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @ResponseMessage('Đã đánh dấu toàn bộ thông báo là đã đọc')
   markAllRead(@CurrentUser() user: AuthenticatedUser) {
     return this.notificationsService.markAllRead(user.id);
   }
 
   @Patch(':id/read')
-  @Roles(UserRole.CLIENT)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @ResponseMessage('Đã đánh dấu thông báo là đã đọc')
   markRead(
     @CurrentUser() user: AuthenticatedUser,

@@ -5,6 +5,7 @@ import { Friendship } from '../friends/entities/friendship.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { User } from '../users/entities/user.entity';
 import { AdminPostsController } from './admin-posts.controller';
+import { PostAppeal } from './entities/post-appeal.entity';
 import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
 import { PostShare } from './entities/post-share.entity';
@@ -23,6 +24,7 @@ import { PostAiSuggestionService } from './services/post-ai-suggestion.service';
       PostReaction,
       PostComment,
       PostShare,
+      PostAppeal,
       User,
       Friendship,
     ]),

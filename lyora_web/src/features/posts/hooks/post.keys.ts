@@ -1,7 +1,8 @@
 import type {
-  PostSharesQueryParams,
+  AdminPostAppealsQueryParams,
   AdminPostsQueryParams,
   PostReactionsQueryParams,
+  PostSharesQueryParams,
   PostsQueryParams,
 } from '../types/post.types';
 
@@ -15,6 +16,7 @@ export const postKeys = {
     [...postKeys.all, 'reactions', postId, params] as const,
   shares: (postId: string, params: PostSharesQueryParams = {}) =>
     [...postKeys.all, 'shares', postId, params] as const,
+  comments: (postId: string) => [...postKeys.all, 'comments', postId] as const,
   details: () => [...postKeys.all, 'detail'] as const,
   detail: (id: string) => [...postKeys.details(), id] as const,
   adminAll: () => [...postKeys.all, 'admin'] as const,
@@ -24,4 +26,9 @@ export const postKeys = {
     [...postKeys.adminLists(), params] as const,
   adminDetails: () => [...postKeys.adminAll(), 'detail'] as const,
   adminDetail: (id: string) => [...postKeys.adminDetails(), id] as const,
+  adminAppeals: () => [...postKeys.adminAll(), 'appeals'] as const,
+  adminAppealList: (params: AdminPostAppealsQueryParams = {}) =>
+    [...postKeys.adminAppeals(), params] as const,
+  adminPostAppealHistory: (postId: string) =>
+    [...postKeys.adminAppeals(), 'history', postId] as const,
 };

@@ -1,10 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { formatRelativeTime } from '@/core';
+import type { AppNotification } from '@/features/notifications';
 import { ROUTES } from '@/routes/paths';
 import webIconLockup from '@/core/assets/web_icon_lockup.svg';
 import type { AdminNavItem, AdminNavSearchEntry } from '../adminNav';
 import {
   AdminNavIcon,
+  BellIcon,
   CloseIcon,
   MenuIcon,
   SearchIcon,
@@ -17,11 +20,20 @@ interface AdminHeaderProps {
   isSearchOpen: boolean;
   searchResults: AdminNavSearchEntry[];
   searchContainerRef: React.RefObject<HTMLDivElement | null>;
+  notifications: AppNotification[];
+  unreadNotificationsCount: number;
+  isNotificationsOpen: boolean;
+  isLoadingNotifications: boolean;
+  isMarkingAllNotificationsRead: boolean;
+  notificationsRef: React.RefObject<HTMLDivElement | null>;
   onSearchOpen: () => void;
   onSearchChange: (value: string) => void;
   onSearchSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onSelectSearchItem: (item: AdminNavItem) => void;
   onClearSearch: () => void;
+  onToggleNotifications: () => void;
+  onSelectNotification: (notification: AppNotification) => void;
+  onMarkAllNotificationsRead: () => void;
   onToggleSidebarCollapse: () => void;
   onOpenMobileSidebar: () => void;
 }
@@ -32,11 +44,20 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   isSearchOpen,
   searchResults,
   searchContainerRef,
+  notifications,
+  unreadNotificationsCount,
+  isNotificationsOpen,
+  isLoadingNotifications,
+  isMarkingAllNotificationsRead,
+  notificationsRef,
   onSearchOpen,
   onSearchChange,
   onSearchSubmit,
   onSelectSearchItem,
   onClearSearch,
+  onToggleNotifications,
+  onSelectNotification,
+  onMarkAllNotificationsRead,
   onToggleSidebarCollapse,
   onOpenMobileSidebar,
 }) => {
@@ -175,8 +196,96 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         )}
       </div>
 
-      {/* Right spacer */}
+      {/* Right Notifications + Context Pill */}
       <div className="order-2 md:order-3 flex items-center gap-2 shrink-0">
+        <div ref={notificationsRef} className="relative">
+          <button
+            type="button"
+            onClick={onToggleNotifications}
+            aria-label="Thông báo quản trị"
+            aria-expanded={isNotificationsOpen}
+            className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-background transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <BellIcon className="w-4 h-4" />
+            {unreadNotificationsCount > 0 && (
+              <span className="absolute -top-1 -right-1 inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-bold text-on-primary tabular-nums">
+                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+              </span>
+            )}
+          </button>
+
+          {isNotificationsOpen && (
+            <div
+              role="region"
+              aria-label="Danh sách thông báo quản trị"
+              className="absolute right-0 mt-1.5 w-80 sm:w-96 rounded-xl border border-border bg-card shadow-md overflow-hidden z-40"
+            >
+              <div className="px-3.5 py-2.5 border-b border-border bg-background/60 flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-foreground">
+                  Thông báo quản trị
+                </span>
+                {unreadNotificationsCount > 0 && (
+                  <button
+                    type="button"
+                    disabled={isMarkingAllNotificationsRead}
+                    onClick={onMarkAllNotificationsRead}
+                    className="text-[11px] font-medium text-primary hover:underline cursor-pointer disabled:opacity-50"
+                  >
+                    Đánh dấu tất cả đã đọc
+                  </button>
+                )}
+              </div>
+
+              {isLoadingNotifications ? (
+                <div className="p-4 text-center text-xs text-muted">
+                  Đang tải thông báo...
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-5 text-center space-y-1">
+                  <p className="text-xs font-medium text-foreground">
+                    Chưa có thông báo mới
+                  </p>
+                  <p className="text-[11px] text-muted">
+                    Các khiếu nại bài viết từ thành viên sẽ xuất hiện tại đây.
+                  </p>
+                </div>
+              ) : (
+                <ul className="max-h-80 overflow-y-auto divide-y divide-border/70">
+                  {notifications.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => onSelectNotification(item)}
+                        className={`w-full px-3.5 py-2.5 text-left transition-colors hover:bg-background cursor-pointer flex items-start gap-2.5 ${
+                          item.isRead ? 'bg-card' : 'bg-secondary/25'
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${
+                            item.isRead ? 'bg-border' : 'bg-primary'
+                          }`}
+                        />
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <p className="text-xs font-semibold text-foreground line-clamp-1">
+                            {item.title}
+                          </p>
+                          <p className="text-xs text-muted line-clamp-2 leading-relaxed">
+                            {item.description}
+                          </p>
+                          <p className="text-[11px] text-muted tabular-nums">
+                            {formatRelativeTime(item.createdAt)}
+                          </p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+
         <span className="hidden md:inline-flex items-center rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground/80">
           Trung tâm điều hành
         </span>

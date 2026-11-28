@@ -19,7 +19,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { CreatePostDto } from './dto/create-post.dto';
+import { CreatePostAppealDto } from './dto/post-appeal.dto';
 import {
+  PostCommentsQueryDto,
   PostReactionsQueryDto,
   PostSharesQueryDto,
 } from './dto/post-interactions-query.dto';
@@ -135,6 +137,27 @@ export class PostsController {
     @Query() query: PostSharesQueryDto,
   ) {
     return this.postsService.getPostShares(currentUser, id, query);
+  }
+
+  @Get(':id/comments')
+  @ResponseMessage('Lấy danh sách bình luận bài viết thành công')
+  async getComments(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: PostCommentsQueryDto,
+  ) {
+    return this.postsService.getPostComments(currentUser, id, query);
+  }
+
+  @Post(':id/appeals')
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Gửi khiếu nại bài viết thành công')
+  async createAppeal(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: CreatePostAppealDto,
+  ) {
+    return this.postsService.createAppeal(currentUser, id, dto);
   }
 
   @Get(':id')
