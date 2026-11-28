@@ -1,7 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { localStorageService, useAuthStore } from "@/core";
 import { friendsService } from "../services/friends.service";
 import { friendsKeys } from "./friends.keys";
+import type {
+  FriendDiscoveryItem,
+  FriendSearchResult,
+} from "../types/friend.types";
 
 const SENT_FRIEND_REQUESTS_STORAGE_PREFIX = "lyora_sent_friend_requests";
 
@@ -34,12 +43,34 @@ function rememberSentFriendRequest(targetUserId: string) {
   localStorageService.setItem(sentRequestsStorageKey(currentUserId), records);
 }
 
-function invalidateFriendData(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: friendsKeys.all });
+function invalidateFriendData(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: friendsKeys.accepted() });
+  void queryClient.invalidateQueries({
+    queryKey: friendsKeys.receivedRequests(),
+  });
   void queryClient.invalidateQueries({ queryKey: ["users", "profile-page"] });
   void queryClient.invalidateQueries({
     queryKey: ["users", "friends-directory"],
   });
+}
+
+export function updateFriendSearchStatus(
+  queryClient: QueryClient,
+  userId: string,
+  friendshipStatus: FriendDiscoveryItem["friendshipStatus"],
+): void {
+  queryClient.setQueriesData<FriendSearchResult>(
+    { queryKey: friendsKeys.searches() },
+    (current) =>
+      current
+        ? {
+            ...current,
+            items: current.items.map((item) =>
+              item.id === userId ? { ...item, friendshipStatus } : item,
+            ),
+          }
+        : current,
+  );
 }
 
 export function useFriendSearchQuery(query: string) {
@@ -73,33 +104,47 @@ export function useSendFriendRequestMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) => friendsService.sendRequest(userId),
+    onMutate: (userId) =>
+      updateFriendSearchStatus(queryClient, userId, "REQUEST_SENT"),
     onSuccess: (_, userId) => {
       rememberSentFriendRequest(userId);
       invalidateFriendData(queryClient);
     },
+    onError: () =>
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.searches() }),
   });
 }
 
 export function useAcceptFriendRequestMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: friendsService.acceptRequest.bind(friendsService),
+    mutationFn: (userId: string) => friendsService.acceptRequest(userId),
+    onMutate: (userId) =>
+      updateFriendSearchStatus(queryClient, userId, "FRIEND"),
     onSuccess: () => invalidateFriendData(queryClient),
+    onError: () =>
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.searches() }),
   });
 }
 
 export function useRemoveFriendRequestMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: friendsService.removeRequest.bind(friendsService),
+    mutationFn: (userId: string) => friendsService.removeRequest(userId),
+    onMutate: (userId) => updateFriendSearchStatus(queryClient, userId, "NONE"),
     onSuccess: () => invalidateFriendData(queryClient),
+    onError: () =>
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.searches() }),
   });
 }
 
 export function useUnfriendMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: friendsService.unfriend.bind(friendsService),
+    mutationFn: (userId: string) => friendsService.unfriend(userId),
+    onMutate: (userId) => updateFriendSearchStatus(queryClient, userId, "NONE"),
     onSuccess: () => invalidateFriendData(queryClient),
+    onError: () =>
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.searches() }),
   });
 }

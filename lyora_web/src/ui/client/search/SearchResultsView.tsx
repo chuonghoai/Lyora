@@ -33,6 +33,7 @@ const PersonResultCard: React.FC<PersonResultCardProps> = ({
   controller,
 }) => {
   const isIncoming = person.friendshipStatus === "REQUEST_RECEIVED";
+  const isActionPending = controller.isActionPending(person.id);
   return (
     <article className="flex items-center gap-3 rounded-xl border border-border bg-background/40 p-3">
       <Link
@@ -61,75 +62,82 @@ const PersonResultCard: React.FC<PersonResultCardProps> = ({
         </span>
       </Link>
       <div className="flex shrink-0 items-center gap-1.5">
-        {person.friendshipStatus === "NONE" && (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={controller.isMutating}
-            onClick={() =>
-              void controller.handleSendRequest(person.id, person.fullName)
-            }
-            className="h-8 gap-1 px-2.5 py-1 text-xs"
-          >
-            <UserPlusIcon className="h-3.5 w-3.5" />
-            Thêm bạn
-          </Button>
-        )}
-        {person.friendshipStatus === "REQUEST_SENT" && (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={controller.isMutating}
-            onClick={() =>
-              void controller.handleRemoveRequest(
-                person.id,
-                person.fullName,
-                false,
-              )
-            }
-            className="h-8 gap-1 px-2.5 py-1 text-xs"
-            title="Hủy lời mời kết bạn"
-          >
-            <ClockIcon className="h-3.5 w-3.5" />
-            Đã gửi
-          </Button>
-        )}
-        {isIncoming && (
-          <>
-            <Button
-              type="button"
-              variant="primary"
-              disabled={controller.isMutating}
-              onClick={() =>
-                void controller.handleAcceptRequest(person.id, person.fullName)
-              }
-              className="h-8 gap-1 px-2.5 py-1 text-xs"
-            >
-              <UserCheckIcon className="h-3.5 w-3.5" />
-              Chấp nhận
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={controller.isMutating}
-              onClick={() =>
-                void controller.handleRemoveRequest(
-                  person.id,
-                  person.fullName,
-                  true,
-                )
-              }
-              className="h-8 px-2.5 py-1 text-xs"
-            >
-              Từ chối
-            </Button>
-          </>
-        )}
-        {person.friendshipStatus === "FRIEND" && (
-          <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-secondary px-2.5 text-xs font-semibold text-primary-active">
-            <CheckIcon className="h-3.5 w-3.5" />
-            Bạn bè
+        {isActionPending ? (
+          <span className="inline-flex h-8 min-w-24 items-center justify-center rounded-lg bg-secondary px-2.5 text-primary-active">
+            <LoadingSpinner size="sm" />
           </span>
+        ) : (
+          <>
+            {person.friendshipStatus === "NONE" && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  void controller.handleSendRequest(person.id, person.fullName)
+                }
+                className="h-8 gap-1 px-2.5 py-1 text-xs"
+              >
+                <UserPlusIcon className="h-3.5 w-3.5" />
+                Thêm bạn
+              </Button>
+            )}
+            {person.friendshipStatus === "REQUEST_SENT" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  void controller.handleRemoveRequest(
+                    person.id,
+                    person.fullName,
+                    false,
+                  )
+                }
+                className="h-8 gap-1 px-2.5 py-1 text-xs"
+                title="Hủy lời mời kết bạn"
+              >
+                <ClockIcon className="h-3.5 w-3.5" />
+                Đã gửi
+              </Button>
+            )}
+            {isIncoming && (
+              <>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() =>
+                    void controller.handleAcceptRequest(
+                      person.id,
+                      person.fullName,
+                    )
+                  }
+                  className="h-8 gap-1 px-2.5 py-1 text-xs"
+                >
+                  <UserCheckIcon className="h-3.5 w-3.5" />
+                  Chấp nhận
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    void controller.handleRemoveRequest(
+                      person.id,
+                      person.fullName,
+                      true,
+                    )
+                  }
+                  className="h-8 px-2.5 py-1 text-xs"
+                >
+                  Từ chối
+                </Button>
+              </>
+            )}
+            {person.friendshipStatus === "FRIEND" && (
+              <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-secondary px-2.5 text-xs font-semibold text-primary-active">
+                <CheckIcon className="h-3.5 w-3.5" />
+                Bạn bè
+              </span>
+            )}
+          </>
         )}
       </div>
     </article>

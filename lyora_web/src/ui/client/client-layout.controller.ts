@@ -15,6 +15,7 @@ import {
   useFriendSearchQuery,
   getSentFriendRequests,
   useReceivedFriendRequestsQuery,
+  updateFriendSearchStatus,
 } from "@/features/friends";
 import {
   useMarkAllNotificationsReadMutation,
@@ -199,21 +200,55 @@ export function useClientLayoutController() {
       return;
     }
     webSocketService.connect();
-    const refreshFriends = () => {
-      void queryClient.invalidateQueries({ queryKey: friendsKeys.all });
-      void queryClient.invalidateQueries({ queryKey: ["users", "profile-page"] });
-      void queryClient.invalidateQueries({ queryKey: ["users", "friends-directory"] });
+    const refreshFriendLists = () => {
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.accepted() });
+      void queryClient.invalidateQueries({
+        queryKey: friendsKeys.receivedRequests(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["users", "profile-page"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["users", "friends-directory"],
+      });
     };
     const unsubscribeNotification = webSocketService.subscribe(
       "notification.created",
       () => {
         void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
-        refreshFriends();
+        refreshFriendLists();
       },
     );
     const unsubscribeFriendship = webSocketService.subscribe(
       "friendship.updated",
-      refreshFriends,
+      (event) => {
+        if (
+          event &&
+          typeof event === "object" &&
+          "payload" in event &&
+          event.payload &&
+          typeof event.payload === "object" &&
+          "userId" in event.payload &&
+          "friendshipStatus" in event.payload &&
+          typeof event.payload.userId === "string" &&
+          typeof event.payload.friendshipStatus === "string"
+        ) {
+          const friendshipStatus = event.payload.friendshipStatus;
+          if (
+            friendshipStatus === "NONE" ||
+            friendshipStatus === "FRIEND" ||
+            friendshipStatus === "REQUEST_SENT" ||
+            friendshipStatus === "REQUEST_RECEIVED"
+          ) {
+            updateFriendSearchStatus(
+              queryClient,
+              event.payload.userId,
+              friendshipStatus,
+            );
+          }
+        }
+        refreshFriendLists();
+      },
     );
     return () => {
       unsubscribeNotification();
