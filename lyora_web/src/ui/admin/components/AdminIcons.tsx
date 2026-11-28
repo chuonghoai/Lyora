@@ -127,6 +127,12 @@ export const ExternalArrowIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.
   </svg>
 );
 
+export const ArrowRightIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+
 export const LockIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
   <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />

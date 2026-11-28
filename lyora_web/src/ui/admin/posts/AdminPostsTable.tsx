@@ -119,43 +119,43 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
             <tr>
               <th
                 scope="col"
-                className="border-b border-border py-3 px-5 text-xs font-medium text-muted w-[34%]"
+                className="border-b border-border py-3 px-4 text-xs font-medium text-muted min-w-[260px]"
               >
                 Bài viết
               </th>
               <th
                 scope="col"
-                className="border-b border-border py-3 px-3.5 text-xs font-medium text-muted w-[19%]"
+                className="border-b border-border py-3 px-3 text-xs font-medium text-muted min-w-[170px]"
               >
                 Tác giả
               </th>
               <th
                 scope="col"
-                className="border-b border-border py-3 px-3 text-xs font-medium text-muted w-[9%]"
+                className="border-b border-border py-3 px-3 text-xs font-medium text-muted whitespace-nowrap"
               >
                 Phạm vi
               </th>
               <th
                 scope="col"
-                className="border-b border-border py-3 px-3 text-xs font-medium text-muted w-[11%]"
+                className="border-b border-border py-3 px-3 text-xs font-medium text-muted whitespace-nowrap"
               >
                 Trạng thái
               </th>
               <th
                 scope="col"
-                className="border-b border-border py-3 px-3 text-xs font-medium text-muted text-right w-[10%]"
+                className="border-b border-border py-3 px-3 text-xs font-medium text-muted text-right whitespace-nowrap"
               >
                 Tương tác
               </th>
               <th
                 scope="col"
-                className="border-b border-border py-3 px-3 text-xs font-medium text-muted text-right w-[11%]"
+                className="border-b border-border py-3 px-3 text-xs font-medium text-muted text-right whitespace-nowrap"
               >
                 Thời gian đăng
               </th>
               <th
                 scope="col"
-                className="border-b border-border py-3 px-5 text-xs font-medium text-muted text-right w-[170px]"
+                className="border-b border-border py-3 px-4 text-xs font-medium text-muted text-right whitespace-nowrap"
               >
                 Thao tác
               </th>
@@ -175,7 +175,7 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
                 >
                   <th
                     scope="row"
-                    className="border-b border-border py-3.5 px-5 align-top font-normal"
+                    className="border-b border-border py-3.5 px-4 align-top font-normal max-w-[360px]"
                   >
                     <div className="flex items-start gap-3 min-w-0">
                       {firstVisual ? (
@@ -225,7 +225,7 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
                     </div>
                   </th>
 
-                  <td className="border-b border-border py-3.5 px-3.5 align-top">
+                  <td className="border-b border-border py-3.5 px-3 align-top max-w-[220px]">
                     <div className="flex items-center gap-2.5 min-w-0">
                       {post.author.avatarUrl ? (
                         <AppImage
@@ -264,7 +264,7 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
                     </span>
                   </td>
 
-                  <td className="border-b border-border py-3.5 px-3 align-top">
+                  <td className="border-b border-border py-3.5 px-3 align-top whitespace-nowrap">
                     {renderModerationBadge(post)}
                   </td>
 
@@ -284,15 +284,15 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
                     {formatDateTime(post.createdAt)}
                   </td>
 
-                  <td className="border-b border-border py-3.5 px-5 align-top text-right whitespace-nowrap">
-                    <div className="inline-flex items-center justify-end gap-1.5">
+                  <td className="border-b border-border py-3.5 px-4 align-top text-right whitespace-nowrap">
+                    <div className="inline-flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5">
                       <button
                         type="button"
                         onClick={() => controller.handleOpenDetail(post.id)}
                         aria-label={`Xem chi tiết bài viết của ${post.author.fullName || 'tác giả'}`}
-                        className="inline-flex min-h-9 sm:min-h-8 items-center gap-1 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        className="inline-flex shrink-0 min-h-9 sm:min-h-8 items-center gap-1 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
-                        <EyeIcon className="w-3.5 h-3.5 text-muted" />
+                        <EyeIcon className="w-3.5 h-3.5 text-muted shrink-0" />
                         <span>Chi tiết</span>
                       </button>
 
@@ -301,18 +301,18 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
                           type="button"
                           disabled={isRestoring}
                           onClick={() => void controller.handleRestorePost(post)}
-                          className="inline-flex min-h-9 sm:min-h-8 items-center gap-1 rounded-lg border border-secondary-strong bg-secondary/50 px-2.5 text-xs font-medium text-primary-active hover:bg-secondary disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                          className="inline-flex shrink-0 min-h-9 sm:min-h-8 items-center gap-1 rounded-lg border border-secondary-strong bg-secondary/50 px-2.5 text-xs font-medium text-primary-active hover:bg-secondary disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                         >
-                          <RotateCcwIcon className="w-3.5 h-3.5" />
+                          <RotateCcwIcon className="w-3.5 h-3.5 shrink-0" />
                           <span>{isRestoring ? 'Đang mở...' : 'Khôi phục'}</span>
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => controller.handleOpenHideModal(post)}
-                          className="inline-flex min-h-9 sm:min-h-8 items-center gap-1 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                          className="inline-flex shrink-0 min-h-9 sm:min-h-8 items-center gap-1 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                         >
-                          <EyeOffIcon className="w-3.5 h-3.5 text-muted" />
+                          <EyeOffIcon className="w-3.5 h-3.5 text-muted shrink-0" />
                           <span>Ẩn</span>
                         </button>
                       )}
@@ -321,7 +321,7 @@ export const AdminPostsTable: React.FC<AdminPostsTableProps> = ({
                         type="button"
                         onClick={() => controller.handleOpenRemoveModal(post)}
                         aria-label={`Gỡ bỏ bài viết của ${post.author.fullName || 'tác giả'}`}
-                        className="inline-flex min-h-9 min-w-9 sm:min-h-8 sm:min-w-8 items-center justify-center rounded-lg border border-transparent text-muted hover:border-error/30 hover:bg-error/10 hover:text-error transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        className="inline-flex shrink-0 min-h-9 min-w-9 sm:min-h-8 sm:min-w-8 items-center justify-center rounded-lg border border-transparent text-muted hover:border-error/30 hover:bg-error/10 hover:text-error transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         <TrashIcon className="w-3.5 h-3.5" />
                       </button>
