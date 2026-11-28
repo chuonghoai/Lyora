@@ -212,6 +212,25 @@ export const SparklesIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => 
   </svg>
 );
 
+export const ChevronLeftIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 18l-6-6 6-6" />
+  </svg>
+);
+
+export const ChevronRightIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 18l6-6-6-6" />
+  </svg>
+);
+
+export const ZoomInIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="7" />
+    <path d="m21 21-4.35-4.35M11 8v6M8 11h6" />
+  </svg>
+);
+
 export const FutureMetricIcon: React.FC<{
   kind: 'posts' | 'engagement' | 'comments' | 'messaging' | 'ai' | 'activity' | 'moderation';
   className?: string;
