@@ -167,23 +167,49 @@ export const AdminPostDetailModal: React.FC<AdminPostDetailModalProps> = ({
                 )}
 
                 {post.media.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  <div
+                    className={`grid gap-2.5 pt-1 ${
+                      post.media.length === 1
+                        ? 'grid-cols-1'
+                        : 'grid-cols-1 sm:grid-cols-2'
+                    }`}
+                  >
                     {post.media.map((item, idx) => (
                       <div
                         key={item.id ?? `${item.url}-${idx}`}
-                        className="rounded-lg border border-border bg-card overflow-hidden"
+                        className={`rounded-lg border border-border bg-card overflow-hidden ${
+                          item.type === 'AUDIO' && post.media.length > 1
+                            ? 'sm:col-span-2'
+                            : ''
+                        }`}
                       >
                         {item.type === 'IMAGE' ? (
-                          <AppImage
-                            src={item.url}
-                            alt={item.alt || `Ảnh đính kèm ${idx + 1}`}
-                            className="h-44 w-full rounded-none object-cover"
-                          />
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Mở ảnh kích thước gốc trong tab mới"
+                            className="block bg-background/60"
+                          >
+                            <AppImage
+                              src={item.url}
+                              alt={item.alt || `Ảnh đính kèm ${idx + 1}`}
+                              className={`w-full h-auto rounded-none object-contain ${
+                                post.media.length === 1
+                                  ? 'max-h-[520px]'
+                                  : 'max-h-[360px]'
+                              }`}
+                            />
+                          </a>
                         ) : item.type === 'VIDEO' ? (
                           <video
                             src={item.url}
                             controls
-                            className="h-44 w-full object-cover bg-foreground"
+                            className={`w-full h-auto object-contain bg-foreground ${
+                              post.media.length === 1
+                                ? 'max-h-[520px]'
+                                : 'max-h-[360px]'
+                            }`}
                           />
                         ) : (
                           <div className="p-3 space-y-1">
@@ -262,18 +288,26 @@ export const AdminPostDetailModal: React.FC<AdminPostDetailModalProps> = ({
                                 </p>
                               )}
                               {cmt.media && (
-                                <div className="mt-2 max-w-xs rounded-lg border border-border overflow-hidden">
+                                <div className="mt-2 max-w-sm rounded-lg border border-border bg-background/60 overflow-hidden">
                                   {cmt.media.type === 'IMAGE' ? (
-                                    <AppImage
-                                      src={cmt.media.url}
-                                      alt="Ảnh bình luận"
-                                      className="max-h-36 w-auto rounded-none"
-                                    />
+                                    <a
+                                      href={cmt.media.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="Mở ảnh kích thước gốc trong tab mới"
+                                      className="block"
+                                    >
+                                      <AppImage
+                                        src={cmt.media.url}
+                                        alt="Ảnh bình luận"
+                                        className="max-h-60 w-full h-auto rounded-none object-contain"
+                                      />
+                                    </a>
                                   ) : (
                                     <video
                                       src={cmt.media.url}
                                       controls
-                                      className="max-h-36 w-full"
+                                      className="max-h-60 w-full h-auto object-contain bg-foreground"
                                     />
                                   )}
                                 </div>
