@@ -40,7 +40,30 @@ describe('RealtimeGateway', () => {
     await gateway.handleConnection(client as never);
 
     expect(client.join).toHaveBeenCalledWith('user:user-1');
-    expect(client.data).toEqual({ userId: 'user-1' });
+    expect(client.data).toEqual({ userId: 'user-1', role: UserRole.CLIENT });
+    expect(client.disconnect).not.toHaveBeenCalled();
+  });
+
+  it('cho phép ADMIN kết nối phòng user riêng để nhận thông báo realtime và không gắn handler bạn bè', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: 'admin-1',
+      email: 'admin@example.com',
+      role: UserRole.ADMIN,
+    });
+    const client = {
+      id: 'socket-admin-1',
+      handshake: { auth: { token: 'admin-token' } },
+      data: {},
+      join: jest.fn(),
+      on: jest.fn(),
+      disconnect: jest.fn(),
+    };
+
+    await gateway.handleConnection(client as never);
+
+    expect(client.join).toHaveBeenCalledWith('user:admin-1');
+    expect(client.data).toEqual({ userId: 'admin-1', role: UserRole.ADMIN });
+    expect(client.on).not.toHaveBeenCalled();
     expect(client.disconnect).not.toHaveBeenCalled();
   });
 
@@ -115,5 +138,11 @@ describe('RealtimeGateway', () => {
         payload: { action: 'ACCEPTED' },
       }),
     );
+  });
+
+  it('bỏ qua an toàn khi server socket chưa sẵn sàng', () => {
+    expect(() =>
+      gateway.emitToUser('user-1', 'notification.created', { id: 'noti-1' }),
+    ).not.toThrow();
   });
 });

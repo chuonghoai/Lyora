@@ -25,7 +25,7 @@ import {
 } from "@/features/notifications";
 import { friendsKeys } from "@/features/friends/hooks/friends.keys";
 import { notificationsKeys } from "@/features/notifications/hooks/notifications.keys";
-import type { PostsFeedFilter } from "@/features/posts";
+import { postKeys, type PostsFeedFilter } from "@/features/posts";
 import {
   getClientProfilePath,
   isClientProfilePathname,
@@ -196,9 +196,42 @@ export function useClientLayoutController() {
     };
     const unsubscribeNotification = webSocketService.subscribe(
       "notification.created",
+      (event) => {
+        void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+        const notificationType =
+          event &&
+          typeof event === "object" &&
+          "payload" in event &&
+          event.payload &&
+          typeof event.payload === "object" &&
+          "type" in event.payload &&
+          typeof event.payload.type === "string"
+            ? event.payload.type
+            : null;
+
+        if (
+          !notificationType ||
+          notificationType === "FRIEND_REQUEST" ||
+          notificationType === "FRIEND_REQUEST_ACCEPTED"
+        ) {
+          refreshFriendLists();
+        }
+        if (
+          notificationType === "POST_HIDDEN" ||
+          notificationType === "POST_RESTORED" ||
+          notificationType === "POST_REMOVED" ||
+          notificationType === "COMMENT_REMOVED" ||
+          notificationType === "POST_APPEAL_REJECTED"
+        ) {
+          void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+          void queryClient.invalidateQueries({ queryKey: postKeys.details() });
+        }
+      },
+    );
+    const unsubscribeNotificationUpdated = webSocketService.subscribe(
+      "notification.updated",
       () => {
         void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
-        refreshFriendLists();
       },
     );
     const unsubscribeFriendship = webSocketService.subscribe(
@@ -239,6 +272,7 @@ export function useClientLayoutController() {
     );
     return () => {
       unsubscribeNotification();
+      unsubscribeNotificationUpdated();
       unsubscribeFriendship();
       webSocketService.disconnect();
     };

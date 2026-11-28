@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuthStore, useClickOutside, toast } from '@/core';
+import { useAuthStore, useClickOutside, toast, webSocketService } from '@/core';
 import { useLogoutMutation } from '@/features/auth';
 import {
   useMarkAllNotificationsReadMutation,
@@ -8,15 +9,19 @@ import {
   useNotificationsQuery,
   type AppNotification,
 } from '@/features/notifications';
+import { notificationsKeys } from '@/features/notifications/hooks/notifications.keys';
+import { postKeys } from '@/features/posts';
 import { ROUTES } from '@/routes/paths';
 import { filterAdminNavItems, type AdminNavItem } from './adminNav';
 
 export function useAdminLayoutController() {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const appTitle = import.meta.env.VITE_APP_TITLE || 'Lyora';
 
   const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logoutMutation = useLogoutMutation();
   const notificationsQuery = useNotificationsQuery();
   const markNotificationReadMutation = useMarkNotificationReadMutation();
@@ -72,6 +77,31 @@ export function useAdminLayoutController() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Đồng bộ thông báo realtime qua Socket.IO cho Quản trị viên
+  useEffect(() => {
+    if (!isAuthenticated) {
+      webSocketService.disconnect();
+      return;
+    }
+
+    webSocketService.connect();
+    const unsubscribeCreated = webSocketService.subscribe('notification.created', () => {
+      void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminStats() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
+    });
+    const unsubscribeUpdated = webSocketService.subscribe('notification.updated', () => {
+      void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+    });
+
+    return () => {
+      unsubscribeCreated();
+      unsubscribeUpdated();
+      webSocketService.disconnect();
+    };
+  }, [isAuthenticated, queryClient]);
 
   const handleLogout = async () => {
     if (logoutMutation.isPending) return;
