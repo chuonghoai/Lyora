@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   isApiError,
@@ -6,6 +7,7 @@ import {
   toast,
   useAuthStore,
   useClickOutside,
+  webSocketService,
 } from "@/core";
 import { useLogoutMutation, useRefreshSessionMutation } from "@/features/auth";
 import {
@@ -13,12 +15,16 @@ import {
   useAcceptFriendRequestMutation,
   useFriendSearchQuery,
   useReceivedFriendRequestsQuery,
+  updateFriendSearchStatus,
+  updateFriendSuggestionStatus,
 } from "@/features/friends";
 import {
   useMarkAllNotificationsReadMutation,
   useMarkNotificationReadMutation,
   useNotificationsQuery,
 } from "@/features/notifications";
+import { friendsKeys } from "@/features/friends/hooks/friends.keys";
+import { notificationsKeys } from "@/features/notifications/hooks/notifications.keys";
 import type { PostsFeedFilter } from "@/features/posts";
 import {
   getClientProfilePath,
@@ -79,6 +85,7 @@ export function useClientLayoutController() {
   const appTitle = import.meta.env.VITE_APP_TITLE || "Lyora";
 
   const user = useAuthStore((s) => s.user);
+  const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setAuth = useAuthStore((s) => s.setAuth);
   const logoutMutation = useLogoutMutation();
@@ -166,6 +173,77 @@ export function useClientLayoutController() {
     triggerRefreshSession();
   }, [isAuthenticated, triggerRefreshSession]);
 
+  // Socket only invalidates cache; REST remains the persistent source on initial load/reconnect.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      webSocketService.disconnect();
+      return;
+    }
+    webSocketService.connect();
+    const refreshFriendLists = () => {
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.accepted() });
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.suggestions() });
+      void queryClient.invalidateQueries({
+        queryKey: friendsKeys.receivedRequests(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["users", "profile-page"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["users", "friends-directory"],
+      });
+    };
+    const unsubscribeNotification = webSocketService.subscribe(
+      "notification.created",
+      () => {
+        void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+        refreshFriendLists();
+      },
+    );
+    const unsubscribeFriendship = webSocketService.subscribe(
+      "friendship.updated",
+      (event) => {
+        if (
+          event &&
+          typeof event === "object" &&
+          "payload" in event &&
+          event.payload &&
+          typeof event.payload === "object" &&
+          "userId" in event.payload &&
+          "friendshipStatus" in event.payload &&
+          typeof event.payload.userId === "string" &&
+          typeof event.payload.friendshipStatus === "string"
+        ) {
+          const friendshipStatus = event.payload.friendshipStatus;
+          if (
+            friendshipStatus === "NONE" ||
+            friendshipStatus === "FRIEND" ||
+            friendshipStatus === "REQUEST_SENT" ||
+            friendshipStatus === "REQUEST_RECEIVED"
+          ) {
+            updateFriendSearchStatus(
+              queryClient,
+              event.payload.userId,
+              friendshipStatus,
+            );
+            updateFriendSuggestionStatus(
+              queryClient,
+              event.payload.userId,
+              friendshipStatus,
+            );
+          }
+        }
+        refreshFriendLists();
+      },
+    );
+    return () => {
+      unsubscribeNotification();
+      unsubscribeFriendship();
+      webSocketService.disconnect();
+    };
+  }, [isAuthenticated, queryClient]);
+
+  // Chỉ đồng bộ ô tìm kiếm với URL khi đang xem trang kết quả tìm kiếm.
   useEffect(() => {
     const urlSearch =
       location.pathname === ROUTES.CLIENT.SEARCH

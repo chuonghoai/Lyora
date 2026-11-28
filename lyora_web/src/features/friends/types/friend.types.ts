@@ -7,6 +7,7 @@ export interface FriendDiscoveryItem {
   workplace: string | null;
   location: string | null;
   friendshipStatus: FriendshipStatus;
+  mutualFriendsCount: number;
   isOnline?: boolean;
 }
 

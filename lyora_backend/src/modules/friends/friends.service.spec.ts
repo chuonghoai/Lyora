@@ -5,6 +5,7 @@ import { Friendship } from './entities/friendship.entity';
 import { FriendshipStatus } from './enums/friendship-status.enum';
 import { FriendsService } from './friends.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 describe('FriendsService', () => {
   let service: FriendsService;
@@ -16,6 +17,7 @@ describe('FriendsService', () => {
       'createFriendRequest' | 'createFriendRequestAccepted'
     >
   >;
+  let realtimeGateway: jest.Mocked<Pick<RealtimeGateway, 'emitToUser'>>;
 
   beforeEach(() => {
     friendshipRepo = {
@@ -33,11 +35,13 @@ describe('FriendsService', () => {
       createFriendRequest: jest.fn(),
       createFriendRequestAccepted: jest.fn(),
     };
+    realtimeGateway = { emitToUser: jest.fn() };
 
     service = new FriendsService(
       friendshipRepo as Repository<Friendship>,
       userRepo as Repository<User>,
       notificationsService as NotificationsService,
+      realtimeGateway as RealtimeGateway,
     );
   });
 
@@ -126,9 +130,67 @@ describe('FriendsService', () => {
         workplace: 'Lyora',
         location: 'TP. Hồ Chí Minh',
         friendshipStatus: 'FRIEND',
+        mutualFriendsCount: 0,
         isOnline: false,
       });
       expect(result[0]).not.toHaveProperty('email');
+    });
+  });
+
+  describe('getSuggestions', () => {
+    it('ưu tiên thành viên có bạn chung và loại trừ quan hệ hiện có', async () => {
+      const currentRelationships = [
+        {
+          userId: 'user-1',
+          friendId: 'friend-1',
+          status: FriendshipStatus.ACCEPTED,
+        },
+        {
+          userId: 'user-1',
+          friendId: 'pending-user',
+          status: FriendshipStatus.PENDING,
+        },
+      ] as Friendship[];
+      const friendRelationships = [
+        {
+          userId: 'friend-1',
+          friendId: 'mutual-user',
+          status: FriendshipStatus.ACCEPTED,
+        },
+      ] as Friendship[];
+      const currentQuery = {
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(currentRelationships),
+      };
+      const mutualQuery = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(friendRelationships),
+      };
+      (friendshipRepo.createQueryBuilder as jest.Mock)
+        .mockReturnValueOnce(currentQuery)
+        .mockReturnValueOnce(mutualQuery);
+      (userRepo.find as jest.Mock).mockResolvedValue([
+        { id: 'friend-1', fullName: 'Bạn trực tiếp' },
+        { id: 'pending-user', fullName: 'Đang chờ' },
+        { id: 'platform-user', fullName: 'An Nhiên' },
+        { id: 'mutual-user', fullName: 'Bạn chung' },
+      ]);
+
+      const result = await service.getSuggestions('user-1');
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          id: 'mutual-user',
+          friendshipStatus: 'NONE',
+          mutualFriendsCount: 1,
+        }),
+        expect.objectContaining({
+          id: 'platform-user',
+          friendshipStatus: 'NONE',
+          mutualFriendsCount: 0,
+        }),
+      ]);
     });
   });
 
@@ -219,6 +281,11 @@ describe('FriendsService', () => {
         'Người gửi',
         'user-1',
       );
+      expect(realtimeGateway.emitToUser).toHaveBeenCalledWith(
+        'user-1',
+        'friendship.updated',
+        { userId: 'user-2', friendshipStatus: 'REQUEST_SENT' },
+      );
     });
 
     it('chỉ chấp nhận lời mời PENDING gửi đến người dùng hiện tại', async () => {
@@ -240,6 +307,11 @@ describe('FriendsService', () => {
       expect(
         notificationsService.createFriendRequestAccepted,
       ).toHaveBeenCalledWith('user-2', 'Người chấp nhận', 'user-1');
+      expect(realtimeGateway.emitToUser).toHaveBeenCalledWith(
+        'user-1',
+        'friendship.updated',
+        { userId: 'user-2', friendshipStatus: 'FRIEND' },
+      );
     });
 
     it('vẫn hoàn tất lời mời khi lưu thông báo thất bại', async () => {

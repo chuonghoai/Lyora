@@ -5,6 +5,7 @@ import {
   ConfirmModal,
   EmptyState,
   ErrorState,
+  LoadingSpinner,
   LoadingState,
 } from "@/core";
 import type { FriendDiscoveryItem } from "@/features/friends";
@@ -25,12 +26,14 @@ interface FriendCardProps {
   friend: FriendDiscoveryItem;
   controller: FriendsController;
   requestActions?: boolean;
+  showSuggestionMeta?: boolean;
 }
 
 const FriendCard: React.FC<FriendCardProps> = ({
   friend,
   controller,
   requestActions = false,
+  showSuggestionMeta = false,
 }) => {
   const initial = friend.fullName.charAt(0).toUpperCase();
   const isIncoming = friend.friendshipStatus === "REQUEST_RECEIVED";
@@ -58,9 +61,13 @@ const FriendCard: React.FC<FriendCardProps> = ({
             {friend.fullName}
           </span>
           <span className="block truncate text-xs text-muted">
-            {friend.workplace ||
-              friend.location ||
-              "Thành viên cộng đồng Lyora"}
+            {showSuggestionMeta && friend.mutualFriendsCount > 0
+              ? `${friend.mutualFriendsCount} bạn chung`
+              : showSuggestionMeta
+                ? "Gợi ý cho bạn"
+                : friend.workplace ||
+                  friend.location ||
+                  "Thành viên cộng đồng Lyora"}
           </span>
         </span>
       </button>
@@ -296,13 +303,35 @@ export default function FriendsView(): React.ReactElement {
             </span>
           )}
         </div>
-        {!hasSearch ? (
-          <EmptyState
-            compact
-            icon={<UsersIcon className="h-5 w-5" />}
-            title="Tìm kiếm thành viên cộng đồng"
-            description="Nhập tên thành viên (từ 2 ký tự trở lên) để tìm và gửi lời mời kết bạn."
-          />
+        {!hasSearch ? controller.isLoadingSuggestions ? (
+          <div className="flex min-h-32 items-center justify-center rounded-xl border border-border bg-card">
+            <LoadingSpinner size="md" />
+          </div>
+        ) : controller.suggestionsError ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-error/30 bg-error/5 p-4 text-sm text-error"
+          >
+            Không thể tải gợi ý thành viên lúc này. Vui lòng thử lại.
+          </div>
+        ) : controller.suggestions.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-background/50 p-8 text-center">
+            <UsersIcon className="mx-auto h-7 w-7 text-muted" />
+            <p className="mt-2 text-sm text-muted">
+              Chưa có gợi ý thành viên mới vào lúc này.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {controller.suggestions.map((friend) => (
+              <FriendCard
+                key={friend.id}
+                friend={friend}
+                controller={controller}
+                showSuggestionMeta
+              />
+            ))}
+          </div>
         ) : controller.isSearching ? (
           <LoadingState
             variant="skeleton-list"

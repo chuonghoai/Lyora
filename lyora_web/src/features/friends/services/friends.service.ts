@@ -3,6 +3,7 @@ import type { FriendDiscoveryItem, FriendSearchResult } from '../types/friend.ty
 
 export interface IFriendsService {
   getAcceptedFriends(): Promise<FriendDiscoveryItem[]>;
+  getSuggestions(): Promise<FriendDiscoveryItem[]>;
   search(query: string): Promise<FriendSearchResult>;
   getReceivedRequests(): Promise<FriendDiscoveryItem[]>;
   sendRequest(userId: string): Promise<void>;
@@ -24,6 +25,10 @@ export class FriendsService implements IFriendsService {
 
   async getAcceptedFriends(): Promise<FriendDiscoveryItem[]> {
     return (await this.repository.getAcceptedFriends()).data;
+  }
+
+  async getSuggestions(): Promise<FriendDiscoveryItem[]> {
+    return (await this.repository.getSuggestions()).data;
   }
 
   async getReceivedRequests(): Promise<FriendDiscoveryItem[]> {

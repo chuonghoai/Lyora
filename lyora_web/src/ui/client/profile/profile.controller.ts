@@ -196,7 +196,7 @@ export function useProfileController() {
     avatarUrl: friend.avatarUrl,
     headline: friend.workplace,
     location: friend.location,
-    mutualFriendsCount: 0,
+    mutualFriendsCount: friend.mutualFriendsCount,
     friendshipStatus: friend.friendshipStatus,
     isOnline: friend.isOnline ?? false,
   });
@@ -210,24 +210,34 @@ export function useProfileController() {
     [receivedRequestsQuery.data],
   );
 
+  // Trong danh sách bạn bè của một hồ sơ khác, một người là "bạn chung"
+  // khi cả người xem và chủ hồ sơ đều đang là bạn với người đó. API biểu thị
+  // điều này qua trạng thái FRIEND của mối quan hệ trực tiếp với người xem.
+  // Không dùng số bạn chung giữa người xem và chính thẻ thành viên vì đó là
+  // một quan hệ khác, khiến bộ lọc "Bạn chung" bỏ sót người bạn chung thật.
+  const profileFriends = useMemo<ProfileFriendSummary[]>(
+    () =>
+      (profile?.friendsPreview ?? []).map((friend) => ({
+        ...friend,
+        mutualFriendsCount: friend.friendshipStatus === "FRIEND" ? 1 : 0,
+      })),
+    [profile?.friendsPreview],
+  );
+
   const overviewFriends = useMemo<ProfileFriendSummary[]>(() => {
-    const list = isOwnProfile
-      ? acceptedFriends
-      : (profile?.friendsPreview ?? []);
+    const list = isOwnProfile ? acceptedFriends : profileFriends;
     return list.slice(0, 6);
-  }, [isOwnProfile, acceptedFriends, profile?.friendsPreview]);
+  }, [isOwnProfile, acceptedFriends, profileFriends]);
 
   const friendsForFeed = useMemo<FriendContactItem[]>(() => {
-    const list = isOwnProfile
-      ? acceptedFriends
-      : (profile?.friendsPreview ?? []);
+    const list = isOwnProfile ? acceptedFriends : profileFriends;
     return list.map((friend) => ({
       id: friend.id,
       fullName: friend.fullName,
       avatarUrl: friend.avatarUrl,
       isOnline: Boolean(friend.isOnline),
     }));
-  }, [isOwnProfile, acceptedFriends, profile?.friendsPreview]);
+  }, [isOwnProfile, acceptedFriends, profileFriends]);
 
   const handleOpenUserProfile = (targetUserId: string) => {
     setIsFriendMenuOpen(false);
@@ -264,7 +274,7 @@ export function useProfileController() {
       };
     }
 
-    const otherFriends = profile?.friendsPreview ?? [];
+    const otherFriends = profileFriends;
     const mutualList = otherFriends.filter(
       (item) => item.mutualFriendsCount > 0,
     );
@@ -280,7 +290,7 @@ export function useProfileController() {
     isOwnProfile,
     acceptedFriends,
     receivedRequests,
-    profile?.friendsPreview,
+    profileFriends,
   ]);
 
   const filteredFriendsList = useMemo<ProfileFriendSummary[]>(() => {
@@ -293,7 +303,7 @@ export function useProfileController() {
         source = acceptedFriends;
       }
     } else {
-      const otherFriends = profile?.friendsPreview ?? [];
+      const otherFriends = profileFriends;
       source =
         friendsFilter === "MUTUAL"
           ? otherFriends.filter((item) => item.mutualFriendsCount > 0)
@@ -315,7 +325,7 @@ export function useProfileController() {
     friendsFilter,
     acceptedFriends,
     receivedRequests,
-    profile?.friendsPreview,
+    profileFriends,
     friendSearchQuery,
   ]);
 
