@@ -45,7 +45,9 @@ export class WebSocketService {
     this.socket?.disconnect();
     this.setStatus('CONNECTING');
     this.socket = io(`${this.config.url}/realtime`, {
-      auth: { token },
+      auth: (cb) => {
+        cb({ token: TokenStorage.getAccessToken() ?? '' });
+      },
       transports: ['websocket'],
       reconnectionAttempts: this.config.maxReconnectAttempts,
     });
