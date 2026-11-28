@@ -3,7 +3,6 @@ export const CORE_CONSTANTS = {
   DEFAULT_PAGE_SIZE: 10,
   MAX_PAGE_SIZE: 100,
   DATE_FORMAT: "DD/MM/YYYY",
-  SUPPORT_PHONE: "1900-6868",
   STORAGE_KEYS: {
     TOKEN: "lyora_token",
     REFRESH_TOKEN: "lyora_refresh_token",

@@ -12,7 +12,11 @@ export interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = ({ controller }) => {
   return (
     <form onSubmit={controller.handleSubmit} noValidate className="space-y-5">
-      {controller.apiError && <FormAlert message={controller.apiError.message} />}
+      {controller.apiError && (
+        <FormAlert
+          message={controller.apiError.message || 'Đăng nhập không thành công. Vui lòng thử lại!'}
+        />
+      )}
 
       <Input
         label="Email"

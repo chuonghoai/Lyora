@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { localStorageService, type ApiError } from '@/core';
+import { describe, expect, it, vi } from 'vitest';
+import { type ApiError } from '@/core';
 import {
-  profilePreviewStore,
   ProfileService,
   updateExtendedProfileSchema,
   userKeys,
   type IProfileRepository,
 } from '@/features/user';
+import type { IFriendsRepository } from '@/features/friends/repositories/friends.repository';
 import { PostService, type IPostRepository } from '@/features/posts';
 import {
   getClientProfilePath,
@@ -15,10 +15,6 @@ import {
 } from '@/routes/paths';
 
 describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Click-to-Profile)', () => {
-  beforeEach(() => {
-    profilePreviewStore.reset();
-    localStorageService.removeItem('lyora:profile-preview-extras');
-  });
 
   it('defines centralized /{userId} profile routes and path helper', () => {
     expect(ROUTES.CLIENT.PROFILE).toBe('/me');
@@ -26,11 +22,11 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
     expect(getClientProfilePath()).toBe('/me');
     expect(getClientProfilePath(undefined, 'user-real-1')).toBe('/user-real-1');
     expect(getClientProfilePath('me', 'user-real-1')).toBe('/user-real-1');
-    expect(getClientProfilePath('preview-user-1')).toBe('/preview-user-1');
+    expect(getClientProfilePath('sample-user-1')).toBe('/sample-user-1');
 
-    expect(isClientProfilePathname('/preview-user-1')).toBe(true);
+    expect(isClientProfilePathname('/sample-user-1')).toBe(true);
     expect(isClientProfilePathname('/11111111-1111-4111-8111-111111111111')).toBe(true);
-    expect(isClientProfilePathname('/profile/preview-user-1')).toBe(true);
+    expect(isClientProfilePathname('/profile/sample-user-1')).toBe(true);
     expect(isClientProfilePathname('/')).toBe(false);
     expect(isClientProfilePathname('/messages')).toBe(false);
     expect(isClientProfilePathname('/admin')).toBe(false);
@@ -39,10 +35,10 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
 
   it('produces deterministic hierarchical query keys for profile page & directory', () => {
     expect(userKeys.profilePage()).toEqual(['users', 'profile-page', 'me']);
-    expect(userKeys.profilePage('preview-user-1')).toEqual([
+    expect(userKeys.profilePage('sample-user-1')).toEqual([
       'users',
       'profile-page',
-      'preview-user-1',
+      'sample-user-1',
     ]);
     expect(userKeys.profileActivity()).toEqual(['users', 'profile-activity', 'me']);
     expect(userKeys.friendsDirectory()).toEqual(['users', 'friends-directory']);
@@ -171,7 +167,6 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
 
     const service = new ProfileService(mockRepo);
     const profile = await service.getProfileById('me');
-    expect(profile.isPreviewFallback).toBe(false);
     expect(profile.friendshipStatus).toBe('SELF');
     expect(profile.fullName).toBe('Trịnh Đại Nghĩa');
 
@@ -202,7 +197,7 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
     expect(updated.workplace).toBe('Lyora Team');
   });
 
-  it('falls back to preview store on 404/network error and handles other profiles & friendship transitions', async () => {
+  it('propagates API errors without preview fallback and delegates friend actions to friendsRepository', async () => {
     const notFound: ApiError = {
       statusCode: 404,
       message: 'Not Found',
@@ -215,43 +210,68 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
       getAcceptedFriends: vi.fn().mockRejectedValue(notFound),
     };
 
-    const service = new ProfileService(mockRepo);
-    const ownProfile = await service.getProfileById('me');
-    expect(ownProfile.isPreviewFallback).toBe(true);
-    expect(ownProfile.friendsCount).toBe(ownProfile.friendsPreview.length);
+    const failingService = new ProfileService(mockRepo);
+    await expect(failingService.getProfileById('me')).rejects.toMatchObject({
+      statusCode: 404,
+    });
+    await expect(
+      failingService.getProfileById('user-other-2'),
+    ).rejects.toMatchObject({ statusCode: 404 });
 
-    // Xem hồ sơ người dùng chưa kết bạn (preview-user-8 -> NONE)
-    const strangerProfile = await service.getProfileById('preview-user-8');
-    expect(strangerProfile.friendshipStatus).toBe('NONE');
-    expect(strangerProfile.email).toBeNull();
-    expect(strangerProfile.mutualFriendsCount).toBeGreaterThan(0);
+    const mockPublicProfile = {
+      id: 'user-target-1',
+      email: null,
+      fullName: 'Trần Bảo Long',
+      role: 'CLIENT' as const,
+      phoneNumber: null,
+      bio: null,
+      location: null,
+      hometown: null,
+      workplace: null,
+      education: null,
+      website: null,
+      avatarUrl: null,
+      coverUrl: null,
+      isActive: true,
+      isOnline: false,
+      createdAt: '2025-02-01T00:00:00.000Z',
+      friendshipStatus: 'REQUEST_SENT' as const,
+      friendsCount: 1,
+      mutualFriendsCount: 0,
+      friendsPreview: [],
+    };
+    const repoWithTarget: IProfileRepository = {
+      getMyProfile: vi.fn(),
+      getPublicProfile: vi.fn().mockResolvedValue({
+        success: true,
+        data: mockPublicProfile,
+      }),
+      updateMyProfile: vi.fn(),
+      getAcceptedFriends: vi.fn().mockResolvedValue({ success: true, data: [] }),
+    };
+    const mockFriendsRepo = {
+      sendRequest: vi.fn().mockResolvedValue({ success: true, data: null }),
+      removeRequest: vi.fn().mockResolvedValue({ success: true, data: null }),
+      acceptRequest: vi.fn().mockResolvedValue({ success: true, data: null }),
+      unfriend: vi.fn().mockResolvedValue({ success: true, data: null }),
+    } as unknown as IFriendsRepository;
 
-    // Gửi lời mời -> Hủy lời mời
-    const afterSend = await service.sendFriendRequest('preview-user-8');
-    expect(afterSend.friendshipStatus).toBe('REQUEST_SENT');
+    const liveService = new ProfileService(repoWithTarget, mockFriendsRepo);
+    const sent = await liveService.sendFriendRequest('user-target-1');
+    expect(mockFriendsRepo.sendRequest).toHaveBeenCalledWith('user-target-1');
+    expect(sent.friendshipStatus).toBe('REQUEST_SENT');
 
-    const afterCancel = await service.cancelFriendRequest('preview-user-8');
-    expect(afterCancel.friendshipStatus).toBe('NONE');
+    await liveService.cancelFriendRequest('user-target-1');
+    expect(mockFriendsRepo.removeRequest).toHaveBeenCalledWith('user-target-1');
 
-    // Chấp nhận lời mời từ preview-user-6 (REQUEST_RECEIVED -> FRIEND)
-    const initialDir = await service.getFriendsDirectory();
-    const initialFriendsCount = initialDir.friends.length;
+    await liveService.acceptFriendRequest('user-target-1');
+    expect(mockFriendsRepo.acceptRequest).toHaveBeenCalledWith('user-target-1');
 
-    const afterAccept = await service.acceptFriendRequest('preview-user-6');
-    expect(afterAccept.friendshipStatus).toBe('FRIEND');
-
-    const updatedDir = await service.getFriendsDirectory();
-    expect(updatedDir.friends.length).toBe(initialFriendsCount + 1);
-
-    // Hủy kết bạn -> quay về NONE và giảm số bạn bè
-    const afterUnfriend = await service.unfriend('preview-user-6');
-    expect(afterUnfriend.friendshipStatus).toBe('NONE');
-
-    const finalDir = await service.getFriendsDirectory();
-    expect(finalDir.friends.length).toBe(initialFriendsCount);
+    await liveService.unfriend('user-target-1');
+    expect(mockFriendsRepo.unfriend).toHaveBeenCalledWith('user-target-1');
   });
 
-  it('prevents self-targeted friend actions and throws when userId does not exist', async () => {
+  it('prevents self-targeted friend actions and propagates 404 when userId does not exist', async () => {
     const notFound: ApiError = {
       statusCode: 404,
       message: 'Not Found',
@@ -268,12 +288,12 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
     await expect(service.sendFriendRequest('me')).rejects.toThrow(
       'Không thể thực hiện thao tác kết bạn với chính tài khoản của bạn.',
     );
-    await expect(service.getProfileById('non-existent-id')).rejects.toThrow(
-      'Không tìm thấy hồ sơ người dùng này.',
-    );
+    await expect(service.getProfileById('non-existent-id')).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 
-  it('returns own tagged/reacted/saved activity and filters profile authored posts by authorId', async () => {
+  it('returns empty profile activity buckets when backend activity API is not implemented and does not fabricate posts', async () => {
     const mockRepo: IProfileRepository = {
       getMyProfile: vi.fn(),
       updateMyProfile: vi.fn(),
@@ -282,14 +302,20 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
 
     const service = new ProfileService(mockRepo);
     const ownActivity = await service.getProfileActivity('me');
-    expect(ownActivity.tagged.length).toBeGreaterThan(0);
-    expect(ownActivity.reacted.length).toBeGreaterThan(0);
-    expect(ownActivity.saved.length).toBeGreaterThan(0);
+    expect(ownActivity).toEqual({
+      tagged: [],
+      reacted: [],
+      saved: [],
+      authored: [],
+    });
 
-    const otherActivity = await service.getProfileActivity('preview-user-1');
-    expect(otherActivity.tagged.length).toBeGreaterThan(0);
-    expect(otherActivity.reacted).toEqual([]);
-    expect(otherActivity.saved).toEqual([]);
+    const otherActivity = await service.getProfileActivity('user-other-1');
+    expect(otherActivity).toEqual({
+      tagged: [],
+      reacted: [],
+      saved: [],
+      authored: [],
+    });
 
     const notFound: ApiError = {
       statusCode: 404,
@@ -300,14 +326,12 @@ describe('Profile Page Feature (Own Profile Composer & Posts, /{userId} URL & Cl
       getPosts: vi.fn().mockRejectedValue(notFound),
     } as unknown as IPostRepository;
     const postService = new PostService(failingPostRepo);
-    const authoredByUser1 = await postService.getPosts({
-      page: 1,
-      limit: 10,
-      authorId: 'preview-user-1',
-    });
-    expect(authoredByUser1.items.length).toBeGreaterThan(0);
-    expect(
-      authoredByUser1.items.every((post) => post.author.id === 'preview-user-1'),
-    ).toBe(true);
+    await expect(
+      postService.getPosts({
+        page: 1,
+        limit: 10,
+        authorId: 'user-other-1',
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 });
   });
 });

@@ -6,7 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, In, IsNull, Repository } from 'typeorm';
+import {
+  Brackets,
+  DataSource,
+  EntityManager,
+  In,
+  IsNull,
+  Repository,
+} from 'typeorm';
 import { PaginationMetaDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { FriendsService } from '../friends/friends.service';
@@ -323,6 +330,37 @@ export class ConversationsService {
       qb.andWhere('c.type = :type', { type: query.type });
     }
 
+    const searchKeyword = query.search?.trim();
+    if (searchKeyword) {
+      const searchTerm = `%${searchKeyword}%`;
+      const directMatchQb = this.memberRepository
+        .createQueryBuilder('cm_s')
+        .select('1')
+        .innerJoin('cm_s.user', 'u_s')
+        .where('cm_s.conversationId = c.id')
+        .andWhere('cm_s.userId != :currentUserId')
+        .andWhere('cm_s.deletedAt IS NULL')
+        .andWhere('u_s.fullName ILIKE :searchTerm');
+
+      qb.andWhere(
+        new Brackets((searchQb) => {
+          searchQb
+            .where('(c.type = :groupType AND c.title ILIKE :searchTerm)', {
+              groupType: ConversationType.GROUP,
+              searchTerm,
+            })
+            .orWhere(
+              `(c.type = :directType AND EXISTS (${directMatchQb.getQuery()}))`,
+              {
+                directType: ConversationType.DIRECT,
+                currentUserId,
+                searchTerm,
+              },
+            );
+        }),
+      );
+    }
+
     qb.orderBy('c.updatedAt', 'DESC').addOrderBy('c.id', 'DESC');
 
     const total = await qb.getCount();
@@ -400,17 +438,8 @@ export class ConversationsService {
       };
     });
 
-    // Lọc theo search nếu có
-    let filteredItems = items;
-    if (query.search && query.search.trim()) {
-      const term = query.search.trim().toLowerCase();
-      filteredItems = items.filter((item) =>
-        item.title.toLowerCase().includes(term),
-      );
-    }
-
     return {
-      items: filteredItems,
+      items,
       meta: new PaginationMetaDto(page, limit, total),
     };
   }

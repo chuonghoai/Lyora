@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Button, Input, LoadingSpinner } from '@/core';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AppImage, Button, EmptyState, ErrorState, Input, LoadingState } from '@/core';
 import type { FriendUser } from '@/features/conversations';
 import {
   CheckIcon,
@@ -14,6 +14,8 @@ export interface AddGroupMembersModalProps {
   onClose: () => void;
   friends: FriendUser[];
   isLoadingFriends: boolean;
+  isFriendsError?: boolean;
+  onRetryFriends?: () => void;
   existingMemberUserIds: string[];
   isAdding: boolean;
   onSubmit: (memberIds: string[]) => Promise<void> | void;
@@ -32,6 +34,8 @@ export const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({
   onClose,
   friends,
   isLoadingFriends,
+  isFriendsError = false,
+  onRetryFriends,
   existingMemberUserIds,
   isAdding,
   onSubmit,
@@ -39,6 +43,22 @@ export const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({
   const [search, setSearch] = useState('');
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearch('');
+      setSelectedFriendIds([]);
+      setErrorMsg(null);
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isAdding) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isAdding, onClose]);
 
   const existingSet = useMemo(
     () => new Set(existingMemberUserIds),
@@ -100,7 +120,9 @@ export const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({
       aria-modal="true"
       aria-labelledby="add-members-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
+      onClick={() => {
+        if (!isAdding) onClose();
+      }}
     >
       <div
         className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border flex flex-col max-h-[85vh] overflow-hidden"
@@ -121,9 +143,12 @@ export const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (!isAdding) onClose();
+            }}
+            disabled={isAdding}
             aria-label="Đóng cửa sổ"
-            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
@@ -158,24 +183,32 @@ export const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({
           {/* Friends List */}
           <div className="flex-1 overflow-y-auto p-2 min-h-0 space-y-1">
             {isLoadingFriends ? (
-              <div className="flex flex-col items-center justify-center p-8 gap-2 text-muted">
-                <LoadingSpinner size="md" />
-                <span className="text-xs">Đang tải danh sách bạn bè...</span>
-              </div>
+              <LoadingState compact label="Đang tải danh sách bạn bè..." />
+            ) : isFriendsError ? (
+              <ErrorState
+                compact
+                title="Không thể tải danh sách bạn bè"
+                description="Vui lòng thử lại để tải danh sách bạn bè của bạn."
+                onRetry={onRetryFriends}
+              />
             ) : candidateFriends.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-8 text-center text-muted">
-                <UsersIcon className="w-10 h-10 mb-2 opacity-40 text-muted" />
-                <p className="text-sm font-medium text-foreground">
-                  Không còn bạn bè nào để thêm
-                </p>
-                <p className="text-xs text-muted mt-1">
-                  Tất cả bạn bè của bạn đã là thành viên trong nhóm này.
-                </p>
-              </div>
+              <EmptyState
+                compact
+                icon={<UsersIcon className="w-5 h-5" />}
+                title="Không còn bạn bè nào để thêm"
+                description="Tất cả bạn bè của bạn đã là thành viên trong nhóm này."
+              />
             ) : filteredFriends.length === 0 ? (
-              <div className="p-6 text-center text-xs text-muted">
-                Không tìm thấy bạn bè phù hợp với từ khóa &ldquo;{search}&rdquo;
-              </div>
+              <EmptyState
+                compact
+                title="Không tìm thấy bạn bè phù hợp"
+                description={`Không có ai khớp với từ khóa "${search}".`}
+                action={{
+                  label: 'Xóa tìm kiếm',
+                  variant: 'outline',
+                  onClick: () => setSearch(''),
+                }}
+              />
             ) : (
               filteredFriends.map((friend) => {
                 const isSelected = selectedFriendIds.includes(friend.id);
@@ -195,10 +228,11 @@ export const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
                         {friend.avatarUrl ? (
-                          <img
+                          <AppImage
                             src={friend.avatarUrl}
                             alt={friend.fullName}
-                            className="w-9 h-9 rounded-full object-cover border border-border"
+                            rounded
+                            className="w-9 h-9 border border-border"
                           />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-secondary text-primary font-bold text-xs flex items-center justify-center border border-border">
@@ -216,7 +250,7 @@ export const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({
                     <div
                       className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
                         isSelected
-                          ? 'bg-primary border-primary text-white'
+                          ? 'bg-primary border-primary text-on-primary'
                           : 'border-muted/40 bg-card'
                       }`}
                     >

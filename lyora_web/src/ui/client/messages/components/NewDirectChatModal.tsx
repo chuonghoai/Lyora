@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AppImage, EmptyState, ErrorState } from '@/core';
 import type { FriendUser } from '@/features/conversations';
 import { CloseIcon, SearchIcon } from './ConversationIcons';
 
@@ -7,6 +8,8 @@ interface NewDirectChatModalProps {
   onClose: () => void;
   friends: FriendUser[];
   isLoadingFriends: boolean;
+  isFriendsError?: boolean;
+  onRetryFriends?: () => void;
   isCreating: boolean;
   onSelectFriend: (friendId: string) => void;
 }
@@ -16,10 +19,26 @@ export const NewDirectChatModal: React.FC<NewDirectChatModalProps> = ({
   onClose,
   friends,
   isLoadingFriends,
+  isFriendsError = false,
+  onRetryFriends,
   isCreating,
   onSelectFriend,
 }) => {
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearch('');
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isCreating) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isCreating, onClose]);
 
   const filteredFriends = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -35,8 +54,14 @@ export const NewDirectChatModal: React.FC<NewDirectChatModalProps> = ({
       aria-modal="true"
       aria-labelledby="direct-chat-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-[1px]"
+      onClick={() => {
+        if (!isCreating) onClose();
+      }}
     >
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-md">
+      <div
+        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-md"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <h3
@@ -47,9 +72,12 @@ export const NewDirectChatModal: React.FC<NewDirectChatModalProps> = ({
           </h3>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (!isCreating) onClose();
+            }}
+            disabled={isCreating}
             aria-label="Đóng modal"
-            className="group min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="group min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
@@ -86,12 +114,32 @@ export const NewDirectChatModal: React.FC<NewDirectChatModalProps> = ({
                 </div>
               </div>
             ))
+          ) : isFriendsError ? (
+            <ErrorState
+              compact
+              title="Không thể tải danh sách bạn bè"
+              description="Vui lòng thử lại để bắt đầu cuộc trò chuyện mới."
+              onRetry={onRetryFriends}
+            />
           ) : filteredFriends.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted">
-              {search
-                ? 'Không tìm thấy bạn bè nào phù hợp.'
-                : 'Bạn chưa có người bạn nào trong danh sách.'}
-            </div>
+            search ? (
+              <EmptyState
+                compact
+                title="Không tìm thấy bạn bè phù hợp"
+                description={`Không có người bạn nào khớp với "${search}".`}
+                action={{
+                  label: 'Xóa tìm kiếm',
+                  variant: 'outline',
+                  onClick: () => setSearch(''),
+                }}
+              />
+            ) : (
+              <EmptyState
+                compact
+                title="Chưa có bạn bè"
+                description="Hãy kết bạn để bắt đầu nhắn tin trực tiếp."
+              />
+            )
           ) : (
             filteredFriends.map((friend) => {
               const initial = (friend.fullName || 'F').charAt(0).toUpperCase();
@@ -106,10 +154,11 @@ export const NewDirectChatModal: React.FC<NewDirectChatModalProps> = ({
                 >
                   <div className="relative shrink-0">
                     {friend.avatarUrl ? (
-                      <img
+                      <AppImage
                         src={friend.avatarUrl}
                         alt={friend.fullName}
-                        className="h-10 w-10 rounded-full object-cover border border-border"
+                        rounded
+                        className="h-10 w-10 border border-border"
                       />
                     ) : (
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary font-bold text-primary text-sm">

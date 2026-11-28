@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  NotImplementedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isUUID } from 'class-validator';
@@ -10,16 +11,34 @@ import { Brackets, In, Repository } from 'typeorm';
 import { PaginationMetaDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { Friendship } from '../friends/entities/friendship.entity';
+import { FriendshipStatus } from '../friends/enums/friendship-status.enum';
 import { User } from '../users/entities/user.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostQueryDto } from './dto/post-query.dto';
+import { PostComment } from './entities/post-comment.entity';
+import { PostReaction } from './entities/post-reaction.entity';
 import { Post } from './entities/post.entity';
 import { PostReactionType, PostVisibility } from './enums/post.enums';
-import { PostResponse } from './interfaces/post-response.interface';
+import {
+  PostCommentResponse,
+  PostResponse,
+} from './interfaces/post-response.interface';
 
 export interface PaginatedPosts {
   items: PostResponse[];
   meta: PaginationMetaDto;
+}
+
+function createEmptyReactionBreakdown(): Record<PostReactionType, number> {
+  return {
+    [PostReactionType.LIKE]: 0,
+    [PostReactionType.LOVE]: 0,
+    [PostReactionType.HAHA]: 0,
+    [PostReactionType.WOW]: 0,
+    [PostReactionType.SAD]: 0,
+    [PostReactionType.ANGRY]: 0,
+  };
 }
 
 @Injectable()
@@ -27,8 +46,14 @@ export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+    @InjectRepository(PostReaction)
+    private readonly postReactionRepository: Repository<PostReaction>,
+    @InjectRepository(PostComment)
+    private readonly postCommentRepository: Repository<PostComment>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Friendship)
+    private readonly friendshipRepository: Repository<Friendship>,
   ) {}
 
   async create(
@@ -59,7 +84,11 @@ export class PostsService {
       }),
     );
 
-    return this.toResponse(await this.getPostOrThrow(created.id));
+    const [response] = await this.toResponses(
+      [await this.getPostOrThrow(created.id)],
+      currentUser.id,
+    );
+    return response;
   }
 
   async findAllPaginated(
@@ -69,14 +98,17 @@ export class PostsService {
     const { page, limit, search, visibility, authorId, filter } = query;
 
     if (filter === 'saved') {
-      return { items: [], meta: new PaginationMetaDto(page, limit, 0) };
+      throw new NotImplementedException(
+        'Tính năng bài viết đã lưu hiện chưa được hỗ trợ trên hệ thống',
+      );
     }
+
+    const friendIds = await this.getAcceptedFriendIds(currentUser.id);
 
     const qb = this.postRepository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.author', 'author');
 
-    // Bài PUBLIC hiển thị cho mọi người; FRIENDS/PRIVATE chỉ tác giả xem được
     if (filter === 'mine') {
       qb.where('post.authorId = :me', { me: currentUser.id });
     } else {
@@ -87,6 +119,16 @@ export class PostsService {
               publicVisibility: PostVisibility.PUBLIC,
             })
             .orWhere('post.authorId = :me', { me: currentUser.id });
+
+          if (friendIds.length > 0) {
+            visibleScope.orWhere(
+              '(post.visibility = :friendsVisibility AND post.authorId IN (:...friendIds))',
+              {
+                friendsVisibility: PostVisibility.FRIENDS,
+                friendIds,
+              },
+            );
+          }
         }),
       );
     }
@@ -109,7 +151,7 @@ export class PostsService {
       .getManyAndCount();
 
     return {
-      items: posts.map((post) => this.toResponse(post)),
+      items: await this.toResponses(posts, currentUser.id),
       meta: new PaginationMetaDto(page, limit, totalItems),
     };
   }
@@ -119,15 +161,21 @@ export class PostsService {
     id: string,
   ): Promise<PostResponse> {
     const post = await this.getPostOrThrow(id);
+    const isFriendVisible =
+      post.visibility === PostVisibility.FRIENDS &&
+      (await this.isAcceptedFriend(currentUser.id, post.authorId));
+
     const canView =
       post.visibility === PostVisibility.PUBLIC ||
       post.authorId === currentUser.id ||
-      currentUser.role === UserRole.ADMIN;
+      currentUser.role === UserRole.ADMIN ||
+      isFriendVisible;
 
     if (!canView) {
       throw new NotFoundException('Không tìm thấy bài viết');
     }
-    return this.toResponse(post);
+    const [response] = await this.toResponses([post], currentUser.id);
+    return response;
   }
 
   async remove(currentUser: AuthenticatedUser, id: string): Promise<void> {
@@ -153,6 +201,40 @@ export class PostsService {
     return post;
   }
 
+  private async getAcceptedFriendIds(userId: string): Promise<string[]> {
+    const friendships = await this.friendshipRepository.find({
+      where: [
+        { userId, status: FriendshipStatus.ACCEPTED },
+        { friendId: userId, status: FriendshipStatus.ACCEPTED },
+      ],
+    });
+    return friendships.map((f) =>
+      f.userId === userId ? f.friendId : f.userId,
+    );
+  }
+
+  private async isAcceptedFriend(
+    userAId: string,
+    userBId: string,
+  ): Promise<boolean> {
+    if (userAId === userBId) return true;
+    const friendship = await this.friendshipRepository.findOne({
+      where: [
+        {
+          userId: userAId,
+          friendId: userBId,
+          status: FriendshipStatus.ACCEPTED,
+        },
+        {
+          userId: userBId,
+          friendId: userAId,
+          status: FriendshipStatus.ACCEPTED,
+        },
+      ],
+    });
+    return Boolean(friendship);
+  }
+
   private async resolveTaggedUserIds(
     taggedUserIds: string[] | undefined,
     authorId: string,
@@ -170,36 +252,97 @@ export class PostsService {
     return users.map((user) => user.id);
   }
 
-  private toResponse(post: Post): PostResponse {
-    return {
-      id: post.id,
-      author: {
-        id: post.author.id,
-        fullName: post.author.fullName,
-        email: post.author.email,
-        avatarUrl: post.author.avatarUrl ?? null,
-      },
-      content: post.content,
-      visibility: post.visibility,
-      media: post.media ?? [],
-      taggedUserIds: post.taggedUserIds ?? [],
-      reactionCount: post.reactionsCount,
-      reactionBreakdown: {
-        [PostReactionType.LIKE]: 0,
-        [PostReactionType.LOVE]: 0,
-        [PostReactionType.HAHA]: 0,
-        [PostReactionType.WOW]: 0,
-        [PostReactionType.SAD]: 0,
-        [PostReactionType.ANGRY]: 0,
-      },
-      userReaction: null,
-      commentCount: post.commentsCount,
-      comments: [],
-      shareCount: post.sharesCount,
-      bookmarkCount: 0,
-      isBookmarked: false,
-      createdAt: post.createdAt.toISOString(),
-      updatedAt: post.updatedAt.toISOString(),
-    };
+  private async toResponses(
+    posts: Post[],
+    currentUserId: string,
+  ): Promise<PostResponse[]> {
+    if (posts.length === 0) {
+      return [];
+    }
+
+    const postIds = posts.map((post) => post.id);
+
+    const [reactions, comments] = await Promise.all([
+      this.postReactionRepository.find({
+        where: { postId: In(postIds) },
+      }),
+      this.postCommentRepository.find({
+        where: { postId: In(postIds) },
+        order: { createdAt: 'ASC' },
+      }),
+    ]);
+
+    const breakdownByPost = new Map<string, Record<PostReactionType, number>>();
+    const totalReactionsByPost = new Map<string, number>();
+    const userReactionByPost = new Map<string, PostReactionType>();
+
+    for (const reaction of reactions) {
+      const breakdown =
+        breakdownByPost.get(reaction.postId) ?? createEmptyReactionBreakdown();
+      breakdown[reaction.type] = (breakdown[reaction.type] ?? 0) + 1;
+      breakdownByPost.set(reaction.postId, breakdown);
+
+      totalReactionsByPost.set(
+        reaction.postId,
+        (totalReactionsByPost.get(reaction.postId) ?? 0) + 1,
+      );
+
+      if (reaction.userId === currentUserId) {
+        userReactionByPost.set(reaction.postId, reaction.type);
+      }
+    }
+
+    const commentsByPost = new Map<string, PostCommentResponse[]>();
+    for (const comment of comments) {
+      const list = commentsByPost.get(comment.postId) ?? [];
+      list.push({
+        id: comment.id,
+        author: {
+          id: comment.author?.id ?? comment.authorId,
+          fullName: comment.author?.fullName ?? 'Người dùng Lyora',
+          avatarUrl: comment.author?.avatarUrl ?? null,
+        },
+        content: comment.content,
+        media: comment.media ?? null,
+        createdAt: comment.createdAt.toISOString(),
+      });
+      commentsByPost.set(comment.postId, list);
+    }
+
+    return posts.map((post) => {
+      const postComments = commentsByPost.get(post.id) ?? [];
+      const breakdown =
+        breakdownByPost.get(post.id) ?? createEmptyReactionBreakdown();
+      const reactionCount =
+        totalReactionsByPost.get(post.id) ?? post.reactionsCount;
+      const commentCount =
+        postComments.length > 0 ? postComments.length : post.commentsCount;
+
+      return {
+        id: post.id,
+        author: {
+          id: post.author.id,
+          fullName: post.author.fullName,
+          ...(post.authorId === currentUserId
+            ? { email: post.author.email }
+            : {}),
+          avatarUrl: post.author.avatarUrl ?? null,
+        },
+        content: post.content,
+        visibility: post.visibility,
+        media: post.media ?? [],
+        taggedUserIds: post.taggedUserIds ?? [],
+        reactionCount,
+        reactionBreakdown: breakdown,
+        userReaction: userReactionByPost.get(post.id) ?? null,
+        commentCount,
+        comments: postComments,
+        shareCount: post.sharesCount,
+        bookmarkCount: 0,
+        isBookmarked: false,
+        createdAt: post.createdAt.toISOString(),
+        updatedAt: post.updatedAt.toISOString(),
+      };
+    });
   }
 }

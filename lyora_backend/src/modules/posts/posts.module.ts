@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiModule } from '../ai/ai.module';
+import { Friendship } from '../friends/entities/friendship.entity';
 import { User } from '../users/entities/user.entity';
 import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
@@ -13,7 +14,13 @@ import { PostAiSuggestionService } from './services/post-ai-suggestion.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Post, PostReaction, PostComment, User]),
+    TypeOrmModule.forFeature([
+      Post,
+      PostReaction,
+      PostComment,
+      User,
+      Friendship,
+    ]),
     AiModule,
   ],
   controllers: [PostsController],

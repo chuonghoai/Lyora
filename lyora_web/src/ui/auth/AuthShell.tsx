@@ -24,9 +24,9 @@ export const AuthShell: React.FC<AuthShellProps> = ({
         <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full border border-secondary-strong" />
         <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-secondary-strong/25" />
         <Link
-          to={ROUTES.CLIENT.ROOT}
+          to={ROUTES.AUTH.LOGIN}
           className="relative inline-flex w-fit items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-          aria-label="Về cổng người dùng Lyora"
+          aria-label="Lyora"
         >
           <span className="grid h-12 w-12 place-items-center rounded-xl border border-border bg-card p-1.5 shadow-sm">
             <img src={webIconSymbol} alt="" className="h-full w-full" />
@@ -43,15 +43,15 @@ export const AuthShell: React.FC<AuthShellProps> = ({
           </p>
         </div>
 
-        <p className="relative text-sm text-muted">Lyora Platform · Cộng đồng số dành cho bạn</p>
+        <p className="relative text-sm text-muted">Lyora · Cộng đồng số dành cho bạn</p>
       </section>
 
       <section className="flex min-h-full items-center justify-center lg:px-12 xl:px-20">
         <div className="w-full max-w-[30rem]">
           <Link
-            to={ROUTES.CLIENT.ROOT}
+            to={ROUTES.AUTH.LOGIN}
             className="mb-10 inline-flex items-center gap-3 rounded-xl lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-            aria-label="Về cổng người dùng Lyora"
+            aria-label="Lyora"
           >
             <span className="grid h-11 w-11 place-items-center rounded-xl border border-border bg-card p-1.5 shadow-sm">
               <img src={webIconSymbol} alt="" className="h-full w-full" />
@@ -70,14 +70,6 @@ export const AuthShell: React.FC<AuthShellProps> = ({
           </div>
 
           <div className="mt-6 text-center text-sm text-muted">{footer}</div>
-          <div className="mt-7 text-center">
-            <Link
-              to={ROUTES.CLIENT.ROOT}
-              className="rounded-lg px-2 py-1 text-sm font-medium text-muted underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              ← Về Cổng Người Dùng
-            </Link>
-          </div>
         </div>
       </section>
     </main>

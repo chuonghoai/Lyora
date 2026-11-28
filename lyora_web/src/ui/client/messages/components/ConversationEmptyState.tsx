@@ -1,5 +1,6 @@
 import React from 'react';
-import { ChatOutlineIcon, PlusIcon } from './ConversationIcons';
+import { EmptyState } from '@/core';
+import { ChatOutlineIcon } from './ConversationIcons';
 
 interface ConversationEmptyStateProps {
   title?: string;
@@ -15,28 +16,22 @@ export const ConversationEmptyState: React.FC<ConversationEmptyStateProps> = ({
   onAction,
 }) => {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center p-8 text-center bg-card">
-      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-secondary/60 text-primary mb-4">
-        <ChatOutlineIcon className="h-10 w-10 text-primary" />
-      </div>
-
-      <h2 className="text-lg font-semibold text-foreground tracking-tight">
-        {title}
-      </h2>
-      <p className="mt-1.5 max-w-sm text-sm text-muted leading-relaxed">
-        {description}
-      </p>
-
-      {actionText && onAction && (
-        <button
-          type="button"
-          onClick={onAction}
-          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover active:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 cursor-pointer"
-        >
-          <PlusIcon className="h-4 w-4" />
-          {actionText}
-        </button>
-      )}
+    <div className="flex h-full w-full items-center justify-center p-8 bg-card">
+      <EmptyState
+        icon={<ChatOutlineIcon className="h-7 w-7" />}
+        title={title}
+        description={description}
+        className="w-full max-w-md border-none bg-transparent"
+        action={
+          actionText && onAction
+            ? {
+                label: actionText,
+                variant: 'primary',
+                onClick: onAction,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 };

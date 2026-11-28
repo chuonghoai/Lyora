@@ -145,7 +145,11 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ controller }) 
           <PostCommentForm
             postId={post.id}
             inputSuffix="modal"
-            placeholder="Hãy gửi bình luận đầu tiên của bạn..."
+            placeholder={
+              post.comments.length === 0
+                ? 'Hãy gửi bình luận đầu tiên của bạn...'
+                : 'Viết bình luận...'
+            }
             controller={controller}
           />
         </footer>

@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -24,6 +23,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { VietnameseParseUUIDPipe } from '../../common/pipes/vietnamese-parse-uuid.pipe';
 import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
 import { UserStatisticsQueryDto } from './dto/user-statistics-query.dto';
 import {
@@ -113,7 +113,7 @@ export class UsersController {
   @Get(':id')
   @Roles(UserRole.ADMIN)
   @ResponseMessage('Lấy thông tin người dùng thành công')
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  async findOne(@Param('id', VietnameseParseUUIDPipe) id: string) {
     return this.usersService.findById(id);
   }
 }

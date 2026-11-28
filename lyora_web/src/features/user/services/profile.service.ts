@@ -1,49 +1,62 @@
-import { isApiError, type UserProfile } from '@/core';
+import { useAuthStore, type UserProfile } from '@/core';
+import {
+  friendsRepository,
+  type IFriendsRepository,
+} from '@/features/friends/repositories/friends.repository';
 import { updateExtendedProfileSchema } from '../models/profile.model';
 import { profileRepository, type IProfileRepository } from '../repositories/profile.repository';
 import type {
   ProfileActivityFeed,
   ProfileFriendsDirectory,
+  ProfileFriendSummary,
   PublicUserProfile,
   UpdateExtendedProfilePayload,
 } from '../types/user.types';
-import { profilePreviewStore } from './profilePreviewStore';
-
-function isFallbackError(error: unknown): boolean {
-  if (!isApiError(error)) return false;
-  return (
-    error.statusCode === 401 ||
-    error.statusCode === 403 ||
-    error.statusCode === 404 ||
-    error.statusCode === 503 ||
-    Boolean(error.isNetworkError)
-  );
-}
 
 function isHttpUrl(url?: string | null): boolean {
   if (!url) return false;
   return /^https?:\/\//i.test(url.trim());
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('Không thể đọc dữ liệu ảnh.'));
-      }
-    };
-    reader.onerror = () => reject(new Error('Không thể tải tệp ảnh từ thiết bị.'));
-    reader.readAsDataURL(file);
-  });
-}
-
 function isFullPublicProfile(
   user: PublicUserProfile | UserProfile,
 ): user is PublicUserProfile {
   return 'friendshipStatus' in user && Array.isArray(user.friendsPreview);
+}
+
+function normalizeUserToPublicProfile(user: UserProfile): PublicUserProfile {
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+    phoneNumber: user.phoneNumber ?? null,
+    bio: user.bio ?? null,
+    location: user.location ?? null,
+    hometown: user.hometown ?? null,
+    workplace: user.workplace ?? null,
+    education: user.education ?? null,
+    website: user.website ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+    coverUrl: user.coverUrl ?? null,
+    isActive: user.isActive ?? true,
+    isOnline:
+      'isOnline' in user && typeof (user as { isOnline?: unknown }).isOnline === 'boolean'
+        ? (user as { isOnline: boolean }).isOnline
+        : false,
+    createdAt: user.createdAt ?? '',
+    friendshipStatus: 'SELF',
+    friendsCount: 0,
+    mutualFriendsCount: 0,
+    friendsPreview: [],
+  };
+}
+
+function isSelfIdentifier(userId?: string): boolean {
+  const normalized = userId?.trim();
+  if (!normalized || normalized === 'me') return true;
+  const currentUserId = useAuthStore.getState().user?.id;
+  return Boolean(currentUserId && normalized === currentUserId);
 }
 
 export interface IProfileService {
@@ -61,87 +74,84 @@ export interface IProfileService {
 
 export class ProfileService implements IProfileService {
   private readonly repository: IProfileRepository;
+  private readonly friendsRepo: IFriendsRepository;
 
-  constructor(repository: IProfileRepository = profileRepository) {
+  constructor(
+    repository: IProfileRepository = profileRepository,
+    friendsRepo: IFriendsRepository = friendsRepository,
+  ) {
     this.repository = repository;
-  }
-
-  private async syncLiveFriendsIfPossible(): Promise<void> {
-    try {
-      const response = await this.repository.getAcceptedFriends();
-      if (Array.isArray(response.data) && response.data.length > 0) {
-        profilePreviewStore.registerBackendFriends(response.data);
-      }
-    } catch (error) {
-      if (!isFallbackError(error)) {
-        throw error;
-      }
-    }
+    this.friendsRepo = friendsRepo;
   }
 
   async getProfileById(userId?: string): Promise<PublicUserProfile> {
-    await this.syncLiveFriendsIfPossible();
-
-    if (profilePreviewStore.isSelfId(userId)) {
-      try {
-        const response = await this.repository.getMyProfile();
-        if (isFullPublicProfile(response.data)) {
-          return {
-            ...response.data,
-            isPreviewFallback: false,
-          };
-        }
-        return profilePreviewStore.getMyProfile(response.data, false);
-      } catch (error) {
-        if (isFallbackError(error)) {
-          return profilePreviewStore.getMyProfile(null, true);
-        }
-        throw error;
-      }
+    if (isSelfIdentifier(userId)) {
+      const response = await this.repository.getMyProfile();
+      return isFullPublicProfile(response.data)
+        ? response.data
+        : normalizeUserToPublicProfile(response.data);
     }
 
-    if (this.repository.getPublicProfile) {
-      try {
-        const response = await this.repository.getPublicProfile(userId!);
-        return {
-          ...response.data,
-          isPreviewFallback: false,
-        };
-      } catch (error) {
-        if (!isFallbackError(error)) {
-          throw error;
-        }
-      }
+    if (!this.repository.getPublicProfile) {
+      throw new Error('Không thể tải hồ sơ người dùng này.');
     }
 
-    const target = profilePreviewStore.getProfileById(userId!);
-    if (!target) {
-      throw new Error('Không tìm thấy hồ sơ người dùng này.');
-    }
-    return target;
+    const response = await this.repository.getPublicProfile(userId!.trim());
+    return response.data;
   }
 
   async getFriendsDirectory(): Promise<ProfileFriendsDirectory> {
-    await this.syncLiveFriendsIfPossible();
-    return profilePreviewStore.getDirectory();
+    const [friendsRes, receivedRes] = await Promise.all([
+      this.friendsRepo.getAcceptedFriends(),
+      this.friendsRepo.getReceivedRequests(),
+    ]);
+
+    const friends: ProfileFriendSummary[] = (friendsRes.data ?? []).map((item) => ({
+      id: item.id,
+      fullName: item.fullName,
+      avatarUrl: item.avatarUrl ?? null,
+      headline: item.workplace ?? null,
+      location: item.location ?? null,
+      mutualFriendsCount: 0,
+      friendshipStatus: 'FRIEND',
+      isOnline: item.isOnline ?? false,
+    }));
+
+    const incomingRequests: ProfileFriendSummary[] = (receivedRes.data ?? []).map((item) => ({
+      id: item.id,
+      fullName: item.fullName,
+      avatarUrl: item.avatarUrl ?? null,
+      headline: item.workplace ?? null,
+      location: item.location ?? null,
+      mutualFriendsCount: 0,
+      friendshipStatus: 'REQUEST_RECEIVED',
+      isOnline: item.isOnline ?? false,
+    }));
+
+    return {
+      friends,
+      incomingRequests,
+      sentRequests: [],
+    };
   }
 
-  async getProfileActivity(userId?: string): Promise<ProfileActivityFeed> {
-    return profilePreviewStore.getProfileActivity(userId);
+  async getProfileActivity(_userId?: string): Promise<ProfileActivityFeed> {
+    void _userId;
+    // Backend hiện chưa cung cấp API cho danh sách bài gắn thẻ / đã bày tỏ cảm xúc / đã lưu.
+    return {
+      tagged: [],
+      reacted: [],
+      saved: [],
+      authored: [],
+    };
   }
 
   async uploadProfileImage(file: File): Promise<string> {
-    if (this.repository.uploadProfileMedia) {
-      try {
-        const response = await this.repository.uploadProfileMedia(file);
-        return response.data.url;
-      } catch (error) {
-        if (!isFallbackError(error)) {
-          throw error;
-        }
-      }
+    if (!this.repository.uploadProfileMedia) {
+      throw new Error('Chức năng tải ảnh hồ sơ hiện chưa khả dụng.');
     }
-    return readFileAsDataUrl(file);
+    const response = await this.repository.uploadProfileMedia(file);
+    return response.data.url;
   }
 
   async updateMyProfile(payload: UpdateExtendedProfilePayload): Promise<PublicUserProfile> {
@@ -179,53 +189,48 @@ export class ProfileService implements IProfileService {
         : {}),
     };
 
-    const previewPayload: UpdateExtendedProfilePayload = {
-      ...apiPayload,
-      ...(payload.avatarUrl !== undefined ? { avatarUrl: payload.avatarUrl } : {}),
-      ...(payload.coverUrl !== undefined ? { coverUrl: payload.coverUrl } : {}),
-    };
+    const response = await this.repository.updateMyProfile(apiPayload);
+    return isFullPublicProfile(response.data)
+      ? response.data
+      : normalizeUserToPublicProfile(response.data);
+  }
 
-    try {
-      const response = await this.repository.updateMyProfile(apiPayload);
-      if (isFullPublicProfile(response.data)) {
-        profilePreviewStore.saveMyExtras(previewPayload, response.data, false);
-        return {
-          ...response.data,
-          coverUrl:
-            response.data.coverUrl ??
-            (previewPayload.coverUrl && !isHttpUrl(previewPayload.coverUrl)
-              ? previewPayload.coverUrl
-              : null),
-          isPreviewFallback: false,
-        };
-      }
-      return profilePreviewStore.saveMyExtras(previewPayload, response.data, false);
-    } catch (error) {
-      if (isFallbackError(error)) {
-        return profilePreviewStore.saveMyExtras(previewPayload, undefined, true);
-      }
-      throw error;
+  private assertNotSelfTarget(userId: string): string {
+    const trimmed = userId.trim();
+    if (!trimmed || isSelfIdentifier(trimmed)) {
+      throw new Error('Không thể thực hiện thao tác kết bạn với chính tài khoản của bạn.');
     }
+    return trimmed;
   }
 
   async sendFriendRequest(userId: string): Promise<PublicUserProfile> {
-    return profilePreviewStore.sendFriendRequest(userId);
+    const targetId = this.assertNotSelfTarget(userId);
+    await this.friendsRepo.sendRequest(targetId);
+    return this.getProfileById(targetId);
   }
 
   async cancelFriendRequest(userId: string): Promise<PublicUserProfile> {
-    return profilePreviewStore.cancelFriendRequest(userId);
+    const targetId = this.assertNotSelfTarget(userId);
+    await this.friendsRepo.removeRequest(targetId);
+    return this.getProfileById(targetId);
   }
 
   async acceptFriendRequest(userId: string): Promise<PublicUserProfile> {
-    return profilePreviewStore.acceptFriendRequest(userId);
+    const targetId = this.assertNotSelfTarget(userId);
+    await this.friendsRepo.acceptRequest(targetId);
+    return this.getProfileById(targetId);
   }
 
   async rejectFriendRequest(userId: string): Promise<PublicUserProfile> {
-    return profilePreviewStore.rejectFriendRequest(userId);
+    const targetId = this.assertNotSelfTarget(userId);
+    await this.friendsRepo.removeRequest(targetId);
+    return this.getProfileById(targetId);
   }
 
   async unfriend(userId: string): Promise<PublicUserProfile> {
-    return profilePreviewStore.unfriend(userId);
+    const targetId = this.assertNotSelfTarget(userId);
+    await this.friendsRepo.unfriend(targetId);
+    return this.getProfileById(targetId);
   }
 }
 

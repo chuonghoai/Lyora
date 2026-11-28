@@ -4,8 +4,16 @@ import { PostReactionType, PostVisibility } from '../enums/post.enums';
 export interface PostAuthorResponse {
   id: string;
   fullName: string;
-  email: string;
+  email?: string;
   avatarUrl: string | null;
+}
+
+export interface PostCommentResponse {
+  id: string;
+  author: PostAuthorResponse;
+  content: string;
+  media: PostMediaItem | null;
+  createdAt: string;
 }
 
 export interface PostResponse {
@@ -19,7 +27,7 @@ export interface PostResponse {
   reactionBreakdown: Record<PostReactionType, number>;
   userReaction: PostReactionType | null;
   commentCount: number;
-  comments: never[];
+  comments: PostCommentResponse[];
   shareCount: number;
   bookmarkCount: number;
   isBookmarked: boolean;

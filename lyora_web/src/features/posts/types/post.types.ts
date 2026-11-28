@@ -65,7 +65,6 @@ export interface PostsQueryParams {
 export interface PaginatedPostsResult {
   items: Post[];
   meta: PaginationMeta;
-  isPreviewFallback?: boolean;
 }
 
 export interface CreatePostPayload {
@@ -103,7 +102,6 @@ export interface PaginatedPostReactionsResult {
   items: PostReactionUser[];
   meta: PaginationMeta;
   breakdown: ReactionBreakdown;
-  isPreviewFallback?: boolean;
 }
 
 export type PostSuggestionTone =

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { isApiError, toast, useAuthStore, useClickOutside } from "@/core";
 import {
-  PROFILE_COVER_PRESETS,
   updateExtendedProfileSchema,
   useProfileActivityQuery,
   useProfilePageQuery,
@@ -15,6 +14,7 @@ import {
   type ProfileTabKey,
   type PublicUserProfile,
 } from "@/features/user";
+import { useCreateDirectConversationMutation } from "@/features/conversations";
 import {
   useAcceptFriendRequestMutation,
   useAcceptedFriendsQuery,
@@ -64,7 +64,7 @@ function buildEditFormState(
     education: profile?.education ?? "",
     website: profile?.website ?? "",
     avatarUrl: profile?.avatarUrl ?? null,
-    coverUrl: profile?.coverUrl ?? PROFILE_COVER_PRESETS[0].url,
+    coverUrl: profile?.coverUrl ?? null,
   };
 }
 
@@ -85,6 +85,7 @@ export function useProfileController() {
   const removeRequestMutation = useRemoveFriendRequestMutation();
   const acceptRequestMutation = useAcceptFriendRequestMutation();
   const unfriendMutation = useUnfriendMutation();
+  const createDirectMutation = useCreateDirectConversationMutation();
 
   const tabParam = searchParams.get("tab");
   const activeTab: ProfileTabKey =
@@ -288,8 +289,6 @@ export function useProfileController() {
     if (isOwnProfile) {
       if (friendsFilter === "REQUESTS") {
         source = receivedRequests;
-      } else if (friendsFilter === "SUGGESTIONS") {
-        source = [];
       } else {
         source = acceptedFriends;
       }
@@ -363,9 +362,28 @@ export function useProfileController() {
     navigate(ROUTES.CLIENT.ROOT);
   };
 
-  const handleOpenMessages = () => {
+  const handleOpenMessages = async () => {
     setIsFriendMenuOpen(false);
-    navigate(ROUTES.CLIENT.MESSAGES);
+    if (!profile) {
+      navigate(ROUTES.CLIENT.MESSAGES);
+      return;
+    }
+    try {
+      const conversation = await createDirectMutation.mutateAsync({
+        targetUserId: profile.id,
+      });
+      navigate(
+        `${ROUTES.CLIENT.MESSAGES}?conversationId=${encodeURIComponent(conversation.id)}`,
+      );
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Không thể mở cuộc trò chuyện trực tiếp.",
+      );
+    }
   };
 
   const handleCopyProfileLink = async () => {
@@ -412,9 +430,9 @@ export function useProfileController() {
     }
   };
 
-  const handleSelectCoverPreset = (url: string) => {
+  const handleRemoveCover = () => {
     pendingCoverFileRef.current = null;
-    setEditForm((prev) => ({ ...prev, coverUrl: url }));
+    setEditForm((prev) => ({ ...prev, coverUrl: null }));
   };
 
   const handlePickAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -545,7 +563,11 @@ export function useProfileController() {
       );
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Không thể gửi lời mời kết bạn.",
+        isApiError(err)
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Không thể gửi lời mời kết bạn.",
       );
     }
   };
@@ -563,7 +585,11 @@ export function useProfileController() {
       );
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Không thể hủy lời mời kết bạn.",
+        isApiError(err)
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Không thể hủy lời mời kết bạn.",
       );
     }
   };
@@ -581,9 +607,11 @@ export function useProfileController() {
       );
     } catch (err) {
       toast.error(
-        err instanceof Error
+        isApiError(err)
           ? err.message
-          : "Không thể chấp nhận lời mời kết bạn.",
+          : err instanceof Error
+            ? err.message
+            : "Không thể chấp nhận lời mời kết bạn.",
       );
     }
   };
@@ -601,9 +629,11 @@ export function useProfileController() {
       );
     } catch (err) {
       toast.error(
-        err instanceof Error
+        isApiError(err)
           ? err.message
-          : "Không thể từ chối lời mời kết bạn.",
+          : err instanceof Error
+            ? err.message
+            : "Không thể từ chối lời mời kết bạn.",
       );
     }
   };
@@ -630,7 +660,11 @@ export function useProfileController() {
       toast.info(`Đã hủy kết bạn với ${target.fullName}.`);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Không thể hủy kết bạn lúc này.",
+        isApiError(err)
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Không thể hủy kết bạn lúc này.",
       );
     }
   };
@@ -687,12 +721,23 @@ export function useProfileController() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleRetryFriends = () => {
+    void acceptedFriendsQuery.refetch();
+    void receivedRequestsQuery.refetch();
+  };
+
+  const handleRetryActivity = () => {
+    void activityQuery.refetch();
+  };
+
   const handleRefetchProfile = () => {
     void profileQuery.refetch();
     void acceptedFriendsQuery.refetch();
     void receivedRequestsQuery.refetch();
     void activityQuery.refetch();
-    void postFeed.handleRefreshFeed();
+    if (profile) {
+      void postFeed.handleRefreshFeed();
+    }
   };
 
   return {
@@ -702,25 +747,29 @@ export function useProfileController() {
     isOwnProfile,
     isLoading: profileQuery.isLoading,
     isError: profileQuery.isError,
+    isLoadingFriends:
+      acceptedFriendsQuery.isLoading || receivedRequestsQuery.isLoading,
+    isFriendsError:
+      acceptedFriendsQuery.isError || receivedRequestsQuery.isError,
     activeTab,
     profileVisibilityFilter,
     activityTab: activeActivityTab,
     activityItems,
     activityCounts,
     isLoadingActivity: activityQuery.isLoading,
+    isActivityError: activityQuery.isError,
     friendsFilter,
     friendSearchQuery,
     filteredFriendsList,
     overviewFriends,
     friendsTabCounts,
     incomingRequests: receivedRequests,
-    suggestedConnections: [] as ProfileFriendSummary[],
-    coverPresets: PROFILE_COVER_PRESETS,
     isEditModalOpen,
     editForm,
     editErrors,
     isSavingProfile:
       updateProfileMutation.isPending || uploadProfileImageMutation.isPending,
+    isCreatingDirectChat: createDirectMutation.isPending,
     isFriendshipMutating,
     isFriendMenuOpen,
     friendMenuRef,
@@ -741,7 +790,7 @@ export function useProfileController() {
     handleOpenEditModal,
     handleCloseEditModal,
     handleEditFormChange,
-    handleSelectCoverPreset,
+    handleRemoveCover,
     handlePickAvatarFile,
     handlePickCoverFile,
     handleRemoveAvatar,
@@ -754,6 +803,8 @@ export function useProfileController() {
     handleRequestUnfriend,
     handleCancelUnfriend,
     handleConfirmUnfriend,
+    handleRetryFriends,
+    handleRetryActivity,
     handleRefetchProfile,
   };
 }

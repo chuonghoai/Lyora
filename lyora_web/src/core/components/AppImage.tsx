@@ -10,7 +10,7 @@ const DEFAULT_FALLBACK_SVG =
 
 export const AppImage: React.FC<AppImageProps> = ({
   src,
-  alt = 'Image',
+  alt = 'Hình ảnh',
   fallbackSrc = DEFAULT_FALLBACK_SVG,
   rounded = false,
   className = '',

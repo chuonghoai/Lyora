@@ -43,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-muted">
               Hệ thống ghi nhận sự cố gián đoạn trong giao diện hiển thị. Vui lòng tải lại trang hoặc thử lại sau.
             </p>
-            {this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <pre className="text-xs bg-background border border-border text-foreground p-3 rounded-lg overflow-x-auto text-left max-h-32">
                 {this.state.error.message}
               </pre>

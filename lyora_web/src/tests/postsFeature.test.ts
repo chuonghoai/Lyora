@@ -129,12 +129,11 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     const result = await service.getPosts({ page: 1, limit: 5 });
 
     expect(mockRepo.getPosts).toHaveBeenCalledTimes(1);
-    expect(result.isPreviewFallback).toBe(false);
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.id).toBe('post-1');
   });
 
-  it('PostService falls back gracefully on 404 (pending backend) and supports pagination + interactions', async () => {
+  it('PostService propagates 404 errors without falling back to preview/mock data', async () => {
     const notFoundError: ApiError = {
       statusCode: 404,
       message: 'Cannot GET /posts',
@@ -157,61 +156,35 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     };
 
     const service = new PostService(mockRepo);
-    const friendsList = await service.getFriends();
-    expect(friendsList.length).toBe(5);
-    const page1 = await service.getPosts({ page: 1, limit: 5 });
-    expect(page1.isPreviewFallback).toBe(true);
-    expect(page1.items).toHaveLength(5);
-    expect(page1.meta.hasNextPage).toBe(true);
-
-    const page2 = await service.getPosts({ page: 2, limit: 5 });
-    expect(page2.items).toHaveLength(5);
-    expect(page2.items[0]?.id).not.toBe(page1.items[0]?.id);
-
-    const created = await service.createPost({
-      content: 'Bài viết mới trong giao diện Client Home',
-      visibility: 'PUBLIC',
-      media: [],
+    await expect(service.getFriends()).rejects.toMatchObject({ statusCode: 404 });
+    await expect(service.getPosts({ page: 1, limit: 5 })).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(created.content).toBe('Bài viết mới trong giao diện Client Home');
-
-    const reacted = await service.reactPost(created.id, 'LOVE');
-    expect(reacted.userReaction).toBe('LOVE');
-    expect(reacted.reactionCount).toBe(1);
-
-    const bookmarked = await service.toggleBookmark(created.id);
-    expect(bookmarked.isBookmarked).toBe(true);
-    expect(bookmarked.bookmarkCount).toBe(1);
-
-    const shared = await service.sharePost(created.id);
-    expect(shared.shareCount).toBe(1);
-
-    const comment = await service.addComment(created.id, 'Bình luận thử nghiệm', {
-      url: 'https://example.com/comment.jpg',
-      type: 'IMAGE',
+    await expect(
+      service.createPost({
+        content: 'Bài viết mới trong giao diện Client Home',
+        visibility: 'PUBLIC',
+        media: [],
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(service.reactPost('post-1', 'LOVE')).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(comment.content).toBe('Bình luận thử nghiệm');
-    expect(comment.media?.type).toBe('IMAGE');
-
-    const reactorsPage1 = await service.getPostReactions(page1.items[0]!.id, {
-      page: 1,
-      limit: 6,
+    await expect(service.toggleBookmark('post-1')).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(reactorsPage1.items.length).toBe(6);
-    expect(reactorsPage1.meta.hasNextPage).toBe(true);
-
-    const reactorsPage2 = await service.getPostReactions(page1.items[0]!.id, {
-      page: 2,
-      limit: 6,
+    await expect(service.sharePost('post-1')).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(reactorsPage2.items.length).toBe(6);
-    expect(reactorsPage2.items[0]?.id).not.toBe(reactorsPage1.items[0]?.id);
-
-    const hiddenRes = await service.hidePost(created.id);
-    expect(hiddenRes.hidden).toBe(true);
-
-    const unhiddenRes = await service.unhidePost(created.id);
-    expect(unhiddenRes.hidden).toBe(false);
+    await expect(
+      service.addComment('post-1', 'Bình luận thử nghiệm', {
+        url: 'https://example.com/comment.jpg',
+        type: 'IMAGE',
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(
+      service.getPostReactions('post-1', { page: 1, limit: 6 }),
+    ).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it('PostService rethrows real non-404 API errors (e.g. 401/500)', async () => {

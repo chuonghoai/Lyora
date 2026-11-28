@@ -7,6 +7,7 @@ import type { ProfileController } from '@/ui/client/profile/profile.controller';
 import type { DashboardController } from '@/ui/admin/dashboard/dashboard.controller';
 import type { ClientLayoutController } from '@/ui/client/client-layout.controller';
 import type { AdminLayoutController } from '@/ui/admin/admin-layout.controller';
+import type { MessagesController } from '@/ui/client/messages/messages.controller';
 
 describe('View-Controller Contract & Integration Types', () => {
   it('LoginController contract has all required unified properties and handlers', () => {
@@ -79,7 +80,11 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'profileUser'
       | 'isEditingProfile'
       | 'profileForm'
+      | 'profileFormError'
       | 'isUpdatingProfile'
+      | 'isFriendsLoading'
+      | 'isFriendsError'
+      | 'isCreatingDirectChat'
       | 'posts'
       | 'totalItems'
       | 'myPostsCount'
@@ -91,7 +96,6 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'visibilityFilter'
       | 'searchQuery'
       | 'debouncedSearch'
-      | 'isPreviewFallback'
       | 'isFeedLoading'
       | 'isFeedError'
       | 'isFeedRefetching'
@@ -112,18 +116,13 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'reactionsModalPost'
       | 'reactionsData'
       | 'isReactionsLoading'
+      | 'isReactionsError'
       | 'isHidingPost'
-      | 'maxExpandedChatWindows'
-      | 'maxTotalChatWindows'
-      | 'maxChatWindows'
-      | 'openChatWindows'
-      | 'forwardingState'
-      | 'getFriendById'
-      | 'getMessagesForFriend'
-      | 'getPinnedMessageForFriend'
-      | 'handleSelectTab'
       | 'handleSelectVisibilityFilter'
+      | 'handleClearFilters'
       | 'handleRefreshFeed'
+      | 'handleRetryReactions'
+      | 'handleRetryFriends'
       | 'handleLoadMore'
       | 'handleStartEditProfile'
       | 'handleSaveProfile'
@@ -150,16 +149,6 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleRemoveCommentMedia'
       | 'handleSubmitComment'
       | 'handleOpenChatWithFriend'
-      | 'handleMinimizeChatWindow'
-      | 'handleCloseChatWindow'
-      | 'handleChatDraftChange'
-      | 'handleSendChatMessage'
-      | 'handleSendQuickLike'
-      | 'handleReplyMessage'
-      | 'handleRecallMessage'
-      | 'handleTogglePinMessage'
-      | 'handleConfirmForwardToFriend'
-      | 'handleReactChatMessage'
       | 'handleOpenLightbox'
       | 'isAiPanelOpen'
       | 'aiTopic'
@@ -185,37 +174,26 @@ describe('View-Controller Contract & Integration Types', () => {
 
   it('DashboardController contract has all required unified properties and handlers', () => {
     type ExpectedKeys =
-      | 'adminActions'
       | 'filterQuery'
       | 'debouncedFilter'
-      | 'isMenuOpen'
-      | 'isSubmitting'
-      | 'menuRef'
+      | 'isStatsRefreshing'
+      | 'isCheckingHealth'
+      | 'lastHealthReport'
+      | 'activeRoleFilter'
       | 'systemHealth'
       | 'isHealthLoading'
+      | 'isHealthError'
       | 'userStats'
       | 'isStatsLoading'
+      | 'isStatsError'
+      | 'statsError'
       | 'appTitle'
-      | 'handleSimulateSync'
-      | 'handleToggleMenu'
       | 'handleFilterChange'
       | 'handleRefreshStats'
-      | 'handleCreateUser'
-      | 'handleExportUsers'
-      | 'handleManageRoles'
-      | 'handleBatchLockUsers'
-      | 'handleCreateAnnouncement'
-      | 'handleModeratePosts'
-      | 'handleReviewReports'
-      | 'handleHideViolatingContent'
-      | 'handleManageFeatureFlags'
-      | 'handleMonitorRealtimeSockets'
-      | 'handleManageCommunityGroups'
-      | 'handleBroadcastNotification'
-      | 'handlePurgeCache'
-      | 'handleBackupDatabase'
-      | 'handleViewAuditLogs'
-      | 'handleConfigureSecurity';
+      | 'handleRetryStats'
+      | 'handleCheckHealth'
+      | 'handleSelectRoleFilter'
+      | 'setFilterQuery';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<DashboardController, ExpectedKeys>;
@@ -231,22 +209,29 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'isAuthenticated'
       | 'isRefreshingSession'
       | 'searchQuery'
+      | 'isSearchSuggestionsError'
       | 'activeTab'
       | 'isMessagesRoute'
+      | 'isFriendsRoute'
       | 'isHomeRoute'
       | 'isProfileRoute'
       | 'accountMenuPanel'
       | 'fontScale'
       | 'reduceMotion'
       | 'notifications'
+      | 'isLoadingNotifications'
+      | 'isNotificationsError'
       | 'unreadNotificationsCount'
       | 'handleMarkNotificationRead'
       | 'handleMarkAllNotificationsRead'
+      | 'handleRetryNotifications'
+      | 'handleRetrySearchSuggestions'
       | 'handleSearchChange'
       | 'handleSelectTab'
       | 'handleOpenComposer'
       | 'handleNavigateAccountPanel'
       | 'handleNavigateMessages'
+      | 'handleNavigateFriends'
       | 'handleOpenProfile'
       | 'handleSelectFontScale'
       | 'handleToggleReduceMotion'
@@ -265,6 +250,10 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'isOwnProfile'
       | 'isLoading'
       | 'isError'
+      | 'isLoadingFriends'
+      | 'isFriendsError'
+      | 'isActivityError'
+      | 'isCreatingDirectChat'
       | 'activeTab'
       | 'profileVisibilityFilter'
       | 'posts'
@@ -295,17 +284,47 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleSelectFriendsFilter'
       | 'handleFriendSearchChange'
       | 'handleOpenUserProfile'
+      | 'handleOpenMessages'
       | 'handleOpenEditModal'
+      | 'handleRemoveCover'
       | 'handleSaveProfile'
       | 'handleSendFriendRequest'
       | 'handleCancelFriendRequest'
       | 'handleAcceptFriendRequest'
       | 'handleRejectFriendRequest'
       | 'handleRequestUnfriend'
-      | 'handleConfirmUnfriend';
+      | 'handleConfirmUnfriend'
+      | 'handleRetryFriends'
+      | 'handleRetryActivity';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<ProfileController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('MessagesController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'currentUser'
+      | 'selectedConversationId'
+      | 'transferTargetUserId'
+      | 'conversations'
+      | 'activeConversation'
+      | 'friends'
+      | 'isLoadingConversations'
+      | 'isConversationsError'
+      | 'isLoadingActiveConversation'
+      | 'isActiveConversationError'
+      | 'isLoadingFriends'
+      | 'isFriendsError'
+      | 'handleSelectConversation'
+      | 'handleOpenTransferOwnershipModal'
+      | 'handleRetryConversations'
+      | 'handleRetryActiveConversation'
+      | 'handleRetryFriends';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<MessagesController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });

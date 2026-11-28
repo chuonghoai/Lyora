@@ -1,4 +1,5 @@
 import React from 'react';
+import { EmptyState, ErrorState } from '@/core';
 import type {
   ConversationSummary,
   ConversationType,
@@ -11,6 +12,8 @@ interface ConversationSidebarProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   filterType: 'ALL' | ConversationType;
   onFilterChange: (type: 'ALL' | ConversationType) => void;
   searchQuery: string;
@@ -24,6 +27,8 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   selectedId,
   onSelect,
   isLoading,
+  isError = false,
+  onRetry,
   filterType,
   onFilterChange,
   searchQuery,
@@ -157,12 +162,52 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               </div>
             </div>
           ))
+        ) : isError ? (
+          <ErrorState
+            compact
+            title="Không thể tải hội thoại"
+            description="Vui lòng kiểm tra kết nối và thử lại."
+            onRetry={onRetry}
+          />
         ) : conversations.length === 0 ? (
-          <div className="p-6 text-center text-sm text-muted">
-            {searchQuery
-              ? 'Không tìm thấy cuộc hội thoại nào phù hợp.'
-              : 'Chưa có cuộc trò chuyện nào. Hãy tạo mới để bắt đầu kết nối!'}
-          </div>
+          searchQuery.trim() ? (
+            <EmptyState
+              compact
+              title="Không tìm thấy hội thoại"
+              description="Không có cuộc hội thoại nào phù hợp với từ khóa bạn nhập."
+              action={{
+                label: 'Xóa tìm kiếm',
+                variant: 'outline',
+                onClick: () => onSearchChange(''),
+              }}
+            />
+          ) : filterType !== 'ALL' ? (
+            <EmptyState
+              compact
+              title={
+                filterType === 'DIRECT'
+                  ? 'Chưa có tin nhắn 1-1 nào'
+                  : 'Chưa có nhóm trò chuyện nào'
+              }
+              description="Thử chuyển về Tất cả để xem toàn bộ hội thoại của bạn."
+              action={{
+                label: 'Xem tất cả',
+                variant: 'outline',
+                onClick: () => onFilterChange('ALL'),
+              }}
+            />
+          ) : (
+            <EmptyState
+              compact
+              title="Chưa có cuộc trò chuyện nào"
+              description="Hãy tạo cuộc trò chuyện mới để bắt đầu kết nối với bạn bè."
+              action={{
+                label: 'Bắt đầu trò chuyện',
+                variant: 'primary',
+                onClick: onOpenDirectModal,
+              }}
+            />
+          )
         ) : (
           conversations.map((conv) => (
             <ConversationListItem

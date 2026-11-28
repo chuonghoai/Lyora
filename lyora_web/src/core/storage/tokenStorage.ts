@@ -1,4 +1,4 @@
-import { localStorageService } from './storageService';
+import { localStorageService, sessionStorageService } from './storageService';
 import type { UserProfile } from '../types';
 
 const STORAGE_KEYS = {
@@ -10,6 +10,16 @@ const STORAGE_KEYS = {
 export class TokenStorage {
   private static listeners: Array<(event: 'login' | 'logout' | 'token_updated') => void> = [];
   private static isListeningToStorage = false;
+
+  private static getActiveStorage() {
+    if (localStorageService.getItem<string>(STORAGE_KEYS.ACCESS_TOKEN)) {
+      return localStorageService;
+    }
+    if (sessionStorageService.getItem<string>(STORAGE_KEYS.ACCESS_TOKEN)) {
+      return sessionStorageService;
+    }
+    return localStorageService;
+  }
 
   private static ensureStorageListener(): void {
     if (this.isListeningToStorage || typeof window === 'undefined') return;
@@ -45,45 +55,93 @@ export class TokenStorage {
   }
 
   static getAccessToken(): string | null {
-    return localStorageService.getItem<string>(STORAGE_KEYS.ACCESS_TOKEN);
+    return (
+      localStorageService.getItem<string>(STORAGE_KEYS.ACCESS_TOKEN) ??
+      sessionStorageService.getItem<string>(STORAGE_KEYS.ACCESS_TOKEN)
+    );
   }
 
-  static setAccessToken(token: string): void {
-    localStorageService.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+  static setAccessToken(token: string, rememberMe?: boolean): void {
+    if (rememberMe === false) {
+      localStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      sessionStorageService.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+      return;
+    }
+    if (rememberMe === true) {
+      sessionStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      localStorageService.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+      return;
+    }
+    this.getActiveStorage().setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
   }
 
   static removeAccessToken(): void {
     localStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    sessionStorageService.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
   }
 
   static getRefreshToken(): string | null {
-    return localStorageService.getItem<string>(STORAGE_KEYS.REFRESH_TOKEN);
+    return (
+      localStorageService.getItem<string>(STORAGE_KEYS.REFRESH_TOKEN) ??
+      sessionStorageService.getItem<string>(STORAGE_KEYS.REFRESH_TOKEN)
+    );
   }
 
-  static setRefreshToken(token: string): void {
-    localStorageService.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
+  static setRefreshToken(token: string, rememberMe?: boolean): void {
+    if (rememberMe === false) {
+      localStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      sessionStorageService.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
+      return;
+    }
+    if (rememberMe === true) {
+      sessionStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      localStorageService.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
+      return;
+    }
+    this.getActiveStorage().setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
   }
 
   static removeRefreshToken(): void {
     localStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    sessionStorageService.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
   }
 
   static getUser(): UserProfile | null {
-    return localStorageService.getItem<UserProfile>(STORAGE_KEYS.USER_PROFILE);
+    return (
+      localStorageService.getItem<UserProfile>(STORAGE_KEYS.USER_PROFILE) ??
+      sessionStorageService.getItem<UserProfile>(STORAGE_KEYS.USER_PROFILE)
+    );
   }
 
-  static setUser(user: UserProfile): void {
-    localStorageService.setItem(STORAGE_KEYS.USER_PROFILE, user);
+  static setUser(user: UserProfile, rememberMe?: boolean): void {
+    if (rememberMe === false) {
+      localStorageService.removeItem(STORAGE_KEYS.USER_PROFILE);
+      sessionStorageService.setItem(STORAGE_KEYS.USER_PROFILE, user);
+      return;
+    }
+    if (rememberMe === true) {
+      sessionStorageService.removeItem(STORAGE_KEYS.USER_PROFILE);
+      localStorageService.setItem(STORAGE_KEYS.USER_PROFILE, user);
+      return;
+    }
+    this.getActiveStorage().setItem(STORAGE_KEYS.USER_PROFILE, user);
   }
 
   static removeUser(): void {
     localStorageService.removeItem(STORAGE_KEYS.USER_PROFILE);
+    sessionStorageService.removeItem(STORAGE_KEYS.USER_PROFILE);
   }
 
-  static saveAuthSession(accessToken: string, refreshToken: string, user: UserProfile): void {
-    this.setAccessToken(accessToken);
-    this.setRefreshToken(refreshToken);
-    this.setUser(user);
+  static saveAuthSession(
+    accessToken: string,
+    refreshToken: string,
+    user: UserProfile,
+    options?: { rememberMe?: boolean },
+  ): void {
+    const rememberMe = options?.rememberMe ?? true;
+    this.setAccessToken(accessToken, rememberMe);
+    this.setRefreshToken(refreshToken, rememberMe);
+    this.setUser(user, rememberMe);
     this.notifyListeners('login');
   }
 
@@ -99,4 +157,3 @@ export class TokenStorage {
     return Boolean(token && token.trim().length > 0);
   }
 }
-

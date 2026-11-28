@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  isApiError,
   localStorageService,
   toast,
   useAuthStore,
@@ -11,7 +12,6 @@ import {
   useAcceptedFriendsQuery,
   useAcceptFriendRequestMutation,
   useFriendSearchQuery,
-  getSentFriendRequests,
   useReceivedFriendRequestsQuery,
 } from "@/features/friends";
 import {
@@ -44,10 +44,6 @@ export interface ClientNotificationItem {
 
 const ACCESSIBILITY_STORAGE_KEY = "lyora_ui_preferences";
 const SEARCH_HISTORY_STORAGE_KEY = "lyora_search_history";
-const FALLBACK_READ_REQUEST_IDS_STORAGE_KEY =
-  "lyora_read_friend_request_notification_ids";
-const FALLBACK_READ_ACCEPTANCE_IDS_STORAGE_KEY =
-  "lyora_read_friend_request_acceptance_notification_ids";
 
 interface UiAccessibilityPrefs {
   fontScale: FontScalePreference;
@@ -65,10 +61,9 @@ function loadAccessibilityPrefs(): UiAccessibilityPrefs {
 }
 
 function formatNotificationTime(createdAt: string): string {
-  const elapsedSeconds = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(createdAt).getTime()) / 1_000),
-  );
+  const timestamp = new Date(createdAt).getTime();
+  if (Number.isNaN(timestamp)) return "";
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1_000));
   if (elapsedSeconds < 60) return "Vừa xong";
   const minutes = Math.floor(elapsedSeconds / 60);
   if (minutes < 60) return `${minutes} phút trước`;
@@ -80,7 +75,7 @@ function formatNotificationTime(createdAt: string): string {
 export function useClientLayoutController() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const appTitle = import.meta.env.VITE_APP_TITLE || "Lyora";
 
   const user = useAuthStore((s) => s.user);
@@ -113,22 +108,9 @@ export function useClientLayoutController() {
   const [accountMenuPanel, setAccountMenuPanel] =
     useState<AccountMenuPanel>("main");
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [readFallbackRequestIds, setReadFallbackRequestIds] = useState<
-    string[]
-  >(
-    () =>
-      localStorageService.getItem<string[]>(
-        FALLBACK_READ_REQUEST_IDS_STORAGE_KEY,
-      ) ?? [],
-  );
-  const [readFallbackAcceptanceIds, setReadFallbackAcceptanceIds] = useState<
-    string[]
-  >(
-    () =>
-      localStorageService.getItem<string[]>(
-        FALLBACK_READ_ACCEPTANCE_IDS_STORAGE_KEY,
-      ) ?? [],
-  );
+  const [acceptingRequesterId, setAcceptingRequesterId] = useState<
+    string | null
+  >(null);
 
   const [fontScale, setFontScale] = useState<FontScalePreference>(
     () => loadAccessibilityPrefs().fontScale,
@@ -148,6 +130,7 @@ export function useClientLayoutController() {
   });
   useClickOutside(notificationRef, () => setIsNotificationOpen(false));
   useClickOutside(searchRef, () => setIsSearchOpen(false));
+
   const acceptedFriendsQuery = useAcceptedFriendsQuery();
   const discoveryQuery = useFriendSearchQuery(searchQuery);
   const receivedRequestsQuery = useReceivedFriendRequestsQuery();
@@ -157,11 +140,8 @@ export function useClientLayoutController() {
   const markAllNotificationsReadMutation =
     useMarkAllNotificationsReadMutation();
 
-  const activeTabParam = searchParams.get("tab");
-  const activeTab: PostsFeedFilter =
-    activeTabParam === "saved" ? "saved" : "all";
+  const activeTab: PostsFeedFilter = "all";
 
-  // Áp dụng tùy chọn Màn hình & Trợ năng lên root document
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.style.fontSize =
@@ -173,7 +153,6 @@ export function useClientLayoutController() {
     });
   }, [fontScale, reduceMotion]);
 
-  // Cơ chế duy trì phiên dài hạn kiểu Facebook: tự động xin cặp token mới mỗi lần vào trang chủ
   const triggerRefreshSession = refreshSessionMutation.mutate;
   useEffect(() => {
     if (!isAuthenticated) {
@@ -187,7 +166,6 @@ export function useClientLayoutController() {
     triggerRefreshSession();
   }, [isAuthenticated, triggerRefreshSession]);
 
-  // Chỉ đồng bộ ô tìm kiếm với URL khi đang xem trang kết quả tìm kiếm.
   useEffect(() => {
     const urlSearch =
       location.pathname === ROUTES.CLIENT.SEARCH
@@ -274,6 +252,7 @@ export function useClientLayoutController() {
     setIsSearchOpen(false);
     navigate(getClientProfilePath(userId, user?.id));
   };
+
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const friendSuggestions = (acceptedFriendsQuery.data ?? [])
     .filter((friend) =>
@@ -288,35 +267,17 @@ export function useClientLayoutController() {
     .slice(0, 4);
 
   const handleSelectTab = (tab: PostsFeedFilter) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (tab === "all") {
-          next.delete("tab");
-        } else {
-          next.set("tab", tab);
-        }
-        return next;
-      },
-      { replace: true },
-    );
-    if (location.pathname !== ROUTES.CLIENT.ROOT) {
+    if (tab === "all") {
       navigate(ROUTES.CLIENT.ROOT);
+    } else {
+      navigate(`${ROUTES.CLIENT.ROOT}?tab=${encodeURIComponent(tab)}`);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleOpenComposer = () => {
-    if (activeTab !== "all") {
-      handleSelectTab("all");
-    } else if (location.pathname !== ROUTES.CLIENT.ROOT) {
-      navigate(ROUTES.CLIENT.ROOT);
-    }
+    navigate(`${ROUTES.CLIENT.ROOT}?compose=1`);
     window.scrollTo({ top: 0, behavior: "smooth" });
-    const composerTrigger =
-      document.getElementById("lyora-post-composer-input") ??
-      document.getElementById("lyora-post-composer-btn");
-    composerTrigger?.focus();
   };
 
   const handleToggleAccountMenu = () => {
@@ -398,14 +359,6 @@ export function useClientLayoutController() {
     });
   };
 
-  const handleSendFeedback = () => {
-    setIsAccountMenuOpen(false);
-    setAccountMenuPanel("main");
-    toast.success(
-      "Cảm ơn bạn! Góp ý trải nghiệm Lyora của bạn đã được ghi nhận.",
-    );
-  };
-
   const handleToggleNotifications = () => {
     setIsAccountMenuOpen(false);
     setAccountMenuPanel("main");
@@ -419,7 +372,7 @@ export function useClientLayoutController() {
   const receivedRequestById = new Map(
     (receivedRequestsQuery.data ?? []).map((request) => [request.id, request]),
   );
-  const persistedNotifications: ClientNotificationItem[] = (
+  const notifications: ClientNotificationItem[] = (
     notificationsQuery.data ?? []
   ).map((notification) => {
     const requester = receivedRequestById.get(notification.actorId);
@@ -440,117 +393,35 @@ export function useClientLayoutController() {
       friendRequestUserId: isFriendRequest ? requester?.id : undefined,
     };
   });
-  const notifiedRequesterIds = new Set(
-    (notificationsQuery.data ?? [])
-      .filter((notification) => notification.type === "FRIEND_REQUEST")
-      .map((notification) => notification.actorId),
-  );
-  const notifiedAcceptanceActorIds = new Set(
-    (notificationsQuery.data ?? [])
-      .filter((notification) => notification.type === "FRIEND_REQUEST_ACCEPTED")
-      .map((notification) => notification.actorId),
-  );
-  const fallbackRequestNotifications: ClientNotificationItem[] = (
-    receivedRequestsQuery.data ?? []
-  )
-    .filter((request) => !notifiedRequesterIds.has(request.id))
-    .map((request) => {
-      const id = `friend-request-${request.id}`;
-      return {
-        id,
-        title: `${request.fullName} đã gửi cho bạn lời mời kết bạn`,
-        description: "Mở mục Bạn bè để chấp nhận hoặc từ chối lời mời.",
-        timeLabel: "Lời mời mới",
-        isRead: readFallbackRequestIds.includes(id),
-        targetRoute: "friends",
-        actorName: request.fullName,
-        actorAvatarUrl: request.avatarUrl,
-        friendRequestUserId: request.id,
-      };
-    });
-  const sentFriendRequestIds = new Set(
-    getSentFriendRequests(user?.id).map((request) => request.userId),
-  );
-  const fallbackAcceptanceNotifications: ClientNotificationItem[] = (
-    acceptedFriendsQuery.data ?? []
-  )
-    .filter(
-      (friend) =>
-        sentFriendRequestIds.has(friend.id) &&
-        !notifiedAcceptanceActorIds.has(friend.id),
-    )
-    .map((friend) => {
-      const id = `friend-request-accepted-${friend.id}`;
-      return {
-        id,
-        title: `${friend.fullName} đã chấp nhận lời mời kết bạn`,
-        description: "Hai bạn hiện đã là bạn bè trên Lyora.",
-        timeLabel: "Vừa xong",
-        isRead: readFallbackAcceptanceIds.includes(id),
-        targetRoute: "friends",
-      };
-    });
-  const notifications = [
-    ...persistedNotifications,
-    ...fallbackRequestNotifications,
-    ...fallbackAcceptanceNotifications,
-  ];
-
-  const persistReadFallbackRequestIds = (ids: string[]) => {
-    setReadFallbackRequestIds(ids);
-    localStorageService.setItem(FALLBACK_READ_REQUEST_IDS_STORAGE_KEY, ids);
-  };
-
-  const persistReadFallbackAcceptanceIds = (ids: string[]) => {
-    setReadFallbackAcceptanceIds(ids);
-    localStorageService.setItem(FALLBACK_READ_ACCEPTANCE_IDS_STORAGE_KEY, ids);
-  };
 
   const handleMarkNotificationRead = (notificationId: string) => {
     const notification = notifications.find(
       (item) => item.id === notificationId,
     );
     if (!notification || notification.isRead) return;
-    if (notificationId.startsWith("friend-request-accepted-")) {
-      persistReadFallbackAcceptanceIds([
-        ...new Set([...readFallbackAcceptanceIds, notificationId]),
-      ]);
-      return;
-    }
-    if (notificationId.startsWith("friend-request-")) {
-      persistReadFallbackRequestIds([
-        ...new Set([...readFallbackRequestIds, notificationId]),
-      ]);
-      return;
-    }
     markNotificationReadMutation.mutate(notificationId);
   };
 
-  const handleMarkAllNotificationsRead = () => {
+  const handleMarkAllNotificationsRead = async () => {
     if (!notifications.some((item) => !item.isRead)) return;
-    const unreadFallbackIds = fallbackRequestNotifications
-      .filter((item) => !item.isRead)
-      .map((item) => item.id);
-    if (unreadFallbackIds.length > 0) {
-      persistReadFallbackRequestIds([
-        ...new Set([...readFallbackRequestIds, ...unreadFallbackIds]),
-      ]);
+    try {
+      await markAllNotificationsReadMutation.mutateAsync();
+      toast.info("Đã đánh dấu tất cả thông báo là đã đọc.");
+    } catch (error) {
+      toast.error(
+        isApiError(error)
+          ? error.message
+          : "Không thể cập nhật trạng thái thông báo.",
+      );
     }
-    const unreadFallbackAcceptanceIds = fallbackAcceptanceNotifications
-      .filter((item) => !item.isRead)
-      .map((item) => item.id);
-    if (unreadFallbackAcceptanceIds.length > 0) {
-      persistReadFallbackAcceptanceIds([
-        ...new Set([
-          ...readFallbackAcceptanceIds,
-          ...unreadFallbackAcceptanceIds,
-        ]),
-      ]);
-    }
-    if (persistedNotifications.some((item) => !item.isRead)) {
-      markAllNotificationsReadMutation.mutate();
-    }
-    toast.info("Đã đánh dấu tất cả thông báo là đã đọc.");
+  };
+
+  const handleRetryNotifications = () => {
+    void notificationsQuery.refetch();
+  };
+
+  const handleRetrySearchSuggestions = () => {
+    void discoveryQuery.refetch();
   };
 
   const handleAcceptFriendRequestFromNotification = async (
@@ -558,16 +429,19 @@ export function useClientLayoutController() {
     notificationId: string,
     requesterName: string,
   ) => {
+    setAcceptingRequesterId(requesterId);
     try {
       await acceptFriendRequestMutation.mutateAsync(requesterId);
       handleMarkNotificationRead(notificationId);
       toast.success(`Bạn và ${requesterName} hiện là bạn bè.`);
     } catch (error) {
       toast.error(
-        error instanceof Error
+        isApiError(error)
           ? error.message
           : "Không thể chấp nhận lời mời kết bạn.",
       );
+    } finally {
+      setAcceptingRequesterId(null);
     }
   };
 
@@ -587,6 +461,8 @@ export function useClientLayoutController() {
     recentSearches,
     friendSuggestions,
     otherSuggestions,
+    isSearchingSuggestions: discoveryQuery.isFetching,
+    isSearchSuggestionsError: discoveryQuery.isError,
     activeTab,
     isMessagesRoute,
     isFriendsRoute,
@@ -598,6 +474,10 @@ export function useClientLayoutController() {
     reduceMotion,
     isNotificationOpen,
     notifications,
+    isLoadingNotifications: notificationsQuery.isLoading,
+    isNotificationsError: notificationsQuery.isError,
+    isMarkingAllNotificationsRead: markAllNotificationsReadMutation.isPending,
+    acceptingRequesterId,
     isAcceptingFriendRequest: acceptFriendRequestMutation.isPending,
     unreadNotificationsCount,
     accountMenuRef,
@@ -612,6 +492,7 @@ export function useClientLayoutController() {
     handleSelectRecentSearch,
     handleRemoveRecentSearch,
     handleSelectSearchUser,
+    handleRetrySearchSuggestions,
     handleSelectTab,
     handleOpenComposer,
     handleToggleAccountMenu,
@@ -622,9 +503,9 @@ export function useClientLayoutController() {
     handleSelectFontScale,
     handleToggleReduceMotion,
     handleManualRefreshSession,
-    handleSendFeedback,
     handleToggleNotifications,
     handleCloseNotifications,
+    handleRetryNotifications,
     handleMarkNotificationRead,
     handleMarkAllNotificationsRead,
     handleAcceptFriendRequestFromNotification,

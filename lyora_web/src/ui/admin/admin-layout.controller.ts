@@ -7,28 +7,22 @@ import { filterAdminNavItems, type AdminNavItem } from './adminNav';
 export function useAdminLayoutController() {
   const location = useLocation();
   const navigate = useNavigate();
-  const appTitle = import.meta.env.VITE_APP_TITLE || 'Lyora Platform';
+  const appTitle = import.meta.env.VITE_APP_TITLE || 'Lyora';
 
   const user = useAuthStore((s) => s.user);
   const logoutMutation = useLogoutMutation();
 
-  // Header local feature finder & notifications
+  // Header local feature finder
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
-  // Sidebar collapse, mobile drawer & bottom account menu
+  // Sidebar collapse & mobile drawer
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const notificationRef = useRef<HTMLDivElement>(null);
-  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(searchContainerRef, () => setIsSearchOpen(false));
-  useClickOutside(notificationRef, () => setIsNotificationOpen(false));
-  useClickOutside(accountMenuRef, () => setIsAccountMenuOpen(false));
 
   const searchResults = useMemo(
     () => filterAdminNavItems(headerSearchQuery),
@@ -39,8 +33,6 @@ export function useAdminLayoutController() {
   useEffect(() => {
     setIsMobileSidebarOpen(false);
     setIsSearchOpen(false);
-    setIsNotificationOpen(false);
-    setIsAccountMenuOpen(false);
   }, [location.pathname]);
 
   // Đóng nhanh các overlay bằng phím Escape
@@ -48,8 +40,6 @@ export function useAdminLayoutController() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsSearchOpen(false);
-        setIsNotificationOpen(false);
-        setIsAccountMenuOpen(false);
         setIsMobileSidebarOpen(false);
       }
     };
@@ -59,7 +49,6 @@ export function useAdminLayoutController() {
 
   const handleLogout = async () => {
     if (logoutMutation.isPending) return;
-    setIsAccountMenuOpen(false);
     await logoutMutation.mutateAsync();
     toast.info('Bạn đã đăng xuất khỏi trung tâm quản trị.');
   };
@@ -74,36 +63,29 @@ export function useAdminLayoutController() {
   };
 
   const handleSelectSearchItem = (item: AdminNavItem) => {
-    setIsSearchOpen(false);
-    setHeaderSearchQuery('');
-    if (item.implemented) {
-      navigate(item.path);
+    if (!item.implemented) {
       return;
     }
-    // TODO: Điều hướng tới route thực tế khi chức năng quản trị tương ứng được triển khai
-    toast.info(`Phân hệ "${item.label}" đang trong kế hoạch triển khai.`);
+    setIsSearchOpen(false);
+    setHeaderSearchQuery('');
+    navigate(item.path);
   };
 
   const handleHeaderSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (searchResults.length > 0) {
-      handleSelectSearchItem(searchResults[0]);
+    const firstImplemented = searchResults.find((item) => item.implemented);
+    if (firstImplemented) {
+      handleSelectSearchItem(firstImplemented);
       return;
     }
-    toast.info('Không tìm thấy chức năng quản trị phù hợp.');
+    if (searchResults.length === 0) {
+      toast.info('Không tìm thấy chức năng quản trị phù hợp.');
+    }
   };
 
   const handleClearHeaderSearch = () => {
     setHeaderSearchQuery('');
     setIsSearchOpen(true);
-  };
-
-  const handleToggleNotifications = () => {
-    setIsNotificationOpen((prev) => !prev);
-  };
-
-  const handleCloseNotifications = () => {
-    setIsNotificationOpen(false);
   };
 
   const handleToggleSidebarCollapse = () => {
@@ -118,20 +100,6 @@ export function useAdminLayoutController() {
     setIsMobileSidebarOpen(false);
   };
 
-  const handleToggleAccountMenu = () => {
-    setIsAccountMenuOpen((prev) => !prev);
-  };
-
-  const handleCloseAccountMenu = () => {
-    setIsAccountMenuOpen(false);
-  };
-
-  const handlePlaceholderNavClick = (item: AdminNavItem) => {
-    // TODO: Điều hướng tới route thực tế khi module quản trị tương ứng được triển khai
-    toast.info(`Phân hệ "${item.label}" đang trong kế hoạch triển khai.`);
-    setIsMobileSidebarOpen(false);
-  };
-
   return {
     location,
     appTitle,
@@ -141,26 +109,17 @@ export function useAdminLayoutController() {
     isSearchOpen,
     searchResults,
     searchContainerRef,
-    isNotificationOpen,
-    notificationRef,
     isSidebarCollapsed,
     isMobileSidebarOpen,
-    isAccountMenuOpen,
-    accountMenuRef,
     handleLogout,
     handleOpenSearch,
     handleHeaderSearchChange,
     handleHeaderSearchSubmit,
     handleSelectSearchItem,
     handleClearHeaderSearch,
-    handleToggleNotifications,
-    handleCloseNotifications,
     handleToggleSidebarCollapse,
     handleOpenMobileSidebar,
     handleCloseMobileSidebar,
-    handleToggleAccountMenu,
-    handleCloseAccountMenu,
-    handlePlaceholderNavClick,
   };
 }
 

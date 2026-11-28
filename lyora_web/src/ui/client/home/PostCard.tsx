@@ -220,40 +220,7 @@ const PostMediaTile: React.FC<{
   className?: string;
   onOpenLightbox: (items: PostMediaItem[], index: number) => void;
 }> = ({ item, index, allMedia, extraCount = 0, className = '', onOpenLightbox }) => {
-  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
-
   if (item.type === 'VIDEO') {
-    const isPosterPlaceholder = item.url.startsWith('data:image/');
-
-    if (isPosterPlaceholder) {
-      return (
-        <div
-          className={`relative overflow-hidden bg-background border border-border rounded-xl ${className}`}
-        >
-          <AppImage
-            src={item.url}
-            alt={item.alt || 'Video cộng đồng'}
-            className="w-full h-full max-h-[460px] object-cover rounded-none"
-          />
-          <div className="absolute inset-0 bg-foreground/20 flex flex-col items-center justify-center gap-2 p-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsPreviewPlaying((prev) => !prev)}
-              aria-label="Xem thử trình phát video"
-              className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-card/95 text-primary shadow-md hover:scale-105 transition-transform cursor-pointer"
-            >
-              <PlayIcon className="w-6 h-6 translate-x-0.5" />
-            </button>
-            {isPreviewPlaying && (
-              <span className="rounded-full bg-foreground/80 px-3 py-1 text-xs font-medium text-card">
-                Khung xem trước video (phát trực tiếp khi gắn URL hoặc Media API)
-              </span>
-            )}
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className={`relative overflow-hidden bg-foreground/5 rounded-xl ${className}`}>
         <video
@@ -724,7 +691,7 @@ export const PostCommentForm: React.FC<{
           <label
             title="Chèn video ngắn vào bình luận"
             aria-label="Chèn video ngắn vào bình luận"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-accent hover:bg-background transition-colors cursor-pointer"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary hover:bg-background transition-colors cursor-pointer"
           >
             <VideoIcon className="w-4 h-4" />
             <input

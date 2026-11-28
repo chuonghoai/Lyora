@@ -21,6 +21,11 @@ function getErrorMessage(error: unknown): string {
 export function useFriendsController() {
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState("");
+  const [unfriendTarget, setUnfriendTarget] = useState<{
+    id: string;
+    fullName: string;
+  } | null>(null);
+
   const deferredSearchText = useDeferredValue(searchText);
   const searchQuery = useFriendSearchQuery(deferredSearchText);
   const acceptedFriendsQuery = useAcceptedFriendsQuery();
@@ -81,13 +86,37 @@ export function useFriendsController() {
     }
   };
 
-  const handleUnfriend = async (userId: string, fullName: string) => {
+  const handleRequestUnfriend = (userId: string, fullName: string) => {
+    setUnfriendTarget({ id: userId, fullName });
+  };
+
+  const handleCancelUnfriend = () => {
+    if (unfriendMutation.isPending) return;
+    setUnfriendTarget(null);
+  };
+
+  const handleConfirmUnfriend = async () => {
+    if (!unfriendTarget) return;
+    const { id, fullName } = unfriendTarget;
     try {
-      await unfriendMutation.mutateAsync(userId);
+      await unfriendMutation.mutateAsync(id);
+      setUnfriendTarget(null);
       toast.info(`Đã hủy kết bạn với ${fullName}.`);
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
+  };
+
+  const handleRetryFriends = () => {
+    void acceptedFriendsQuery.refetch();
+  };
+
+  const handleRetryRequests = () => {
+    void receivedRequestsQuery.refetch();
+  };
+
+  const handleRetrySearch = () => {
+    void searchQuery.refetch();
   };
 
   return {
@@ -96,17 +125,27 @@ export function useFriendsController() {
     totalResults: searchQuery.data?.totalItems ?? 0,
     acceptedFriends: acceptedFriendsQuery.data ?? [],
     receivedRequests: receivedRequestsQuery.data ?? [],
+    isLoadingFriends: acceptedFriendsQuery.isLoading,
+    friendsError: acceptedFriendsQuery.error,
+    isLoadingRequests: receivedRequestsQuery.isLoading,
+    requestsError: receivedRequestsQuery.error,
     isSearching: searchQuery.isFetching,
     searchError: searchQuery.error,
-    requestsError: receivedRequestsQuery.error,
     isMutating,
+    isUnfriending: unfriendMutation.isPending,
+    unfriendTarget,
     handleSearchChange,
     handleClearSearch,
     handleOpenProfile,
     handleSendRequest,
     handleAcceptRequest,
     handleRemoveRequest,
-    handleUnfriend,
+    handleRequestUnfriend,
+    handleCancelUnfriend,
+    handleConfirmUnfriend,
+    handleRetryFriends,
+    handleRetryRequests,
+    handleRetrySearch,
   };
 }
 
