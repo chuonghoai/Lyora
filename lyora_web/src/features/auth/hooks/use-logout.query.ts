@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/react-query';
 import { authService } from '../services/auth.service';
-import { authKeys } from './auth.keys';
 
 export type UseLogoutMutationOptions = Omit<
   UseMutationOptions<void, unknown, void>,
@@ -13,10 +12,16 @@ export function useLogoutMutation(options?: UseLogoutMutationOptions) {
   return useMutation({
     ...options,
     mutationFn: async () => {
-      await authService.logout();
+      try {
+        await authService.logout();
+      } finally {
+        await queryClient.cancelQueries();
+        queryClient.clear();
+      }
     },
-    onSettled: () => {
-      queryClient.removeQueries({ queryKey: authKeys.all });
+    onSettled: (...args) => {
+      queryClient.clear();
+      options?.onSettled?.(...args);
     },
     onSuccess: (...args) => {
       options?.onSuccess?.(...args);

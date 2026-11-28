@@ -42,6 +42,7 @@ export function useRegisterMutation(options?: UseRegisterMutationOptions) {
       return authService.register(credentials);
     },
     onSuccess: (...args) => {
+      queryClient.clear();
       queryClient.invalidateQueries({ queryKey: authKeys.session() });
       options?.onSuccess?.(...args);
     },
