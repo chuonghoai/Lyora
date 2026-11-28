@@ -7,7 +7,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -17,6 +16,7 @@ import { ResponseMessage } from '../../common/decorators/response-message.decora
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/role.enum';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { VietnameseParseUUIDPipe } from '../../common/pipes/vietnamese-parse-uuid.pipe';
 import { ConversationsService } from './conversations.service';
 import { AddGroupMembersDto } from './dto/add-group-members.dto';
 import { ConversationQueryDto } from './dto/conversation-query.dto';
@@ -50,7 +50,7 @@ export class ConversationsController {
   @ResponseMessage('Lấy thông tin chi tiết cuộc hội thoại thành công')
   async findOne(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
   ): Promise<ConversationDetailDto> {
     return this.conversationsService.findById(currentUser.id, id);
   }
@@ -91,7 +91,7 @@ export class ConversationsController {
   @ResponseMessage('Cập nhật tên nhóm thành công')
   async updateGroupTitle(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
     @Body() dto: UpdateGroupTitleDto,
   ): Promise<ConversationDetailDto> {
     return this.conversationsService.updateGroupTitle(currentUser.id, id, dto);
@@ -102,7 +102,7 @@ export class ConversationsController {
   @ResponseMessage('Thêm thành viên vào nhóm thành công')
   async addMembers(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
     @Body() dto: AddGroupMembersDto,
   ): Promise<ConversationDetailDto> {
     return this.conversationsService.addGroupMembers(currentUser.id, id, dto);
@@ -113,8 +113,8 @@ export class ConversationsController {
   @ResponseMessage('Xóa thành viên khỏi nhóm thành công')
   async removeMember(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+    @Param('userId', VietnameseParseUUIDPipe) userId: string,
   ): Promise<ConversationDetailDto> {
     return this.conversationsService.removeMember(currentUser.id, id, userId);
   }
@@ -124,7 +124,7 @@ export class ConversationsController {
   @ResponseMessage('Chuyển quyền Trưởng nhóm thành công')
   async transferOwnership(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
     @Body() dto: TransferGroupOwnershipDto,
   ): Promise<ConversationDetailDto> {
     return this.conversationsService.transferOwnership(currentUser.id, id, dto);
@@ -135,7 +135,7 @@ export class ConversationsController {
   @ResponseMessage('Rời khỏi nhóm thành công')
   async leaveGroup(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
     @Body() dto: LeaveGroupDto,
   ): Promise<{ success: boolean; message: string }> {
     return this.conversationsService.leaveGroup(currentUser.id, id, dto);
@@ -146,7 +146,7 @@ export class ConversationsController {
   @ResponseMessage('Giải tán nhóm thành công')
   async dissolveGroup(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
   ): Promise<{ success: boolean; message: string }> {
     return this.conversationsService.dissolveGroup(currentUser.id, id);
   }

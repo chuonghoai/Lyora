@@ -1,7 +1,6 @@
 import React from "react";
-import { createPortal } from "react-dom";
-import { Button } from "@/core";
-import { ArrowLeftIcon, CloseIcon } from "../home/ClientIcons";
+import { Button, ConfirmModal, ErrorState } from "@/core";
+import { ArrowLeftIcon } from "../home/ClientIcons";
 import { MediaLightboxModal } from "../home/MediaLightboxModal";
 import { PostDetailModal } from "../home/PostDetailModal";
 import { PostReactionsModal } from "../home/PostReactionsModal";
@@ -45,26 +44,15 @@ export const ProfileView: React.FC = () => {
   if (controller.isError || !controller.profile) {
     return (
       <div className="mx-auto w-full max-w-2xl py-10">
-        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
-          <h1 className="text-xl font-bold text-foreground">
-            Không tìm thấy hồ sơ người dùng
-          </h1>
-          <p className="text-sm text-muted">
-            Hồ sơ bạn đang tìm có thể không tồn tại hoặc tạm thời không truy cập
-            được.
-          </p>
-          <div className="pt-2 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              onClick={controller.handleNavigateBackToFeed}
-            >
-              Về bảng tin
-            </Button>
-            <Button variant="primary" onClick={controller.handleRefetchProfile}>
-              Thử lại
-            </Button>
-          </div>
-        </div>
+        <ErrorState
+          title="Không tìm thấy hồ sơ người dùng"
+          description="Hồ sơ bạn đang tìm có thể không tồn tại hoặc tạm thời không truy cập được."
+          onRetry={controller.handleRefetchProfile}
+          secondaryAction={{
+            label: "Về bảng tin",
+            onClick: controller.handleNavigateBackToFeed,
+          }}
+        />
       </div>
     );
   }
@@ -105,11 +93,6 @@ export const ProfileView: React.FC = () => {
               Về hồ sơ của tôi
             </Button>
           )}
-          {controller.profile.isPreviewFallback && (
-            <span className="inline-flex items-center rounded-full border border-secondary-strong bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
-              Giao diện xem trước
-            </span>
-          )}
         </div>
       </div>
 
@@ -136,65 +119,25 @@ export const ProfileView: React.FC = () => {
       <PostReactionsModal controller={controller} />
       <MediaLightboxModal controller={controller} />
 
-      {controller.unfriendTarget &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Xác nhận hủy kết bạn"
-            onClick={controller.handleCancelUnfriend}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/45 p-4"
-          >
-            <div
-              onClick={(event) => event.stopPropagation()}
-              className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 shadow-md"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-foreground">
-                    Hủy kết bạn với {controller.unfriendTarget.fullName}?
-                  </h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted">
-                    Bạn có chắc chắn muốn xóa{" "}
-                    <strong className="text-foreground">
-                      {controller.unfriendTarget.fullName}
-                    </strong>{" "}
-                    khỏi danh sách bạn bè? Bạn vẫn có thể gửi lại lời mời kết
-                    bạn sau này.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={controller.handleCancelUnfriend}
-                  aria-label="Đóng hộp thoại xác nhận"
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-background hover:text-foreground cursor-pointer"
-                >
-                  <CloseIcon className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="flex items-center justify-end gap-2 border-t border-border pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={controller.handleCancelUnfriend}
-                  disabled={controller.isUnfriending}
-                >
-                  Giữ kết nối
-                </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  isLoading={controller.isUnfriending}
-                  onClick={() => void controller.handleConfirmUnfriend()}
-                >
-                  Xác nhận hủy kết bạn
-                </Button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      <ConfirmModal
+        isOpen={Boolean(controller.unfriendTarget)}
+        title={
+          controller.unfriendTarget
+            ? `Hủy kết bạn với ${controller.unfriendTarget.fullName}?`
+            : "Xác nhận hủy kết bạn"
+        }
+        description={
+          controller.unfriendTarget
+            ? `Bạn có chắc chắn muốn xóa ${controller.unfriendTarget.fullName} khỏi danh sách bạn bè? Bạn vẫn có thể gửi lại lời mời kết bạn sau này.`
+            : ""
+        }
+        confirmLabel="Xác nhận hủy kết bạn"
+        cancelLabel="Giữ kết nối"
+        variant="danger"
+        isLoading={controller.isUnfriending}
+        onConfirm={() => void controller.handleConfirmUnfriend()}
+        onCancel={controller.handleCancelUnfriend}
+      />
     </div>
   );
 };

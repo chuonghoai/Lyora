@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Input, LoadingSpinner, useAuthStore } from '@/core';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, EmptyState, ErrorState, Input, LoadingState } from '@/core';
 import type { FriendUser } from '@/features/conversations';
 import {
   CheckIcon,
@@ -11,8 +11,11 @@ import {
 interface NewGroupChatModalProps {
   isOpen: boolean;
   onClose: () => void;
+  currentUser?: { id?: string; fullName?: string } | null;
   friends: FriendUser[];
   isLoadingFriends: boolean;
+  isFriendsError?: boolean;
+  onRetryFriends?: () => void;
   isCreating: boolean;
   onSubmit: (title: string, memberIds: string[], idempotencyKey: string) => Promise<void> | void;
 }
@@ -28,25 +31,42 @@ function removeVietnameseDiacritics(str: string): string {
 export const NewGroupChatModal: React.FC<NewGroupChatModalProps> = ({
   isOpen,
   onClose,
+  currentUser,
   friends,
   isLoadingFriends,
+  isFriendsError = false,
+  onRetryFriends,
   isCreating,
   onSubmit,
 }) => {
-  const currentUser = useAuthStore((state) => state.user);
-
   const [title, setTitle] = useState('');
   const [search, setSearch] = useState('');
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
 
-  // Sinh key mới mỗi khi mở modal
+  const handleResetAndClose = useCallback(() => {
+    setTitle('');
+    setSearch('');
+    setSelectedFriendIds([]);
+    setErrorMsg(null);
+    setIdempotencyKey('');
+    onClose();
+  }, [onClose]);
+
+  // Sinh key mới mỗi khi mở modal & hỗ trợ Escape
   useEffect(() => {
-    if (isOpen) {
-      setIdempotencyKey(crypto.randomUUID());
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    setIdempotencyKey(crypto.randomUUID());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isCreating) {
+        handleResetAndClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isCreating, handleResetAndClose]);
 
   // Sinh key mới khi người dùng thay đổi payload (title hoặc members)
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,23 +139,9 @@ export const NewGroupChatModal: React.FC<NewGroupChatModalProps> = ({
       await onSubmit(trimmedTitle, selectedFriendIds, idempotencyKey);
       // Kết thúc lifecycle của key khi tạo thành công
       handleResetAndClose();
-    } catch (err: unknown) {
-      // Khi API lỗi, giữ nguyên title, selectedFriendIds và idempotencyKey để retry
-      if (err instanceof Error) {
-        setErrorMsg(err.message);
-      } else {
-        setErrorMsg('Có lỗi xảy ra khi tạo nhóm. Vui lòng thử lại.');
-      }
+    } catch {
+      // Lỗi API đã được controller hiển thị toast; giữ nguyên state & idempotencyKey để retry
     }
-  };
-
-  const handleResetAndClose = () => {
-    setTitle('');
-    setSearch('');
-    setSelectedFriendIds([]);
-    setErrorMsg(null);
-    setIdempotencyKey('');
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -154,8 +160,14 @@ export const NewGroupChatModal: React.FC<NewGroupChatModalProps> = ({
       aria-modal="true"
       aria-labelledby="group-chat-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-[1px]"
+      onClick={() => {
+        if (!isCreating) handleResetAndClose();
+      }}
     >
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl flex flex-col max-h-[90vh]">
+      <div
+        className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* 1. Header & Bare Outline Icon */}
         <div className="flex items-center justify-between pb-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2.5">
@@ -169,9 +181,12 @@ export const NewGroupChatModal: React.FC<NewGroupChatModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={handleResetAndClose}
+            onClick={() => {
+              if (!isCreating) handleResetAndClose();
+            }}
+            disabled={isCreating}
             aria-label="Đóng modal"
-            className="group min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="group min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
@@ -305,16 +320,33 @@ export const NewGroupChatModal: React.FC<NewGroupChatModalProps> = ({
           {/* 6. Danh sách bạn bè có checkbox & Independent Scroll */}
           <div className="border border-border rounded-xl p-1 bg-background/20 max-h-56 overflow-y-auto">
             {isLoadingFriends ? (
-              <div className="flex flex-col items-center justify-center p-6 text-muted text-xs gap-2">
-                <LoadingSpinner size="sm" />
-                <span>Đang tải danh sách bạn bè...</span>
-              </div>
+              <LoadingState compact label="Đang tải danh sách bạn bè..." />
+            ) : isFriendsError ? (
+              <ErrorState
+                compact
+                title="Không thể tải danh sách bạn bè"
+                description="Vui lòng thử lại để chọn thành viên tạo nhóm."
+                onRetry={onRetryFriends}
+              />
             ) : filteredFriends.length === 0 ? (
-              <div className="p-6 text-center text-xs text-muted">
-                {search.trim()
-                  ? 'Không tìm thấy người bạn nào phù hợp với từ khóa'
-                  : 'Danh sách bạn bè trống'}
-              </div>
+              search.trim() ? (
+                <EmptyState
+                  compact
+                  title="Không tìm thấy bạn bè phù hợp"
+                  description={`Không có ai khớp với "${search}".`}
+                  action={{
+                    label: 'Xóa tìm kiếm',
+                    variant: 'outline',
+                    onClick: () => setSearch(''),
+                  }}
+                />
+              ) : (
+                <EmptyState
+                  compact
+                  title="Danh sách bạn bè trống"
+                  description="Bạn cần kết bạn với ít nhất 2 người trước khi tạo nhóm."
+                />
+              )
             ) : (
               <div className="divide-y divide-border/60">
                 {filteredFriends.map((friend) => {

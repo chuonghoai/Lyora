@@ -174,9 +174,15 @@ export const ProfileAboutSection: React.FC<ProfileAboutSectionProps> = ({
             <div className="pt-3 border-t border-border flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs text-muted">
                 <CalendarIcon className="w-4 h-4 text-primary" />
-                <span>Tham gia từ {formatDate(profile.createdAt)}</span>
+                <span>Tham gia từ {profile.createdAt ? formatDate(profile.createdAt) : 'Chưa rõ'}</span>
               </div>
-              <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-semibold text-success">
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  profile.isActive
+                    ? 'bg-success/10 text-success'
+                    : 'bg-error/10 text-error'
+                }`}
+              >
                 <ShieldCheckIcon className="w-3.5 h-3.5" />
                 <span>{profile.isActive ? 'Đang hoạt động' : 'Tạm khóa'}</span>
               </span>

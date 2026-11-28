@@ -131,7 +131,7 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
         if (refreshCount > 5) {
           logger.error('ApiClient', 'Detected runaway token refresh loop. Clearing auth session.');
           TokenStorage.clearAuth();
-          toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+          toast.error('Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.');
           return Promise.reject(buildApiError(error));
         }
 
@@ -212,7 +212,7 @@ function buildApiError(
   } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
     message = 'Hết thời gian kết nối đến máy chủ. Vui lòng thử lại!';
   } else if (!error.response && error.request) {
-    message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc backend service.';
+    message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.';
   } else if (statusCode === 401) {
     message = 'Email hoặc mật khẩu không chính xác hoặc phiên đã hết hạn.';
   } else if (statusCode === 403) {

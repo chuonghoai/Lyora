@@ -17,7 +17,6 @@ export interface AdminNavItem {
   icon: AdminNavIconName;
   exact?: boolean;
   implemented: boolean;
-  todoNote?: string;
 }
 
 export interface AdminNavGroup {
@@ -51,8 +50,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         path: '/admin/users',
         icon: 'users',
         implemented: false,
-        // TODO: Triển khai trang quản lý danh sách, phân quyền và trạng thái người dùng (/admin/users)
-        todoNote: 'TODO: Triển khai màn hình quản lý người dùng',
       },
       {
         id: 'posts',
@@ -60,8 +57,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         path: '/admin/posts',
         icon: 'posts',
         implemented: false,
-        // TODO: Triển khai trang quản lý và kiểm duyệt bài viết cộng đồng (/admin/posts)
-        todoNote: 'TODO: Triển khai màn hình quản lý bài viết',
       },
       {
         id: 'comments',
@@ -69,8 +64,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         path: '/admin/comments',
         icon: 'comments',
         implemented: false,
-        // TODO: Triển khai trang rà soát và xử lý bình luận (/admin/comments)
-        todoNote: 'TODO: Triển khai màn hình quản lý bình luận',
       },
       {
         id: 'moderation',
@@ -78,8 +71,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         path: '/admin/reports',
         icon: 'moderation',
         implemented: false,
-        // TODO: Triển khai hàng đợi tiếp nhận và xử lý báo cáo vi phạm (/admin/reports)
-        todoNote: 'TODO: Triển khai màn hình báo cáo & kiểm duyệt',
       },
     ],
   },
@@ -93,8 +84,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         path: '/admin/ai',
         icon: 'ai',
         implemented: false,
-        // TODO: Triển khai trang quản trị và giám sát tính năng AI (/admin/ai)
-        todoNote: 'TODO: Triển khai màn hình quản lý tính năng AI',
       },
       {
         id: 'analytics',
@@ -102,8 +91,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         path: '/admin/analytics',
         icon: 'analytics',
         implemented: false,
-        // TODO: Triển khai trang phân tích tương tác và tăng trưởng cộng đồng (/admin/analytics)
-        todoNote: 'TODO: Triển khai màn hình báo cáo & phân tích',
       },
       {
         id: 'settings',
@@ -111,8 +98,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         path: '/admin/settings',
         icon: 'settings',
         implemented: false,
-        // TODO: Triển khai trang cấu hình chính sách và tính năng hệ thống (/admin/settings)
-        todoNote: 'TODO: Triển khai màn hình cài đặt hệ thống',
       },
     ],
   },
@@ -174,4 +159,3 @@ export function filterAdminNavItems(query: string): AdminNavSearchEntry[] {
     return labelFolded.includes(normalized) || groupFolded.includes(normalized);
   });
 }
-

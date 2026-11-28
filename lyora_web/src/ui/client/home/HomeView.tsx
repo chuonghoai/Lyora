@@ -1,6 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AppImage, Button, Input, LoadingSpinner, formatDate } from '@/core';
+import {
+  AppImage,
+  Button,
+  EmptyState,
+  ErrorState,
+  formatDate,
+  Input,
+  LoadingSpinner,
+  LoadingState,
+} from '@/core';
 import { getClientProfilePath } from '@/routes/paths';
 import { useHomeController } from './home.controller';
 import { PostComposer } from './PostComposer';
@@ -8,10 +17,8 @@ import { PostCard } from './PostCard';
 import { PostDetailModal } from './PostDetailModal';
 import { PostReactionsModal } from './PostReactionsModal';
 import { AllFriendsModal } from './AllFriendsModal';
-import { FriendChatWidget } from './FriendChatWidget';
 import { MediaLightboxModal } from './MediaLightboxModal';
 import {
-  BookmarkIcon,
   CalendarIcon,
   ChatBubbleOutlineIcon,
   EditIcon,
@@ -49,9 +56,8 @@ export default function HomeView(): React.ReactElement {
 
   return (
     <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px] lg:gap-6 items-start">
-      {/* CỘT TRÁI NGOÀI CÙNG: Hồ sơ & Thông tin cá nhân người dùng */}
+      {/* CỘT TRÁI: Hồ sơ & Thông tin cá nhân */}
       <aside className="hidden lg:block sticky top-20 space-y-4">
-        {/* Card 1: Ảnh đại diện, giới thiệu & Thông số hồ sơ */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3.5">
           <Link
             to={getClientProfilePath(profileUser?.id)}
@@ -87,18 +93,12 @@ export default function HomeView(): React.ReactElement {
             </p>
           )}
 
-          <div className="grid grid-cols-3 gap-1.5 pt-2.5 border-t border-border text-center">
+          <div className="grid grid-cols-2 gap-1.5 pt-2.5 border-t border-border text-center">
             <div className="rounded-xl bg-background px-1.5 py-2">
               <p className="text-sm font-bold text-foreground tabular-nums">
-                {controller.myPostsCount}
+                {controller.totalItems}
               </p>
-              <p className="text-[11px] text-muted">Bài của tôi</p>
-            </div>
-            <div className="rounded-xl bg-background px-1.5 py-2">
-              <p className="text-sm font-bold text-primary tabular-nums">
-                {controller.savedPostsCount}
-              </p>
-              <p className="text-[11px] text-muted">Đã lưu</p>
+              <p className="text-[11px] text-muted">Bài viết</p>
             </div>
             <div className="rounded-xl bg-background px-1.5 py-2">
               <p className="text-sm font-bold text-foreground tabular-nums">
@@ -116,7 +116,6 @@ export default function HomeView(): React.ReactElement {
           </Link>
         </div>
 
-        {/* Card 2: Thông tin cá nhân chi tiết (Email, SĐT, Khu vực, Ngày tham gia...) */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-xs font-bold uppercase tracking-wide text-foreground">
@@ -180,7 +179,13 @@ export default function HomeView(): React.ReactElement {
 
               <li className="pt-2 border-t border-border flex items-center justify-between text-[11px]">
                 <span className="text-muted">Trạng thái tài khoản</span>
-                <span className="rounded-full bg-success/10 px-2 py-0.5 font-semibold text-success">
+                <span
+                  className={`rounded-full px-2 py-0.5 font-semibold ${
+                    profileUser?.isActive === false
+                      ? 'bg-error/10 text-error'
+                      : 'bg-success/10 text-success'
+                  }`}
+                >
                   {profileUser?.isActive === false ? 'Tạm khóa' : 'Đã xác thực'}
                 </span>
               </li>
@@ -253,43 +258,37 @@ export default function HomeView(): React.ReactElement {
             </form>
           )}
         </div>
-
-        {/* Card 3: Thông số bảng tin cộng đồng */}
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-foreground">
-            Hoạt động cộng đồng
-          </p>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">Bài viết hiển thị</span>
-            <span className="font-semibold text-foreground tabular-nums">
-              {controller.totalItems}
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">Tổng lượt cảm xúc</span>
-            <span className="font-semibold text-primary tabular-nums">
-              {controller.totalReactionsOnFeed}
-            </span>
-          </div>
-        </div>
       </aside>
 
-      {/* CỘT GIỮA: Kéo dài chiều rộng nhưng luôn giữ khoảng padding ở giữa 2 side */}
+      {/* CỘT GIỮA: Bảng tin */}
       <div className="w-full lg:px-4 xl:px-8 2xl:px-12">
         <div className="mx-auto w-full max-w-5xl space-y-4">
-          {/* Tiêu đề bảng tin */}
           <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                {controller.activeTab === 'saved'
-                  ? 'Bài viết đã lưu'
-                  : 'Bảng tin cộng đồng'}
-              </h1>
-              {controller.isPreviewFallback && (
-                <span className="inline-flex items-center rounded-full border border-secondary-strong bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-primary-active">
-                  Giao diện xem trước
-                </span>
-              )}
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              Bảng tin cộng đồng
+            </h1>
+
+            <div className="hidden lg:flex items-center gap-1.5">
+              {(['ALL', 'PUBLIC', 'FRIENDS', 'PRIVATE'] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => controller.handleSelectVisibilityFilter(opt)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer ${
+                    controller.visibilityFilter === opt
+                      ? 'border-primary bg-secondary text-primary-active font-semibold'
+                      : 'border-border bg-card text-muted hover:text-foreground'
+                  }`}
+                >
+                  {opt === 'ALL'
+                    ? 'Tất cả'
+                    : opt === 'PUBLIC'
+                      ? 'Công khai'
+                      : opt === 'FRIENDS'
+                        ? 'Bạn bè'
+                        : 'Riêng tư'}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -344,10 +343,8 @@ export default function HomeView(): React.ReactElement {
             </button>
           </div>
 
-          {/* Khung tạo bài viết */}
           <PostComposer controller={controller} />
 
-          {/* Danh sách bài viết (Feed) */}
           {controller.isFeedLoading ? (
             <div className="space-y-4" aria-label="Đang tải bảng tin">
               <PostSkeletonCard />
@@ -355,92 +352,111 @@ export default function HomeView(): React.ReactElement {
               <PostSkeletonCard />
             </div>
           ) : controller.isFeedError ? (
-            <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
-              <p className="text-base font-semibold text-foreground">
-                Không thể tải danh sách bài viết
-              </p>
-              <p className="text-sm text-muted">
-                Vui lòng kiểm tra kết nối máy chủ hoặc thử tải lại bảng tin.
-              </p>
-              <Button variant="primary" onClick={() => void controller.handleRefreshFeed()}>
-                Thử lại
-              </Button>
-            </div>
+            <ErrorState
+              title="Không thể tải danh sách bài viết"
+              description="Vui lòng kiểm tra kết nối máy chủ hoặc thử tải lại bảng tin."
+              onRetry={() => void controller.handleRefreshFeed()}
+              isRetrying={controller.isFeedRefetching}
+            />
           ) : controller.posts.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm space-y-3">
-              <p className="text-base font-semibold text-foreground">
-                {controller.activeTab === 'saved'
-                  ? 'Bạn chưa lưu bài viết nào'
-                  : controller.debouncedSearch
-                    ? `Không tìm thấy bài viết khớp với "${controller.debouncedSearch}"`
-                    : 'Chưa có bài viết nào hiển thị'}
-              </p>
-              <p className="text-sm text-muted">
-                {controller.activeTab === 'saved'
-                  ? 'Nhấn nút Lưu trên các bài viết yêu thích để xem lại nhanh tại đây.'
-                  : 'Hãy là người đầu tiên chia sẻ một khoảnh khắc mới lên cộng đồng Lyora.'}
-              </p>
-              <div className="pt-1 flex items-center justify-center gap-2">
-                {controller.activeTab !== 'all' ||
-                controller.debouncedSearch ||
-                controller.visibilityFilter !== 'ALL' ? (
-                  <Button variant="secondary" onClick={controller.handleClearFilters}>
-                    Về bảng tin chính
-                  </Button>
-                ) : (
-                  <Button variant="primary" onClick={controller.handleExpandComposer}>
-                    Viết bài đầu tiên
-                  </Button>
-                )}
-              </div>
-            </div>
+            controller.visibilityFilter !== 'ALL' ? (
+              <EmptyState
+                title="Không có bài viết phù hợp bộ lọc"
+                description="Hiện chưa có bài viết nào ở chế độ hiển thị bạn vừa chọn."
+                action={{
+                  label: 'Xem tất cả bài viết',
+                  onClick: controller.handleClearFilters,
+                  variant: 'secondary',
+                }}
+              />
+            ) : (
+              <EmptyState
+                title="Chưa có bài viết nào hiển thị"
+                description="Hãy là người đầu tiên chia sẻ một khoảnh khắc mới lên cộng đồng Lyora."
+                action={{
+                  label: 'Viết bài đầu tiên',
+                  onClick: controller.handleExpandComposer,
+                  variant: 'primary',
+                }}
+              />
+            )
           ) : (
             <div className="space-y-4">
               {controller.posts.map((post) => (
                 <PostCard key={post.id} post={post} controller={controller} />
               ))}
 
-              {/* Điểm neo Infinite Scroll tự động tải thêm khi kéo xuống cuối trang */}
               <div ref={controller.loadMoreSentinelRef} className="py-4 text-center">
                 {controller.isFetchingNextPage ? (
                   <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted shadow-sm">
                     <LoadingSpinner size="sm" />
                     <span>Đang tải thêm bài viết...</span>
                   </div>
+                ) : controller.isFetchNextPageError ? (
+                  <div className="inline-flex flex-col items-center gap-2">
+                    <p className="text-xs text-error">Không thể tải thêm bài viết.</p>
+                    <Button variant="outline" onClick={controller.handleLoadMore} className="text-xs">
+                      Thử tải lại
+                    </Button>
+                  </div>
                 ) : controller.hasNextPage ? (
                   <Button variant="outline" onClick={controller.handleLoadMore} className="text-xs">
                     Tải thêm bài viết
                   </Button>
-                ) : (
+                ) : controller.posts.length > 5 ? (
                   <p className="text-xs text-muted">
                     Bạn đã xem hết tất cả bài viết hiện có.
                   </p>
-                )}
+                ) : null}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* CỘT PHẢI NGOÀI CÙNG: Danh sách bạn bè & Lưu trữ nhanh */}
+      {/* CỘT PHẢI: Danh sách bạn bè */}
       <aside className="hidden xl:block sticky top-20 space-y-4">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <h2 className="text-sm font-semibold text-foreground truncate">Danh sách bạn bè</h2>
-              <span className="text-xs text-muted tabular-nums">({controller.friends.length})</span>
+              {!controller.isFriendsLoading && !controller.isFriendsError && (
+                <span className="text-xs text-muted tabular-nums">({controller.friends.length})</span>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={controller.handleOpenAllFriendsModal}
-              className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-secondary/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              Tất cả
-            </button>
+            {controller.friends.length > 0 && (
+              <button
+                type="button"
+                onClick={controller.handleOpenAllFriendsModal}
+                className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-secondary/60 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                Tất cả
+              </button>
+            )}
           </div>
 
-          {controller.friends.length === 0 ? (
-            <p className="text-xs text-muted">Chưa có bạn bè đang hoạt động.</p>
+          {controller.isFriendsLoading ? (
+            <LoadingState variant="skeleton-list" count={3} label="Đang tải bạn bè..." />
+          ) : controller.isFriendsError ? (
+            <ErrorState
+              compact
+              title="Không thể tải danh sách bạn bè"
+              description="Vui lòng thử lại."
+              onRetry={controller.handleRetryFriends}
+            />
+          ) : controller.friends.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<UsersIcon className="w-5 h-5" />}
+              title="Chưa có bạn bè"
+              description="Kết nối thêm bạn bè để dễ dàng trò chuyện và chia sẻ bài viết."
+              action={{
+                label: 'Tìm bạn bè',
+                onClick: controller.handleOpenFriendsPage,
+                variant: 'outline',
+              }}
+              className="border-none"
+            />
           ) : (
             <ul className="space-y-1.5">
               {controller.friends.map((friend) => {
@@ -478,10 +494,11 @@ export default function HomeView(): React.ReactElement {
 
                       <button
                         type="button"
-                        onClick={() => controller.handleOpenChatWithFriend(friend.id)}
+                        disabled={controller.isCreatingDirectChat}
+                        onClick={() => void controller.handleOpenChatWithFriend(friend.id)}
                         aria-label={`Nhắn tin với ${friend.fullName}`}
                         title={`Nhắn tin với ${friend.fullName}`}
-                        className="group inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        className="group inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent border-0 cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         <ChatBubbleOutlineIcon
                           className={`w-5 h-5 text-primary group-hover:text-primary-hover ${ICON_SCALE_ANIMATION}`}
@@ -495,24 +512,6 @@ export default function HomeView(): React.ReactElement {
           )}
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-2.5">
-          <div className="flex items-center gap-2">
-            <BookmarkIcon className="w-4 h-4 text-primary" filled />
-            <h2 className="text-sm font-semibold text-foreground">Kho bài viết đã lưu</h2>
-          </div>
-          <p className="text-xs text-muted leading-relaxed">
-            Hiện có <strong className="text-foreground">{controller.savedPostsCount}</strong> bài viết
-            đã đánh dấu trong bảng tin hiện tại.
-          </p>
-          <Button
-            variant="secondary"
-            onClick={() => controller.handleSelectTab('saved')}
-            className="w-full text-xs"
-          >
-            Mở danh sách đã lưu
-          </Button>
-        </div>
-
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-1.5">
           <h2 className="text-xs font-semibold text-foreground">Không gian cộng đồng văn minh</h2>
           <p className="text-xs text-muted leading-relaxed">
@@ -521,19 +520,9 @@ export default function HomeView(): React.ReactElement {
         </div>
       </aside>
 
-      {/* Modal chi tiết 1 bài viết nổi bật kèm danh sách bình luận mở rộng */}
       <PostDetailModal controller={controller} />
-
-      {/* Modal thông số lượt thích & cảm xúc kiểu Facebook */}
       <PostReactionsModal controller={controller} />
-
-      {/* Modal danh sách tất cả bạn bè */}
       <AllFriendsModal controller={controller} />
-
-      {/* Hộp nhắn tin bạn bè góc phải dưới */}
-      <FriendChatWidget controller={controller} />
-
-      {/* Lightbox xem ảnh phóng to */}
       <MediaLightboxModal controller={controller} />
     </div>
   );

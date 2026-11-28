@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Button } from '@/core';
+import React, { useEffect, useState } from 'react';
+import { AppImage, Button, EmptyState } from '@/core';
 import type { ConversationMember } from '@/features/conversations';
 import {
   CheckIcon,
@@ -13,6 +13,7 @@ export interface TransferOwnershipModalProps {
   onClose: () => void;
   members: ConversationMember[];
   currentUserId?: string;
+  initialSelectedUserId?: string | null;
   isTransferring: boolean;
   onSubmit: (newOwnerId: string) => Promise<void> | void;
 }
@@ -22,10 +23,28 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
   onClose,
   members,
   currentUserId,
+  initialSelectedUserId = null,
   isTransferring,
   onSubmit,
 }) => {
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(
+    initialSelectedUserId,
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedOwnerId(null);
+      return;
+    }
+    setSelectedOwnerId(initialSelectedUserId ?? null);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isTransferring) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, initialSelectedUserId, isTransferring, onClose]);
 
   if (!isOpen) return null;
 
@@ -50,7 +69,9 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
       aria-modal="true"
       aria-labelledby="transfer-ownership-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
+      onClick={() => {
+        if (!isTransferring) onClose();
+      }}
     >
       <div
         className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border flex flex-col max-h-[85vh] overflow-hidden"
@@ -59,7 +80,7 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
+            <div className="p-2 rounded-lg bg-warning/10 text-warning">
               <CrownIcon className="h-4.5 w-4.5" />
             </div>
             <h3
@@ -71,9 +92,12 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (!isTransferring) onClose();
+            }}
+            disabled={isTransferring}
             aria-label="Đóng cửa sổ"
-            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
@@ -82,7 +106,7 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
         {/* Content */}
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
           <div className="p-4 border-b border-border">
-            <div className="p-3 text-xs text-amber-800 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 rounded-xl">
+            <div className="p-3 text-xs text-warning bg-warning/10 border border-warning/30 rounded-xl">
               <strong>Lưu ý quan trọng:</strong> Sau khi chuyển quyền, bạn sẽ trở
               thành thành viên thông thường. Bạn sẽ không thể tự lấy lại quyền
               Trưởng nhóm trừ khi được Trưởng nhóm mới chỉ định lại.
@@ -92,15 +116,12 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
           {/* Members List */}
           <div className="flex-1 overflow-y-auto p-2 min-h-0 space-y-1">
             {eligibleMembers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-8 text-center text-muted">
-                <UsersIcon className="w-10 h-10 mb-2 opacity-40" />
-                <p className="text-sm font-medium text-foreground">
-                  Không có thành viên khác trong nhóm
-                </p>
-                <p className="text-xs text-muted mt-1">
-                  Nhóm cần ít nhất một thành viên khác để chuyển quyền Trưởng nhóm.
-                </p>
-              </div>
+              <EmptyState
+                compact
+                icon={<UsersIcon className="w-5 h-5" />}
+                title="Không có thành viên khác trong nhóm"
+                description="Nhóm cần ít nhất một thành viên khác để chuyển quyền Trưởng nhóm."
+              />
             ) : (
               eligibleMembers.map((member) => {
                 const isSelected = selectedOwnerId === member.userId;
@@ -122,10 +143,11 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
                         {member.user?.avatarUrl ? (
-                          <img
+                          <AppImage
                             src={member.user.avatarUrl}
                             alt={member.user.fullName}
-                            className="w-9 h-9 rounded-full object-cover border border-border"
+                            rounded
+                            className="w-9 h-9 border border-border"
                           />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-secondary text-primary font-bold text-xs flex items-center justify-center border border-border">
@@ -144,7 +166,7 @@ export const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
                     <div
                       className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
                         isSelected
-                          ? 'bg-primary border-primary text-white'
+                          ? 'bg-primary border-primary text-on-primary'
                           : 'border-muted/40 bg-card'
                       }`}
                     >

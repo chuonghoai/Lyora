@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/core';
 import { CloseIcon, TrashIcon } from './ConversationIcons';
 
@@ -25,6 +25,17 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
   isDestructive = false,
   isLoading = false,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isLoading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
@@ -42,7 +53,9 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
       aria-modal="true"
       aria-labelledby="confirm-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
+      onClick={() => {
+        if (!isLoading) onClose();
+      }}
     >
       <div
         className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border flex flex-col overflow-hidden"
@@ -65,9 +78,12 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (!isLoading) onClose();
+            }}
+            disabled={isLoading}
             aria-label="Đóng cửa sổ"
-            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-muted hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
           >
             <CloseIcon className="h-5 w-5" />
           </button>

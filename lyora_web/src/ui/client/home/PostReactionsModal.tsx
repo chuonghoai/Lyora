@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Button, LoadingSpinner } from '@/core';
+import { Button, EmptyState, ErrorState, LoadingState } from '@/core';
 import { getReactionMeta, REACTION_OPTIONS } from '@/features/posts';
 import type { PostFeedController } from './post-feed.controller';
 import { ChatBubbleOutlineIcon, CloseIcon, ReactionIcon } from './ClientIcons';
@@ -106,14 +106,24 @@ export const PostReactionsModal: React.FC<PostReactionsModalProps> = ({ controll
         {/* Danh sách người bày tỏ cảm xúc */}
         <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 space-y-1.5">
           {controller.isReactionsLoading && !reactionsData ? (
-            <div className="py-10 flex flex-col items-center justify-center gap-2 text-xs text-muted">
-              <LoadingSpinner size="md" />
-              <span>Đang tải danh sách cảm xúc...</span>
-            </div>
+            <LoadingState
+              variant="skeleton-list"
+              count={4}
+              label="Đang tải danh sách cảm xúc..."
+            />
+          ) : controller.isReactionsError ? (
+            <ErrorState
+              compact
+              title="Không thể tải danh sách cảm xúc"
+              description="Vui lòng thử lại để xem chi tiết."
+              onRetry={controller.handleRetryReactions}
+            />
           ) : !reactionsData || reactionsData.items.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted">
-              Chưa có lượt bày tỏ cảm xúc nào trong mục này.
-            </p>
+            <EmptyState
+              compact
+              title="Chưa có lượt bày tỏ cảm xúc"
+              description="Chưa có thành viên nào bày tỏ cảm xúc trong mục này."
+            />
           ) : (
             reactionsData.items.map((item) => {
               const meta = getReactionMeta(item.reactionType);

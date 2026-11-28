@@ -9,7 +9,7 @@ import {
   useSendForgotPasswordOtpMutation,
   useVerifyForgotPasswordOtpMutation,
 } from '@/features/auth';
-import { isApiError, toast, type ApiError } from '@/core';
+import { toast, type ApiError } from '@/core';
 import { ROUTES } from '@/routes/paths';
 
 export type ForgotPasswordStep = 'EMAIL' | 'OTP' | 'RESET';
@@ -44,12 +44,6 @@ export function useForgotPasswordController() {
       setCooldown(res.cooldownSeconds || 60);
       toast.info(`Mã xác thực OTP đã được gửi đến ${res.email}`);
     },
-    onError: (err: unknown) => {
-      const message = isApiError(err)
-        ? err.message
-        : (err as Error)?.message || 'Gửi mã OTP không thành công';
-      toast.error(message);
-    },
   });
 
   const verifyOtpMutation = useVerifyForgotPasswordOtpMutation({
@@ -58,24 +52,12 @@ export function useForgotPasswordController() {
       setStep('RESET');
       toast.success('Mã xác thực chính xác! Vui lòng thiết lập mật khẩu mới.');
     },
-    onError: (err: unknown) => {
-      const message = isApiError(err)
-        ? err.message
-        : (err as Error)?.message || 'Xác thực mã OTP không thành công';
-      toast.error(message);
-    },
   });
 
   const resetPasswordMutation = useResetPasswordMutation({
     onSuccess: () => {
       toast.success('Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.');
       navigate(ROUTES.AUTH.LOGIN, { replace: true });
-    },
-    onError: (err: unknown) => {
-      const message = isApiError(err)
-        ? err.message
-        : (err as Error)?.message || 'Đặt lại mật khẩu không thành công';
-      toast.error(message);
     },
   });
 

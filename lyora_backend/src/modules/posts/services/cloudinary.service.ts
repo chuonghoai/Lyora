@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import * as streamifier from 'streamifier';
@@ -41,7 +41,9 @@ export class CloudinaryService {
         (error, result?: UploadApiResponse) => {
           if (error || !result) {
             reject(
-              new Error(error?.message ?? 'Cloudinary không trả về kết quả'),
+              new BadGatewayException(
+                'Không thể tải tệp lên dịch vụ lưu trữ. Vui lòng thử lại sau',
+              ),
             );
             return;
           }

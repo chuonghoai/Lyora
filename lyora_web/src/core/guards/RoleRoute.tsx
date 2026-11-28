@@ -22,7 +22,7 @@ export function resolveRoleAccess(params: {
 }): RoleAccessDecision {
   const { isAuthenticated, userRole, allowedRoles, requireAuth } = params;
 
-  if (requireAuth && !isAuthenticated) {
+  if (requireAuth && (!isAuthenticated || !userRole)) {
     return {
       allowed: false,
       redirectTo: ROUTES.AUTH.LOGIN,

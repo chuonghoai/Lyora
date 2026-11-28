@@ -1,8 +1,15 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { AppImage, Button, Input } from '@/core';
+import {
+  AppImage,
+  Button,
+  EmptyState,
+  ErrorState,
+  Input,
+  LoadingState,
+} from '@/core';
 import type { HomeController } from './home.controller';
-import { ChatBubbleOutlineIcon, CloseIcon } from './ClientIcons';
+import { ChatBubbleOutlineIcon, CloseIcon, SearchIcon, UsersIcon } from './ClientIcons';
 
 export interface AllFriendsModalProps {
   controller: HomeController;
@@ -54,10 +61,39 @@ export const AllFriendsModal: React.FC<AllFriendsModalProps> = ({ controller }) 
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 space-y-1.5">
-          {controller.filteredFriends.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted">
-              Không tìm thấy bạn bè phù hợp.
-            </p>
+          {controller.isFriendsLoading ? (
+            <LoadingState variant="skeleton-list" count={3} label="Đang tải danh sách bạn bè..." />
+          ) : controller.isFriendsError ? (
+            <ErrorState
+              compact
+              title="Không thể tải danh sách bạn bè"
+              description="Vui lòng thử lại."
+              onRetry={controller.handleRetryFriends}
+            />
+          ) : controller.friends.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<UsersIcon className="w-5 h-5" />}
+              title="Bạn chưa có bạn bè nào"
+              description="Hãy kết nối với bạn bè để bắt đầu trò chuyện."
+              action={{
+                label: 'Tìm bạn bè',
+                onClick: controller.handleOpenFriendsPage,
+                variant: 'outline',
+              }}
+            />
+          ) : controller.filteredFriends.length === 0 ? (
+            <EmptyState
+              compact
+              icon={<SearchIcon className="w-5 h-5" />}
+              title="Không tìm thấy bạn bè phù hợp"
+              description={`Không có bạn bè nào khớp với "${controller.friendSearchQuery.trim()}".`}
+              action={{
+                label: 'Xóa tìm kiếm',
+                onClick: controller.handleClearFriendSearch,
+                variant: 'outline',
+              }}
+            />
           ) : (
             controller.filteredFriends.map((friend) => {
               const initial = friend.fullName.charAt(0).toUpperCase();
@@ -93,7 +129,11 @@ export const AllFriendsModal: React.FC<AllFriendsModalProps> = ({ controller }) 
                       <p className="text-sm font-semibold text-foreground group-hover:text-primary group-hover:underline truncate">
                         {friend.fullName}
                       </p>
-                      <p className="text-xs text-success font-medium">
+                      <p
+                        className={`text-xs font-medium ${
+                          friend.isOnline ? 'text-success' : 'text-muted'
+                        }`}
+                      >
                         {friend.isOnline ? 'Đang hoạt động' : 'Ngoại tuyến'}
                       </p>
                     </div>
@@ -102,9 +142,10 @@ export const AllFriendsModal: React.FC<AllFriendsModalProps> = ({ controller }) 
                   <Button
                     type="button"
                     variant="secondary"
+                    disabled={controller.isCreatingDirectChat}
                     onClick={() => {
                       controller.handleCloseAllFriendsModal();
-                      controller.handleOpenChatWithFriend(friend.id);
+                      void controller.handleOpenChatWithFriend(friend.id);
                     }}
                     className="h-8 px-3 py-1 text-xs gap-1.5 shrink-0"
                   >

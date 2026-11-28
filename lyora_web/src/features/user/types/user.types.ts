@@ -80,7 +80,7 @@ export interface ProfileActivityFeed {
   authored: ProfileActivityItem[];
 }
 
-export type ProfileFriendsFilter = 'ALL' | 'MUTUAL' | 'REQUESTS' | 'SUGGESTIONS';
+export type ProfileFriendsFilter = 'ALL' | 'MUTUAL' | 'REQUESTS';
 
 export interface ProfileFriendSummary {
   id: string;
@@ -114,7 +114,6 @@ export interface PublicUserProfile {
   friendsCount: number;
   mutualFriendsCount: number;
   friendsPreview: ProfileFriendSummary[];
-  isPreviewFallback?: boolean;
 }
 
 export interface UpdateExtendedProfilePayload extends UpdateUserProfilePayload {
@@ -126,17 +125,10 @@ export interface UpdateExtendedProfilePayload extends UpdateUserProfilePayload {
   website?: string | null;
 }
 
-export interface ProfileCoverPreset {
-  id: string;
-  label: string;
-  url: string;
-}
-
 export interface ProfileFriendsDirectory {
   friends: ProfileFriendSummary[];
   incomingRequests: ProfileFriendSummary[];
   sentRequests: ProfileFriendSummary[];
-  suggestions: ProfileFriendSummary[];
 }
 
 export type { UserProfile, UserRole };

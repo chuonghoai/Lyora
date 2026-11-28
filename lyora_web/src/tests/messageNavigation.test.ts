@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ROUTES } from '@/routes/paths';
 import type { ClientLayoutController } from '@/ui/client/client-layout.controller';
 import type { HomeController } from '@/ui/client/home/home.controller';
-import type { MessagesPlaceholderController } from '@/ui/client/messages/messages-placeholder.controller';
+import type { MessagesController } from '@/ui/client/messages/messages.controller';
 
 describe('Message Navigation Entry Points & Route Integrity', () => {
   // TC-NAV-01: Centralized Route Constants Integrity
@@ -36,17 +36,23 @@ describe('Message Navigation Entry Points & Route Integrity', () => {
     expect(check).toBe(false);
   });
 
-  // TC-NAV-04: MessagesPlaceholderController contract exposes title and handleBackToHome
-  it('TC-NAV-04: MessagesPlaceholderController contract exposes required properties', () => {
+  // TC-NAV-04: MessagesController contract exposes error/retry & query-sync properties
+  it('TC-NAV-04: MessagesController contract exposes required properties', () => {
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
-    type CheckTitle = HasKey<MessagesPlaceholderController, 'title'>;
-    type CheckBack = HasKey<MessagesPlaceholderController, 'handleBackToHome'>;
+    type CheckSelected = HasKey<MessagesController, 'selectedConversationId'>;
+    type CheckRetry = HasKey<MessagesController, 'handleRetryConversations'>;
+    type CheckError = HasKey<MessagesController, 'isConversationsError'>;
+    type CheckActiveError = HasKey<MessagesController, 'isActiveConversationError'>;
 
-    const checkTitle: CheckTitle = true;
-    const checkBack: CheckBack = true;
+    const checkSelected: CheckSelected = true;
+    const checkRetry: CheckRetry = true;
+    const checkError: CheckError = true;
+    const checkActiveError: CheckActiveError = true;
 
-    expect(checkTitle).toBe(true);
-    expect(checkBack).toBe(true);
+    expect(checkSelected).toBe(true);
+    expect(checkRetry).toBe(true);
+    expect(checkError).toBe(true);
+    expect(checkActiveError).toBe(true);
   });
 
   // TC-NAV-05: View-Controller Type Safety Contract Verification
@@ -135,23 +141,22 @@ describe('Message Navigation Entry Points & Route Integrity', () => {
     expect(allowedRoles.includes(userRoleAdmin)).toBe(false);
   });
 
-  // TC-NAV-12: Independence of Friends "Tất cả" & Floating Chat Handlers
-  it('TC-NAV-12: Friends All button and Floating Chat handlers remain independent', () => {
+  // TC-NAV-12: Friends List "Tất cả" & Direct Conversation Navigation Handlers
+  it('TC-NAV-12: Friends All button opens friends modal without navigating to /messages', () => {
     const mockOpenAll = vi.fn();
-    const mockOpenChat = vi.fn();
+    const mockOpenDirectChat = vi.fn((convId: string) => `${ROUTES.CLIENT.MESSAGES}?conversationId=${convId}`);
     const mockNavMessages = vi.fn();
 
     mockOpenAll();
     expect(mockOpenAll).toHaveBeenCalledTimes(1);
     expect(mockNavMessages).not.toHaveBeenCalled();
 
-    mockOpenChat('friend-123');
-    expect(mockOpenChat).toHaveBeenCalledWith('friend-123');
-    expect(mockNavMessages).not.toHaveBeenCalled();
+    const targetUrl = mockOpenDirectChat('conv-123');
+    expect(targetUrl).toBe('/messages?conversationId=conv-123');
   });
 
-  // TC-NAV-13: Message Page Placeholder Back Button Logic
-  it('TC-NAV-13: Placeholder Back Button returns to ROUTES.CLIENT.ROOT', () => {
+  // TC-NAV-13: Return to Feed Navigation Logic
+  it('TC-NAV-13: Back button returns to ROUTES.CLIENT.ROOT', () => {
     const mockNavigate = vi.fn();
     const handleBackToHome = () => {
       mockNavigate(ROUTES.CLIENT.ROOT);
@@ -227,8 +232,8 @@ describe('Message Navigation Entry Points & Route Integrity', () => {
     expect(headerNavSpecs.notification.defaultColor).toBe(headerNavSpecs.message.defaultColor);
   });
 
-  // TC-NAV-17: Account Dropdown Bare Outline & Alignment Integrity
-  it('TC-NAV-17: All 8 Account Dropdown menu items maintain bare outline icons with transparent alignment slots', () => {
+  // TC-NAV-17: Account Dropdown Backed Menu Items Integrity
+  it('TC-NAV-17: Account Dropdown removes dead feedback item and preserves 7 backed menu items', () => {
     const accountMenuItems = [
       'profile',
       'saved',
@@ -236,15 +241,11 @@ describe('Message Navigation Entry Points & Route Integrity', () => {
       'settings',
       'accessibility',
       'help',
-      'feedback',
       'logout',
     ];
 
-    expect(accountMenuItems).toHaveLength(8);
-    const hasDecorativeContainers = false;
-    const usesTransparentAlignmentSlot = true;
-    expect(hasDecorativeContainers).toBe(false);
-    expect(usesTransparentAlignmentSlot).toBe(true);
+    expect(accountMenuItems).toHaveLength(7);
+    expect(accountMenuItems).not.toContain('feedback');
   });
 
   // TC-NAV-18: Friends List Chat Button Specifications

@@ -42,8 +42,8 @@ export class PostMediaItemDto {
 
   @IsOptional()
   @IsNumber({}, { message: 'Thời lượng phải là số' })
-  @Min(0)
-  @Max(3600)
+  @Min(0, { message: 'Thời lượng không được âm' })
+  @Max(3600, { message: 'Thời lượng tối đa 3.600 giây' })
   duration?: number;
 
   @IsOptional()
@@ -53,7 +53,7 @@ export class PostMediaItemDto {
 
   @IsOptional()
   @IsInt({ message: 'Dung lượng phải là số nguyên' })
-  @Min(0)
+  @Min(0, { message: 'Dung lượng không được âm' })
   size?: number;
 }
 

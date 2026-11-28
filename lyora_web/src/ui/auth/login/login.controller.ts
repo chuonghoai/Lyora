@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLoginMutation, loginSchema, mapZodFieldErrors } from '@/features/auth';
-import { useAuthStore, toast, isApiError, type ApiError } from '@/core';
+import { useAuthStore, toast, type ApiError } from '@/core';
 import { ROUTES } from '@/routes/paths';
 
 export function useLoginController() {
@@ -12,7 +12,7 @@ export function useLoginController() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false,
+    rememberMe: true,
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -21,7 +21,7 @@ export function useLoginController() {
   const loginMutation = useLoginMutation({
     onSuccess: (session) => {
       const { accessToken, refreshToken, user } = session;
-      setAuth({ accessToken, refreshToken }, user);
+      setAuth({ accessToken, refreshToken }, user, { rememberMe: formData.rememberMe });
       toast.success(`Đăng nhập thành công! Chào mừng ${user.fullName}.`);
 
       const locationState = location.state as { from?: { pathname?: string } } | null;
@@ -42,12 +42,6 @@ export function useLoginController() {
             : ROUTES.CLIENT.ROOT;
         navigate(clientTarget, { replace: true });
       }
-    },
-    onError: (err: unknown) => {
-      const message = isApiError(err)
-        ? err.message
-        : (err as Error)?.message || 'Đăng nhập không thành công. Vui lòng thử lại!';
-      toast.error(message);
     },
   });
 

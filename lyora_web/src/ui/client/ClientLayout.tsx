@@ -1,13 +1,18 @@
 import React from "react";
 import { Link, Navigate, Outlet } from "react-router-dom";
-import { AppImage, Button, CORE_CONSTANTS } from "@/core";
+import {
+  AppImage,
+  Button,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from "@/core";
 import webIconSymbol from "@/core/assets/web_icon_symbol.svg";
 import { ROUTES } from "@/routes/paths";
 import { useClientLayoutController } from "./client-layout.controller";
 import {
   AccessibilityIcon,
   BellIcon,
-  BookmarkIcon,
   ChatBubbleOutlineIcon,
   CheckIcon,
   ChevronLeftIcon,
@@ -21,7 +26,6 @@ import {
   RefreshIcon,
   SearchIcon,
   SettingsIcon,
-  SmileIcon,
   UserCircleIcon,
   UsersIcon,
 } from "./home/ClientIcons";
@@ -145,9 +149,18 @@ export const ClientLayout: React.FC = () => {
                               }
                               className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-background cursor-pointer"
                             >
-                              <span className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
-                                {person.fullName.charAt(0)}
-                              </span>
+                              {person.avatarUrl ? (
+                                <AppImage
+                                  src={person.avatarUrl}
+                                  alt={person.fullName}
+                                  rounded
+                                  className="h-8 w-8 shrink-0 border border-border"
+                                />
+                              ) : (
+                                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
+                                  {person.fullName.charAt(0)}
+                                </span>
+                              )}
                               <span className="truncate text-sm font-medium text-foreground">
                                 {person.fullName}
                               </span>
@@ -169,9 +182,18 @@ export const ClientLayout: React.FC = () => {
                               }
                               className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-background cursor-pointer"
                             >
-                              <span className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
-                                {person.fullName.charAt(0)}
-                              </span>
+                              {person.avatarUrl ? (
+                                <AppImage
+                                  src={person.avatarUrl}
+                                  alt={person.fullName}
+                                  rounded
+                                  className="h-8 w-8 shrink-0 border border-border"
+                                />
+                              ) : (
+                                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
+                                  {person.fullName.charAt(0)}
+                                </span>
+                              )}
                               <span className="min-w-0">
                                 <span className="block truncate text-sm font-medium text-foreground">
                                   {person.fullName}
@@ -186,12 +208,28 @@ export const ClientLayout: React.FC = () => {
                           ))}
                         </div>
                       )}
-                      {controller.friendSuggestions.length === 0 &&
+                      {controller.isSearchingSuggestions ? (
+                        <LoadingState
+                          compact
+                          label="Đang tìm kiếm gợi ý..."
+                          className="border-none py-3"
+                        />
+                      ) : controller.isSearchSuggestionsError ? (
+                        <ErrorState
+                          compact
+                          title="Không thể tải gợi ý"
+                          description="Bạn vẫn có thể nhấn Enter để mở trang kết quả tìm kiếm."
+                          onRetry={controller.handleRetrySearchSuggestions}
+                          className="border-none py-3"
+                        />
+                      ) : (
+                        controller.friendSuggestions.length === 0 &&
                         controller.otherSuggestions.length === 0 && (
                           <p className="px-2 py-4 text-sm text-muted">
-                            Nhấn Enter để tìm toàn bộ kết quả.
+                            Không có gợi ý nhanh phù hợp. Nhấn Enter để tìm bài viết và mọi người.
                           </p>
-                        )}
+                        )
+                      )}
                       <button
                         type="button"
                         onClick={controller.handleRunSearch}
@@ -223,24 +261,6 @@ export const ClientLayout: React.FC = () => {
             >
               <HomeFeedIcon className="w-4 h-4" />
               <span>Bảng tin</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => controller.handleSelectTab("saved")}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
-                controller.isHomeRoute && controller.activeTab === "saved"
-                  ? "bg-secondary text-primary"
-                  : "text-muted hover:bg-background hover:text-foreground"
-              }`}
-            >
-              <BookmarkIcon
-                className="w-4 h-4"
-                filled={
-                  controller.isHomeRoute && controller.activeTab === "saved"
-                }
-              />
-              <span>Đã lưu</span>
             </button>
 
             <button
@@ -301,7 +321,7 @@ export const ClientLayout: React.FC = () => {
                 <div
                   role="dialog"
                   aria-label="Thông báo cộng đồng"
-                  className="fixed inset-x-3 top-[68px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-[420px] md:w-[460px] min-h-[420px] max-h-[78vh] flex flex-col rounded-2xl border border-border bg-card shadow-md overflow-hidden z-40"
+                  className="fixed inset-x-3 top-[68px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-[420px] md:w-[460px] min-h-[320px] max-h-[78vh] flex flex-col rounded-2xl border border-border bg-card shadow-md overflow-hidden z-40"
                 >
                   <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-3.5 border-b border-border bg-card">
                     <div className="flex items-center gap-2">
@@ -318,8 +338,11 @@ export const ClientLayout: React.FC = () => {
                       {controller.unreadNotificationsCount > 0 && (
                         <button
                           type="button"
-                          onClick={controller.handleMarkAllNotificationsRead}
-                          className="rounded-lg px-2.5 py-1 text-xs font-medium text-primary hover:bg-secondary/50 transition-colors cursor-pointer"
+                          disabled={controller.isMarkingAllNotificationsRead}
+                          onClick={() =>
+                            void controller.handleMarkAllNotificationsRead()
+                          }
+                          className="rounded-lg px-2.5 py-1 text-xs font-medium text-primary hover:bg-secondary/50 disabled:opacity-50 transition-colors cursor-pointer"
                         >
                           Đánh dấu đã đọc
                         </button>
@@ -336,98 +359,132 @@ export const ClientLayout: React.FC = () => {
                   </div>
 
                   <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
-                    {controller.notifications.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors ${
-                          item.isRead
-                            ? "border-border bg-card hover:bg-background"
-                            : "border-secondary-strong/70 bg-secondary/35 hover:bg-secondary/55"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            controller.handleMarkNotificationRead(item.id);
+                    {controller.isLoadingNotifications ? (
+                      <LoadingState
+                        variant="skeleton-list"
+                        count={3}
+                        label="Đang tải thông báo..."
+                      />
+                    ) : controller.isNotificationsError ? (
+                      <ErrorState
+                        compact
+                        title="Không thể tải thông báo"
+                        description="Kết nối đến máy chủ bị gián đoạn. Vui lòng thử lại."
+                        onRetry={controller.handleRetryNotifications}
+                      />
+                    ) : controller.notifications.length === 0 ? (
+                      <EmptyState
+                        compact
+                        icon={<BellIcon className="w-5 h-5" />}
+                        title="Chưa có thông báo nào"
+                        description="Khi có lời mời kết bạn hoặc cập nhật mới từ cộng đồng, thông báo sẽ hiển thị tại đây."
+                        action={{
+                          label: "Tìm bạn bè",
+                          onClick: () => {
                             controller.handleCloseNotifications();
-                            if (item.targetRoute === "profile") {
-                              controller.handleOpenProfile();
-                            } else if (item.targetRoute === "friends") {
-                              controller.handleNavigateFriends();
-                            } else if (item.targetTab) {
-                              controller.handleSelectTab(item.targetTab);
-                            }
-                          }}
-                          className="flex min-w-0 flex-1 items-start gap-3 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg"
+                            controller.handleNavigateFriends();
+                          },
+                          variant: "outline",
+                        }}
+                      />
+                    ) : (
+                      controller.notifications.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors ${
+                            item.isRead
+                              ? "border-border bg-card hover:bg-background"
+                              : "border-secondary-strong/70 bg-secondary/35 hover:bg-secondary/55"
+                          }`}
                         >
-                          {item.actorName ? (
-                            item.actorAvatarUrl ? (
-                              <AppImage
-                                src={item.actorAvatarUrl}
-                                alt={item.actorName}
-                                rounded
-                                className="mt-0.5 h-9 w-9 shrink-0 border border-border"
-                              />
-                            ) : (
-                              <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-card text-xs font-bold text-primary-active">
-                                {item.actorName.charAt(0).toUpperCase()}
-                              </span>
-                            )
-                          ) : (
-                            <span
-                              className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
-                                item.isRead
-                                  ? "border-border bg-background text-muted"
-                                  : "border-secondary-strong bg-card text-primary"
-                              }`}
-                            >
-                              <BellIcon className="w-4 h-4" />
-                            </span>
-                          )}
-                          <span className="min-w-0 flex-1 space-y-0.5">
-                            <span className="block text-xs sm:text-sm font-semibold text-foreground leading-snug">
-                              {item.title}
-                            </span>
-                            <span className="block text-xs text-muted leading-relaxed line-clamp-2">
-                              {item.description}
-                            </span>
-                            <span className="block pt-0.5 text-[11px] font-medium text-primary">
-                              {item.timeLabel}
-                            </span>
-                          </span>
-                        </button>
-                        {item.friendRequestUserId && item.actorName && (
-                          <Button
+                          <button
                             type="button"
-                            variant="primary"
-                            disabled={controller.isAcceptingFriendRequest}
-                            isLoading={controller.isAcceptingFriendRequest}
-                            onClick={() =>
-                              void controller.handleAcceptFriendRequestFromNotification(
-                                item.friendRequestUserId!,
-                                item.id,
-                                item.actorName!,
-                              )
-                            }
-                            className="mt-0.5 h-8 shrink-0 px-2.5 py-1 text-xs"
+                            onClick={() => {
+                              controller.handleMarkNotificationRead(item.id);
+                              controller.handleCloseNotifications();
+                              if (item.targetRoute === "profile") {
+                                controller.handleOpenProfile();
+                              } else if (item.targetRoute === "friends") {
+                                controller.handleNavigateFriends();
+                              } else if (item.targetTab) {
+                                controller.handleSelectTab(item.targetTab);
+                              }
+                            }}
+                            className="flex min-w-0 flex-1 items-start gap-3 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg"
                           >
-                            Chấp nhận
-                          </Button>
-                        )}
-                        {!item.isRead && (
-                          <span
-                            aria-label="Chưa đọc"
-                            className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-accent"
-                          />
-                        )}
-                      </div>
-                    ))}
+                            {item.actorName ? (
+                              item.actorAvatarUrl ? (
+                                <AppImage
+                                  src={item.actorAvatarUrl}
+                                  alt={item.actorName}
+                                  rounded
+                                  className="mt-0.5 h-9 w-9 shrink-0 border border-border"
+                                />
+                              ) : (
+                                <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-card text-xs font-bold text-primary-active">
+                                  {item.actorName.charAt(0).toUpperCase()}
+                                </span>
+                              )
+                            ) : (
+                              <span
+                                className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                                  item.isRead
+                                    ? "border-border bg-background text-muted"
+                                    : "border-secondary-strong bg-card text-primary"
+                                }`}
+                              >
+                                <BellIcon className="w-4 h-4" />
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1 space-y-0.5">
+                              <span className="block text-xs sm:text-sm font-semibold text-foreground leading-snug">
+                                {item.title}
+                              </span>
+                              <span className="block text-xs text-muted leading-relaxed line-clamp-2">
+                                {item.description}
+                              </span>
+                              {item.timeLabel && (
+                                <span className="block pt-0.5 text-[11px] font-medium text-primary">
+                                  {item.timeLabel}
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                          {item.friendRequestUserId && item.actorName && (
+                            <Button
+                              type="button"
+                              variant="primary"
+                              disabled={Boolean(controller.acceptingRequesterId)}
+                              isLoading={
+                                controller.acceptingRequesterId ===
+                                item.friendRequestUserId
+                              }
+                              onClick={() =>
+                                void controller.handleAcceptFriendRequestFromNotification(
+                                  item.friendRequestUserId!,
+                                  item.id,
+                                  item.actorName!,
+                                )
+                              }
+                              className="mt-0.5 h-8 shrink-0 px-2.5 py-1 text-xs"
+                            >
+                              Chấp nhận
+                            </Button>
+                          )}
+                          {!item.isRead && (
+                            <span
+                              aria-label="Chưa đọc"
+                              className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-accent"
+                            />
+                          )}
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   <div className="shrink-0 border-t border-border bg-background/40 px-4 py-2.5 text-center">
                     <p className="text-xs text-muted">
-                      Cập nhật hoạt động tương tác và cộng đồng Lyora theo thời
-                      gian thực
+                      Cập nhật hoạt động cộng đồng Lyora
                     </p>
                   </div>
                 </div>
@@ -493,7 +550,6 @@ export const ClientLayout: React.FC = () => {
                 >
                   {controller.accountMenuPanel === "main" && (
                     <>
-                      {/* Card Trang cá nhân nhanh */}
                       <div className="p-2.5 border-b border-border bg-background/40">
                         <button
                           type="button"
@@ -530,7 +586,6 @@ export const ClientLayout: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Danh sách mục chính */}
                       <div className="p-1.5 space-y-0.5">
                         <button
                           type="button"
@@ -545,27 +600,6 @@ export const ClientLayout: React.FC = () => {
                               />
                             </span>
                             <span>Trang cá nhân</span>
-                          </span>
-                          <ChevronRightIcon className="w-4 h-4 text-muted" />
-                        </button>
-
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            controller.handleToggleAccountMenu();
-                            controller.handleSelectTab("saved");
-                          }}
-                          className="group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer min-h-[44px]"
-                        >
-                          <span className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
-                              <BookmarkIcon
-                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
-                                filled={false}
-                              />
-                            </span>
-                            <span>Bài viết đã lưu</span>
                           </span>
                           <ChevronRightIcon className="w-4 h-4 text-muted" />
                         </button>
@@ -609,7 +643,7 @@ export const ClientLayout: React.FC = () => {
                                 className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
                               />
                             </span>
-                            <span>Cài đặt & quyền riêng tư</span>
+                            <span>Cài đặt &amp; quyền riêng tư</span>
                           </span>
                           <ChevronRightIcon className="w-4 h-4 text-muted" />
                         </button>
@@ -630,7 +664,7 @@ export const ClientLayout: React.FC = () => {
                                 className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
                               />
                             </span>
-                            <span>Màn hình & trợ năng</span>
+                            <span>Màn hình &amp; trợ năng</span>
                           </span>
                           <ChevronRightIcon className="w-4 h-4 text-muted" />
                         </button>
@@ -649,25 +683,9 @@ export const ClientLayout: React.FC = () => {
                                 className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
                               />
                             </span>
-                            <span>Trợ giúp & hỗ trợ</span>
+                            <span>Trợ giúp &amp; hỗ trợ</span>
                           </span>
                           <ChevronRightIcon className="w-4 h-4 text-muted" />
-                        </button>
-
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={controller.handleSendFeedback}
-                          className="group w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer min-h-[44px]"
-                        >
-                          <span className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 items-center justify-center bg-transparent border-0 shrink-0">
-                              <SmileIcon
-                                className={`w-5 h-5 ${ICON_SCALE_ANIMATION} text-foreground group-hover:text-primary group-focus-visible:text-primary`}
-                              />
-                            </span>
-                            <span>Đóng góp ý kiến</span>
-                          </span>
                         </button>
 
                         <div className="my-1 border-t border-border" />
@@ -711,7 +729,7 @@ export const ClientLayout: React.FC = () => {
                           <ChevronLeftIcon className="w-4 h-4" />
                         </button>
                         <h3 className="text-sm font-bold text-foreground">
-                          Màn hình & trợ năng
+                          Màn hình &amp; trợ năng
                         </h3>
                       </div>
 
@@ -780,10 +798,9 @@ export const ClientLayout: React.FC = () => {
                         </button>
                       </div>
 
-                      <div className="rounded-xl border border-border bg-background/60 px-3 py-2 text-[11px] text-muted">
+                      <div className="rounded-xl border border-border bg-background/60 px-3 py-2 text-xs text-muted">
                         Giao diện thống nhất:{" "}
-                        <strong className="text-foreground">Light Mode</strong>{" "}
-                        (Clean & Trustworthy)
+                        <strong className="text-foreground">Chế độ sáng</strong>
                       </div>
                     </div>
                   )}
@@ -803,7 +820,7 @@ export const ClientLayout: React.FC = () => {
                           <ChevronLeftIcon className="w-4 h-4" />
                         </button>
                         <h3 className="text-sm font-bold text-foreground">
-                          Cài đặt & quyền riêng tư
+                          Cài đặt &amp; quyền riêng tư
                         </h3>
                       </div>
 
@@ -817,9 +834,8 @@ export const ClientLayout: React.FC = () => {
                             Đang duy trì
                           </span>
                         </div>
-                        <p className="text-[11px] text-muted leading-relaxed">
-                          Tự động làm mới token an toàn mỗi lần bạn quay lại
-                          trang chủ Lyora.
+                        <p className="text-xs text-muted leading-relaxed">
+                          Tự động làm mới phiên an toàn mỗi lần bạn quay lại trang chủ Lyora.
                         </p>
                         <button
                           type="button"
@@ -853,7 +869,7 @@ export const ClientLayout: React.FC = () => {
                           <ChevronLeftIcon className="w-4 h-4" />
                         </button>
                         <h3 className="text-sm font-bold text-foreground">
-                          Trợ giúp & hỗ trợ
+                          Trợ giúp &amp; hỗ trợ
                         </h3>
                       </div>
 
@@ -862,11 +878,7 @@ export const ClientLayout: React.FC = () => {
                           Trung tâm Hỗ trợ Cộng đồng Lyora
                         </p>
                         <p className="text-muted leading-relaxed">
-                          Nếu gặp sự cố tài khoản hoặc cần báo cáo nội dung vi
-                          phạm, vui lòng liên hệ tổng đài hỗ trợ:
-                        </p>
-                        <p className="pt-1 font-mono font-semibold text-primary">
-                          {CORE_CONSTANTS.SUPPORT_PHONE}
+                          Bạn có thể quản lý quyền riêng tư bài viết ngay trong trình soạn thảo, cập nhật thông tin tại Trang cá nhân hoặc liên hệ quản trị viên khi cần trợ giúp.
                         </p>
                       </div>
                     </div>
@@ -879,11 +891,17 @@ export const ClientLayout: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full px-3 sm:px-5 lg:px-6 py-5 pb-24 md:pb-10">
+      <main
+        className={
+          controller.isMessagesRoute
+            ? "flex-1 w-full pb-16 md:pb-0"
+            : "flex-1 w-full px-3 sm:px-5 lg:px-6 py-5 pb-24 md:pb-10"
+        }
+      >
         <Outlet />
       </main>
 
-      {/* Mobile Bottom Tab Bar (chuẩn DESIGN.md §6.7) */}
+      {/* Mobile Bottom Tab Bar */}
       <nav
         aria-label="Thanh điều hướng nhanh"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card px-2 py-1.5 md:hidden"
@@ -913,24 +931,6 @@ export const ClientLayout: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => controller.handleSelectTab("saved")}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
-              controller.isHomeRoute && controller.activeTab === "saved"
-                ? "text-primary bg-secondary/70 font-semibold"
-                : "text-muted hover:text-foreground"
-            }`}
-          >
-            <BookmarkIcon
-              className="w-5 h-5"
-              filled={
-                controller.isHomeRoute && controller.activeTab === "saved"
-              }
-            />
-            <span>Đã lưu</span>
-          </button>
-
-          <button
-            type="button"
             onClick={controller.handleNavigateFriends}
             className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
               controller.isFriendsRoute
@@ -940,6 +940,19 @@ export const ClientLayout: React.FC = () => {
           >
             <UsersIcon className="w-5 h-5" />
             <span>Bạn bè</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={controller.handleNavigateMessages}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-medium transition-colors cursor-pointer ${
+              controller.isMessagesRoute
+                ? "text-primary bg-secondary/70 font-semibold"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            <ChatBubbleOutlineIcon className="w-5 h-5" />
+            <span>Tin nhắn</span>
           </button>
 
           <button

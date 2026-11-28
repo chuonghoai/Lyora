@@ -276,6 +276,11 @@ export class AuthService {
 
     await this.redisService.revokeSession(payload.sub, payload.sessionId);
     const user = await this.usersService.findById(payload.sub);
+    if (!user.isActive) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên',
+      );
+    }
 
     return this.issueTokens(user);
   }

@@ -1,20 +1,12 @@
 import React from 'react';
-import { toast } from '@/core';
+import { AppImage } from '@/core';
 import type { ConversationDetail } from '@/features/conversations';
 import type { MessagesController } from '../messages.controller';
 import {
-  BellOffIcon,
-  CalendarIcon,
-  ClipboardListIcon,
   CloseIcon,
   CrownIcon,
-  FileIcon,
-  ImageIcon,
-  LinkIcon,
   LogOutIcon,
   PencilIcon,
-  PinIcon,
-  SettingsIcon,
   TrashIcon,
   UserMinusIcon,
   UserPlusIcon,
@@ -39,30 +31,6 @@ export const GroupConversationInfoPanel: React.FC<
     (m) => m.userId === currentUserId,
   );
   const isCallerOwner = callerMembership?.role === 'OWNER';
-
-  const handlePreviewAction = (actionName: string) => {
-    toast.info(`${actionName}: Tính năng đang phát triển`);
-  };
-
-  const handleRenameClick = () => {
-    if (isCallerOwner && controller) {
-      controller.handleOpenRenameGroupModal();
-    } else if (!isCallerOwner) {
-      toast.info('Chỉ Trưởng nhóm mới có quyền đổi tên nhóm');
-    } else {
-      handlePreviewAction('Đổi tên nhóm');
-    }
-  };
-
-  const handleAddMemberClick = () => {
-    if (isCallerOwner && controller) {
-      controller.handleOpenAddGroupMembersModal();
-    } else if (!isCallerOwner) {
-      toast.info('Chỉ Trưởng nhóm mới có quyền thêm thành viên vào nhóm');
-    } else {
-      handlePreviewAction('Thêm bạn vào nhóm');
-    }
-  };
 
   return (
     <aside
@@ -90,10 +58,11 @@ export const GroupConversationInfoPanel: React.FC<
         <div className="flex flex-col items-center text-center p-5 border-b border-border/70">
           <div className="relative">
             {conversation.avatarUrl ? (
-              <img
+              <AppImage
                 src={conversation.avatarUrl}
                 alt={conversation.title}
-                className="h-20 w-20 rounded-full object-cover border border-border shadow-xs"
+                rounded
+                className="h-20 w-20 border border-border shadow-xs"
               />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-secondary font-bold text-2xl text-primary shadow-xs">
@@ -113,23 +82,17 @@ export const GroupConversationInfoPanel: React.FC<
             >
               {conversation.title}
             </h4>
-            <button
-              type="button"
-              onClick={handleRenameClick}
-              title={
-                isCallerOwner
-                  ? 'Đổi tên nhóm'
-                  : 'Chỉ Trưởng nhóm mới có quyền đổi tên nhóm'
-              }
-              aria-label="Đổi tên nhóm"
-              className={`p-1 rounded-md min-h-[32px] min-w-[32px] inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none transition-colors cursor-pointer ${
-                isCallerOwner
-                  ? 'text-muted hover:text-primary hover:bg-primary/5'
-                  : 'text-muted/40 cursor-not-allowed'
-              }`}
-            >
-              <PencilIcon className="h-3.5 w-3.5" />
-            </button>
+            {isCallerOwner && controller && (
+              <button
+                type="button"
+                onClick={controller.handleOpenRenameGroupModal}
+                title="Đổi tên nhóm"
+                aria-label="Đổi tên nhóm"
+                className="p-1 rounded-md min-h-[32px] min-w-[32px] inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 motion-reduce:transition-none transition-colors cursor-pointer text-muted hover:text-primary hover:bg-primary/5"
+              >
+                <PencilIcon className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
           <p className="mt-0.5 text-xs text-muted">
@@ -137,41 +100,21 @@ export const GroupConversationInfoPanel: React.FC<
           </p>
         </div>
 
-        {/* C. Quick actions row (4 actions) */}
-        <div className="grid grid-cols-4 gap-1 px-2 py-4 border-b border-border/70 bg-card">
-          <QuickActionItem
-            icon={<BellOffIcon className="h-4.5 w-4.5" />}
-            label="Tắt thông báo"
-            title="Tắt thông báo nhóm (Tính năng đang phát triển)"
-            onClick={() => handlePreviewAction('Tắt thông báo')}
-          />
-          <QuickActionItem
-            icon={<PinIcon className="h-4.5 w-4.5" />}
-            label="Ghim hội thoại"
-            title="Ghim nhóm lên đầu (Tính năng đang phát triển)"
-            onClick={() => handlePreviewAction('Ghim hội thoại')}
-          />
-          <QuickActionItem
-            icon={<UserPlusIcon className="h-4.5 w-4.5" />}
-            label="Thêm bạn"
-            title={
-              isCallerOwner
-                ? 'Thêm thành viên vào nhóm'
-                : 'Chỉ Trưởng nhóm mới có quyền thêm thành viên'
-            }
-            onClick={handleAddMemberClick}
-          />
-          <QuickActionItem
-            icon={<SettingsIcon className="h-4.5 w-4.5" />}
-            label="Quản lý"
-            title="Quản lý cài đặt nhóm (Tính năng đang phát triển)"
-            onClick={() => handlePreviewAction('Quản lý cài đặt nhóm')}
-          />
-        </div>
+        {/* C. Quick actions row (Owner backed action only) */}
+        {isCallerOwner && controller && (
+          <div className="flex justify-center px-4 py-4 border-b border-border/70 bg-card">
+            <QuickActionItem
+              icon={<UserPlusIcon className="h-4.5 w-4.5" />}
+              label="Thêm bạn"
+              title="Thêm thành viên vào nhóm"
+              onClick={controller.handleOpenAddGroupMembersModal}
+            />
+          </div>
+        )}
 
-        {/* D. Group sections (Collapsible blocks) */}
+        {/* D. Group sections */}
         <div className="divide-y divide-border/60">
-          {/* 1. Thành viên nhóm (Mặc định mở) */}
+          {/* Thành viên nhóm */}
           <InfoPanelSection
             icon={<UsersIcon className="h-4 w-4" />}
             title="Thành viên nhóm"
@@ -199,10 +142,11 @@ export const GroupConversationInfoPanel: React.FC<
                     >
                       <div className="relative shrink-0">
                         {member.user?.avatarUrl ? (
-                          <img
+                          <AppImage
                             src={member.user.avatarUrl}
                             alt={member.user.fullName}
-                            className="h-8 w-8 rounded-full object-cover border border-border"
+                            rounded
+                            className="h-8 w-8 border border-border"
                           />
                         ) : (
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/80 font-semibold text-xs text-primary">
@@ -223,9 +167,6 @@ export const GroupConversationInfoPanel: React.FC<
                             </span>
                           )}
                         </p>
-                        <span className="text-[10px] text-muted">
-                          {isOwner ? 'Trưởng nhóm' : 'Thành viên'}
-                        </span>
                       </div>
                     </button>
 
@@ -247,11 +188,13 @@ export const GroupConversationInfoPanel: React.FC<
                           <button
                             type="button"
                             onClick={() =>
-                              controller?.handleOpenTransferOwnershipModal()
+                              controller?.handleOpenTransferOwnershipModal(
+                                member.userId,
+                              )
                             }
                             title="Chuyển quyền Trưởng nhóm"
                             aria-label={`Chuyển quyền Trưởng nhóm cho ${member.user?.fullName}`}
-                            className="p-1 rounded text-muted hover:text-amber-500 hover:bg-amber-500/10 transition-colors cursor-pointer min-h-[28px] min-w-[28px] inline-flex items-center justify-center"
+                            className="p-1 rounded text-muted hover:text-warning hover:bg-warning/10 transition-colors cursor-pointer min-h-[28px] min-w-[28px] inline-flex items-center justify-center"
                           >
                             <CrownIcon className="h-3.5 w-3.5" />
                           </button>
@@ -275,75 +218,6 @@ export const GroupConversationInfoPanel: React.FC<
                   </div>
                 );
               })}
-            </div>
-          </InfoPanelSection>
-
-          {/* 2. Bảng tin nhóm */}
-          <InfoPanelSection
-            icon={<ClipboardListIcon className="h-4 w-4" />}
-            title="Bảng tin nhóm"
-          >
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40">
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-3.5 w-3.5 text-muted" />
-                  <span className="text-xs text-foreground">
-                    Danh sách nhắc hẹn
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted">0 nhắc hẹn</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40">
-                <div className="flex items-center gap-2">
-                  <PinIcon className="h-3.5 w-3.5 text-muted" />
-                  <span className="text-xs text-foreground">
-                    Ghi chú & Ghim
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted">Chưa có ghim</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40">
-                <div className="flex items-center gap-2">
-                  <ClipboardListIcon className="h-3.5 w-3.5 text-muted" />
-                  <span className="text-xs text-foreground">Bình chọn</span>
-                </div>
-                <span className="text-[10px] text-muted">0 bình chọn</span>
-              </div>
-            </div>
-          </InfoPanelSection>
-
-          {/* 3. Ảnh/Video */}
-          <InfoPanelSection
-            icon={<ImageIcon className="h-4 w-4" />}
-            title="Ảnh / Video"
-            badge="0"
-          >
-            <div className="py-2.5 text-center text-xs text-muted bg-background/50 rounded-lg p-3 border border-border/40">
-              Chưa có hình ảnh hoặc video nào được chia sẻ trong nhóm.
-            </div>
-          </InfoPanelSection>
-
-          {/* 4. Tệp tin */}
-          <InfoPanelSection
-            icon={<FileIcon className="h-4 w-4" />}
-            title="Tệp tin"
-            badge="0"
-          >
-            <div className="py-2.5 text-center text-xs text-muted bg-background/50 rounded-lg p-3 border border-border/40">
-              Chưa có tệp tin nào được chia sẻ trong nhóm.
-            </div>
-          </InfoPanelSection>
-
-          {/* 5. Liên kết */}
-          <InfoPanelSection
-            icon={<LinkIcon className="h-4 w-4" />}
-            title="Liên kết"
-            badge="0"
-          >
-            <div className="py-2.5 text-center text-xs text-muted bg-background/50 rounded-lg p-3 border border-border/40">
-              Chưa có đường dẫn liên kết web nào được chia sẻ trong nhóm.
             </div>
           </InfoPanelSection>
         </div>

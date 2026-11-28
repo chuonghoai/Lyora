@@ -88,6 +88,7 @@ export class FriendsService {
       .createQueryBuilder('user')
       .where('user.id != :currentUserId', { currentUserId })
       .andWhere('user.isActive = true')
+      .andWhere('user.role = :clientRole', { clientRole: UserRole.CLIENT })
       .andWhere('user.fullName ILIKE :keyword', { keyword: `%${keyword}%` })
       .andWhere(
         `NOT EXISTS (

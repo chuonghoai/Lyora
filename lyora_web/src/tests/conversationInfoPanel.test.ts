@@ -111,38 +111,23 @@ describe('Conversation Information Panel Redesign (Direct & Group Variants)', ()
     expect(resolveVariant(mockGroupConversation)).toBe('GROUP_VARIANT');
   });
 
-  // TC-INFO-03: Direct Variant Quick Actions
-  it('TC-INFO-03: Direct Variant cung cấp chính xác 3 quick actions: Tắt thông báo, Ghim hội thoại, Tạo nhóm', () => {
-    const directActions = [
-      { id: 'mute', label: 'Tắt thông báo' },
-      { id: 'pin', label: 'Ghim hội thoại' },
-      { id: 'create_group', label: 'Tạo nhóm' },
-    ];
+  // TC-INFO-03: Direct Variant backed quick action only
+  it('TC-INFO-03: Direct Variant chỉ cung cấp thao tác Tạo nhóm đã có API hỗ trợ, không còn nút giả lập', () => {
+    const directActions = [{ id: 'create_group', label: 'Tạo nhóm' }];
 
-    expect(directActions).toHaveLength(3);
-    expect(directActions.map((a) => a.label)).toEqual([
-      'Tắt thông báo',
-      'Ghim hội thoại',
-      'Tạo nhóm',
-    ]);
+    expect(directActions).toHaveLength(1);
+    expect(directActions.map((a) => a.label)).toEqual(['Tạo nhóm']);
+    expect(directActions.some((a) => a.label === 'Tắt thông báo')).toBe(false);
+    expect(directActions.some((a) => a.label === 'Ghim hội thoại')).toBe(false);
   });
 
-  // TC-INFO-04: Group Variant Quick Actions
-  it('TC-INFO-04: Group Variant cung cấp chính xác 4 quick actions: Tắt thông báo, Ghim hội thoại, Thêm bạn, Quản lý', () => {
-    const groupActions = [
-      { id: 'mute', label: 'Tắt thông báo' },
-      { id: 'pin', label: 'Ghim hội thoại' },
-      { id: 'add_member', label: 'Thêm bạn' },
-      { id: 'manage_group', label: 'Quản lý' },
-    ];
+  // TC-INFO-04: Group Variant backed owner quick action only
+  it('TC-INFO-04: Group Variant chỉ cung cấp thao tác Thêm bạn cho Trưởng nhóm, loại bỏ nút giả lập', () => {
+    const ownerGroupActions = [{ id: 'add_member', label: 'Thêm bạn' }];
 
-    expect(groupActions).toHaveLength(4);
-    expect(groupActions.map((a) => a.label)).toEqual([
-      'Tắt thông báo',
-      'Ghim hội thoại',
-      'Thêm bạn',
-      'Quản lý',
-    ]);
+    expect(ownerGroupActions).toHaveLength(1);
+    expect(ownerGroupActions.map((a) => a.label)).toEqual(['Thêm bạn']);
+    expect(ownerGroupActions.some((a) => a.label === 'Quản lý')).toBe(false);
   });
 
   // TC-INFO-05: Group Members & Roles (OWNER / MEMBER)
@@ -224,23 +209,24 @@ describe('Conversation Information Panel Redesign (Direct & Group Variants)', ()
   });
 
   // TC-INFO-10: Zero Network / Side Effects
-  it('TC-INFO-10: Redesign Info Panel TUYỆT ĐỐI không gọi API backend và không mutate DB', () => {
+  it('TC-INFO-10: Info Panel không tự động gọi API mạng hoặc ghi storage ngoài luồng mutation', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const localSpy = vi.spyOn(Storage.prototype, 'setItem');
+    const localSpy =
+      typeof Storage !== 'undefined'
+        ? vi.spyOn(Storage.prototype, 'setItem')
+        : null;
 
-    // Render logic preview
-    const previewData = {
-      remindersCount: 0,
-      mediaCount: 0,
-      filesCount: 0,
-      linksCount: 0,
-    };
-    expect(previewData.remindersCount).toBe(0);
+    const directPartnerId = mockDirectConversation.members?.find(
+      (m) => m.userId !== currentUserId,
+    )?.userId;
+    expect(directPartnerId).toBe(partnerUserId);
 
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(localSpy).not.toHaveBeenCalled();
+    if (localSpy) {
+      expect(localSpy).not.toHaveBeenCalled();
+      localSpy.mockRestore();
+    }
 
     fetchSpy.mockRestore();
-    localSpy.mockRestore();
   });
 });

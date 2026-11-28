@@ -49,7 +49,12 @@ async function bootstrap(): Promise<void> {
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'x-idempotency-key',
+    ],
   });
 
   // Global Validation Pipe

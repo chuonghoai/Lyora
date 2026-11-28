@@ -1,4 +1,5 @@
 import React from 'react';
+import { AppImage } from '@/core';
 import type { ConversationSummary } from '@/features/conversations';
 import { UserIcon, UsersIcon } from './ConversationIcons';
 
@@ -45,10 +46,11 @@ export const ConversationListItem: React.FC<ConversationListItemProps> = ({
       {/* Avatar */}
       <div className="relative shrink-0">
         {conversation.avatarUrl ? (
-          <img
+          <AppImage
             src={conversation.avatarUrl}
             alt={conversation.title}
-            className="h-12 w-12 rounded-full object-cover border border-border"
+            rounded
+            className="h-12 w-12 border border-border"
           />
         ) : (
           <div
