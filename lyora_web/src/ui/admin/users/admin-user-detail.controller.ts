@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { isApiError, toast, useAuthStore } from '@/core';
 import {
+  hidePostModerationSchema,
+  removeModerationReasonSchema,
+  useHideAdminPostMutation,
   useInfinitePostsQuery,
   usePostReactionsQuery,
   usePostSharesQuery,
+  useRemoveAdminCommentMutation,
+  useRemoveAdminPostMutation,
   type Post,
+  type PostComment,
   type PostVisibility,
   type ReactionType,
 } from '@/features/posts';
@@ -16,6 +22,7 @@ import {
 } from '@/features/user';
 import { getAdminUserDetailPath, ROUTES } from '@/routes/paths';
 import type { AdminPostReactionsModalState } from './AdminPostReactionsModal';
+import type { AdminUserModerationTarget } from './AdminUserPostModerationModal';
 
 export type AdminUserPostVisibilityFilter = 'ALL' | PostVisibility;
 
@@ -40,6 +47,10 @@ export function useAdminUserDetailController() {
     useState<AdminPostReactionsModalState | null>(null);
   const [sharesModal, setSharesModal] =
     useState<AdminPostSharesModalState | null>(null);
+  const [moderationTarget, setModerationTarget] =
+    useState<AdminUserModerationTarget | null>(null);
+  const [moderationReason, setModerationReason] = useState('');
+  const [moderationError, setModerationError] = useState<string | null>(null);
 
   const userQuery = useAdminUserDetailQuery(userId);
   const postsQuery = useInfinitePostsQuery(
@@ -64,6 +75,14 @@ export function useAdminUserDetailController() {
 
   const lockMutation = useLockUserMutation();
   const unlockMutation = useUnlockUserMutation();
+  const hidePostMutation = useHideAdminPostMutation();
+  const removePostMutation = useRemoveAdminPostMutation();
+  const removeCommentMutation = useRemoveAdminCommentMutation();
+
+  const isModeratingPost =
+    hidePostMutation.isPending ||
+    removePostMutation.isPending ||
+    removeCommentMutation.isPending;
 
   const user = userQuery.data ?? null;
   const posts = useMemo(
@@ -180,9 +199,123 @@ export function useAdminUserDetailController() {
     toast.info('// TODO: Đang phát triển');
   };
 
-  const handleAdminDeletePost = () => {
-    // TODO: Đang phát triển
-    toast.info('// TODO: Đang phát triển');
+  const handleOpenHidePostModal = (post: Post) => {
+    setModerationTarget({ mode: 'HIDE_POST', post });
+    setModerationReason('');
+    setModerationError(null);
+  };
+
+  const handleOpenRemovePostModal = (post: Post) => {
+    setModerationTarget({ mode: 'REMOVE_POST', post });
+    setModerationReason('');
+    setModerationError(null);
+  };
+
+  const handleOpenRemoveCommentModal = (postId: string, comment: PostComment) => {
+    setModerationTarget({ mode: 'REMOVE_COMMENT', postId, comment });
+    setModerationReason('');
+    setModerationError(null);
+  };
+
+  const handleCloseModerationModal = () => {
+    if (isModeratingPost) return;
+    setModerationTarget(null);
+    setModerationReason('');
+    setModerationError(null);
+  };
+
+  const handleModerationReasonChange = (value: string) => {
+    setModerationReason(value);
+    if (moderationError) setModerationError(null);
+  };
+
+  const handleSelectModerationReasonPreset = (preset: string) => {
+    setModerationReason(preset);
+    if (moderationError) setModerationError(null);
+  };
+
+  const handleConfirmModeration = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!moderationTarget || isModeratingPost) return;
+
+    if (moderationTarget.mode === 'HIDE_POST') {
+      const parsed = hidePostModerationSchema.safeParse({
+        reason: moderationReason,
+      });
+      if (!parsed.success) {
+        setModerationError(
+          parsed.error.issues[0]?.message ?? 'Lý do ẩn bài viết chưa hợp lệ',
+        );
+        return;
+      }
+
+      const targetPostId = moderationTarget.post.id;
+      try {
+        await hidePostMutation.mutateAsync({
+          postId: targetPostId,
+          reason: parsed.data.reason,
+        });
+        setModerationTarget(null);
+        setModerationReason('');
+        setModerationError(null);
+        if (reactionsModal?.postId === targetPostId) setReactionsModal(null);
+        if (sharesModal?.postId === targetPostId) setSharesModal(null);
+        toast.success('Đã ẩn bài viết vi phạm và gửi thông báo cho tác giả.');
+      } catch (err) {
+        toast.error(
+          isApiError(err) ? err.message : 'Không thể ẩn bài viết lúc này.',
+        );
+      }
+      return;
+    }
+
+    const parsed = removeModerationReasonSchema.safeParse({
+      reason: moderationReason,
+    });
+    if (!parsed.success) {
+      setModerationError(
+        parsed.error.issues[0]?.message ?? 'Lý do gỡ bỏ chưa hợp lệ',
+      );
+      return;
+    }
+    const cleanReason = parsed.data.reason || undefined;
+
+    if (moderationTarget.mode === 'REMOVE_POST') {
+      const targetPostId = moderationTarget.post.id;
+      try {
+        await removePostMutation.mutateAsync({
+          postId: targetPostId,
+          reason: cleanReason,
+        });
+        setModerationTarget(null);
+        setModerationReason('');
+        setModerationError(null);
+        if (reactionsModal?.postId === targetPostId) setReactionsModal(null);
+        if (sharesModal?.postId === targetPostId) setSharesModal(null);
+        toast.success('Đã gỡ bỏ bài viết khỏi hệ thống.');
+      } catch (err) {
+        toast.error(
+          isApiError(err) ? err.message : 'Không thể gỡ bỏ bài viết lúc này.',
+        );
+      }
+      return;
+    }
+
+    try {
+      await removeCommentMutation.mutateAsync({
+        postId: moderationTarget.postId,
+        commentId: moderationTarget.comment.id,
+        reason: cleanReason,
+      });
+      setModerationTarget(null);
+      setModerationReason('');
+      setModerationError(null);
+      toast.success('Đã gỡ bỏ bình luận vi phạm.');
+    } catch (err) {
+      toast.error(
+        isApiError(err) ? err.message : 'Không thể gỡ bỏ bình luận lúc này.',
+      );
+    }
   };
 
   const handleTogglePostComments = (postId: string) => {
@@ -267,6 +400,10 @@ export function useAdminUserDetailController() {
     sharesData: sharesQuery.data,
     isSharesLoading: sharesQuery.isLoading || sharesQuery.isFetching,
     isSharesError: sharesQuery.isError,
+    moderationTarget,
+    moderationReason,
+    moderationError,
+    isModeratingPost,
     setVisibilityFilter,
     handleBackToList,
     handleRefreshAll,
@@ -281,7 +418,13 @@ export function useAdminUserDetailController() {
     handleFlagCoverViolation,
     handleFlagAvatarViolation,
     handleFlagPostViolation,
-    handleAdminDeletePost,
+    handleOpenHidePostModal,
+    handleOpenRemovePostModal,
+    handleOpenRemoveCommentModal,
+    handleCloseModerationModal,
+    handleModerationReasonChange,
+    handleSelectModerationReasonPreset,
+    handleConfirmModeration,
     handleTogglePostComments,
     handleOpenReactionsModal,
     handleCloseReactionsModal,

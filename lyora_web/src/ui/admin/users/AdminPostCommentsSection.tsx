@@ -9,6 +9,7 @@ export interface AdminPostCommentsSectionProps {
   isExpanded: boolean;
   onToggleExpand: (postId: string) => void;
   onInspectAuthor: (userId: string) => void;
+  onRequestRemoveComment?: (postId: string, comment: PostComment) => void;
 }
 
 const AvatarCircle: React.FC<{
@@ -37,10 +38,18 @@ const AvatarCircle: React.FC<{
 };
 
 const CommentBubbleItem: React.FC<{
+  postId: string;
   comment: PostComment;
   isReply?: boolean;
   onInspectAuthor: (userId: string) => void;
-}> = ({ comment, isReply = false, onInspectAuthor }) => {
+  onRequestRemoveComment?: (postId: string, comment: PostComment) => void;
+}> = ({
+  postId,
+  comment,
+  isReply = false,
+  onInspectAuthor,
+  onRequestRemoveComment,
+}) => {
   const authorName = comment.author.fullName?.trim() || 'Người dùng Lyora';
 
   return (
@@ -100,6 +109,18 @@ const CommentBubbleItem: React.FC<{
             {formatRelativeTime(comment.createdAt)}
           </time>
           {isReply && <span>· Phản hồi</span>}
+          {onRequestRemoveComment && (
+            <>
+              <span>·</span>
+              <button
+                type="button"
+                onClick={() => onRequestRemoveComment(postId, comment)}
+                className="text-[11px] font-medium text-error hover:underline cursor-pointer"
+              >
+                Gỡ bình luận
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -113,10 +134,11 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
   isExpanded,
   onToggleExpand,
   onInspectAuthor,
+  onRequestRemoveComment,
 }) => {
   if (comments.length === 0) {
     return (
-      <div className="border-t border-border bg-background/35 px-5 py-3 text-xs text-muted">
+      <div className="rounded-b-xl border-t border-border bg-background/35 px-5 py-3 text-xs text-muted">
         Bài viết này chưa có bình luận nào.
       </div>
     );
@@ -145,7 +167,7 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
   return (
     <section
       aria-label="Danh sách bình luận và phản hồi"
-      className="border-t border-border bg-background/35 px-4 py-3.5 sm:px-5 space-y-3"
+      className="rounded-b-xl border-t border-border bg-background/35 px-4 py-3.5 sm:px-5 space-y-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-semibold text-foreground tabular-nums">
@@ -173,16 +195,23 @@ export const AdminPostCommentsSection: React.FC<AdminPostCommentsSectionProps> =
 
           return (
             <li key={root.id} className="space-y-2">
-              <CommentBubbleItem comment={root} onInspectAuthor={onInspectAuthor} />
+              <CommentBubbleItem
+                postId={postId}
+                comment={root}
+                onInspectAuthor={onInspectAuthor}
+                onRequestRemoveComment={onRequestRemoveComment}
+              />
 
               {replies.length > 0 && (
                 <div className="ml-5 sm:ml-6 border-l-2 border-border pl-3.5 space-y-2.5">
                   {visibleReplies.map((reply) => (
                     <CommentBubbleItem
                       key={reply.id}
+                      postId={postId}
                       comment={reply}
                       isReply
                       onInspectAuthor={onInspectAuthor}
+                      onRequestRemoveComment={onRequestRemoveComment}
                     />
                   ))}
 
