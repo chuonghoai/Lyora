@@ -1,7 +1,7 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { AbstractBaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../users/entities/user.entity';
-import { PostVisibility } from '../enums/post.enums';
+import { PostModerationStatus, PostVisibility } from '../enums/post.enums';
 import { PostMediaItem } from '../interfaces/post-media.interface';
 
 @Entity('posts')
@@ -40,4 +40,21 @@ export class Post extends AbstractBaseEntity {
 
   @Column({ type: 'int', default: 0 })
   sharesCount: number;
+
+  @Index()
+  @Column({
+    type: 'enum',
+    enum: PostModerationStatus,
+    default: PostModerationStatus.ACTIVE,
+  })
+  moderationStatus: PostModerationStatus;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  moderationReason?: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  moderatedAt?: Date | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  moderatedById?: string | null;
 }

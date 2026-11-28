@@ -3,6 +3,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 
+export interface CreateModerationNoticeParams {
+  recipientId: string;
+  actorId: string;
+  type:
+    | NotificationType.POST_HIDDEN
+    | NotificationType.POST_RESTORED
+    | NotificationType.POST_REMOVED
+    | NotificationType.COMMENT_REMOVED;
+  title: string;
+  description: string;
+  targetPath?: string | null;
+}
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -41,6 +54,20 @@ export class NotificationsService {
         title: `${actorName} đã chấp nhận lời mời kết bạn`,
         description: 'Hai bạn hiện đã là bạn bè trên Lyora.',
         targetPath: '/friends',
+        isRead: false,
+      }),
+    );
+  }
+
+  async createModerationNotice(params: CreateModerationNoticeParams) {
+    return this.notificationRepository.save(
+      this.notificationRepository.create({
+        recipientId: params.recipientId,
+        actorId: params.actorId,
+        type: params.type,
+        title: params.title.slice(0, 255),
+        description: params.description.slice(0, 500),
+        targetPath: params.targetPath ?? '/me',
         isRead: false,
       }),
     );

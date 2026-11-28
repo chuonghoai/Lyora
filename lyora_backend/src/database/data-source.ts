@@ -7,6 +7,9 @@ import { Conversation } from '../modules/conversations/entities/conversation.ent
 import { IdempotencyRecord } from '../modules/conversations/entities/idempotency-record.entity';
 import { Friendship } from '../modules/friends/entities/friendship.entity';
 import { Notification } from '../modules/notifications/entities/notification.entity';
+import { PostComment } from '../modules/posts/entities/post-comment.entity';
+import { PostReaction } from '../modules/posts/entities/post-reaction.entity';
+import { Post } from '../modules/posts/entities/post.entity';
 import { User } from '../modules/users/entities/user.entity';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
@@ -27,6 +30,9 @@ export const AppDataSource = new DataSource({
     Conversation,
     ConversationMember,
     IdempotencyRecord,
+    Post,
+    PostReaction,
+    PostComment,
   ],
   migrations: [path.join(__dirname, 'migrations/*{.ts,.js}')],
   synchronize: false,

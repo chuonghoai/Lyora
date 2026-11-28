@@ -10,6 +10,7 @@ export const ROUTES = {
   ADMIN: {
     ROOT: '/admin',
     DASHBOARD: '/admin',
+    POSTS: '/admin/posts',
   },
   AUTH: {
     LOGIN: '/login',

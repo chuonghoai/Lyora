@@ -4,6 +4,10 @@ import { AbstractBaseEntity } from '../../../common/entities/base.entity';
 export enum NotificationType {
   FRIEND_REQUEST = 'FRIEND_REQUEST',
   FRIEND_REQUEST_ACCEPTED = 'FRIEND_REQUEST_ACCEPTED',
+  POST_HIDDEN = 'POST_HIDDEN',
+  POST_RESTORED = 'POST_RESTORED',
+  POST_REMOVED = 'POST_REMOVED',
+  COMMENT_REMOVED = 'COMMENT_REMOVED',
 }
 
 @Entity('notifications')

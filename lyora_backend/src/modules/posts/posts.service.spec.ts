@@ -8,7 +8,11 @@ import { User } from '../users/entities/user.entity';
 import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
 import { Post } from './entities/post.entity';
-import { PostReactionType, PostVisibility } from './enums/post.enums';
+import {
+  PostModerationStatus,
+  PostReactionType,
+  PostVisibility,
+} from './enums/post.enums';
 import { PostsService } from './posts.service';
 
 describe('PostsService (Real DB Data & Empty State)', () => {
@@ -205,5 +209,52 @@ describe('PostsService (Real DB Data & Empty State)', () => {
 
     const visible = await service.findOne(currentUser, postId);
     expect(visible.id).toBe(postId);
+  });
+
+  it('chặn người lạ xem bài viết đang bị HIDDEN nhưng cho phép chính tác giả và ADMIN xem', async () => {
+    const hiddenPostId = '66666666-6666-4666-8666-666666666666';
+    const ownerId = '77777777-7777-4777-8777-777777777777';
+    const hiddenPost = {
+      id: hiddenPostId,
+      authorId: ownerId,
+      author: {
+        id: ownerId,
+        fullName: 'Chủ Bài Viết',
+        email: 'owner@lyora.vn',
+        avatarUrl: null,
+      },
+      content: 'Bài viết đã bị quản trị ẩn',
+      visibility: PostVisibility.PUBLIC,
+      moderationStatus: PostModerationStatus.HIDDEN,
+      media: [],
+      taggedUserIds: null,
+      reactionsCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      createdAt: new Date('2026-11-20T08:00:00.000Z'),
+      updatedAt: new Date('2026-11-20T08:00:00.000Z'),
+    } as unknown as Post;
+
+    (postRepo.findOne as jest.Mock).mockResolvedValue(hiddenPost);
+
+    await expect(service.findOne(currentUser, hiddenPostId)).rejects.toThrow(
+      NotFoundException,
+    );
+
+    const ownerUser: AuthenticatedUser = {
+      id: ownerId,
+      email: 'owner@lyora.vn',
+      role: UserRole.CLIENT,
+    };
+    const ownerRes = await service.findOne(ownerUser, hiddenPostId);
+    expect(ownerRes.id).toBe(hiddenPostId);
+
+    const adminUser: AuthenticatedUser = {
+      id: '88888888-8888-4888-8888-888888888888',
+      email: 'admin@lyora.vn',
+      role: UserRole.ADMIN,
+    };
+    const adminRes = await service.findOne(adminUser, hiddenPostId);
+    expect(adminRes.id).toBe(hiddenPostId);
   });
 });
