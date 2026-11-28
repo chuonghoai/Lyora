@@ -107,7 +107,7 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
     (response) => {
       return response.data;
     },
-    async (error: AxiosError<{ message?: string | string[]; error?: string; timestamp?: string }>) => {
+    async (error: AxiosError<{ message?: string | string[]; error?: string; code?: string; details?: Record<string, unknown>; timestamp?: string }>) => {
       const originalRequest = error.config as ExtendedAxiosRequestConfig | undefined;
       const status = error.response?.status;
       const url = originalRequest?.url || '';
@@ -197,7 +197,13 @@ export function createApiClient(customBaseURL?: string): AxiosInstance {
 }
 
 function buildApiError(
-  error: AxiosError<{ message?: string | string[]; error?: string; timestamp?: string }>,
+  error: AxiosError<{
+    message?: string | string[];
+    error?: string;
+    code?: string;
+    details?: Record<string, unknown>;
+    timestamp?: string;
+  }>,
 ): ApiError {
   const statusCode = error.response?.status || 0;
   const data = error.response?.data;
@@ -229,6 +235,8 @@ function buildApiError(
     statusCode,
     message,
     error: data?.error || error.name,
+    ...(typeof data?.code === 'string' && data.code ? { code: data.code } : {}),
+    ...(data?.details && typeof data.details === 'object' ? { details: data.details } : {}),
     timestamp: data?.timestamp || new Date().toISOString(),
     path: error.config?.url,
     isNetworkError: !error.response,

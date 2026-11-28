@@ -4,6 +4,7 @@ import { IdempotencyRecord } from '../src/modules/conversations/entities/idempot
 import { Friendship } from '../src/modules/friends/entities/friendship.entity';
 import { PostComment } from '../src/modules/posts/entities/post-comment.entity';
 import { PostReaction } from '../src/modules/posts/entities/post-reaction.entity';
+import { PostShare } from '../src/modules/posts/entities/post-share.entity';
 import { Post } from '../src/modules/posts/entities/post.entity';
 import { User } from '../src/modules/users/entities/user.entity';
 import { seedConversations } from './conversations.seed';
@@ -92,6 +93,10 @@ export async function runCreateSeedDB(): Promise<void> {
       {
         table: 'post_reactions',
         count: await dataSource.getRepository(PostReaction).count(),
+      },
+      {
+        table: 'post_shares',
+        count: await dataSource.getRepository(PostShare).count(),
       },
     ];
 

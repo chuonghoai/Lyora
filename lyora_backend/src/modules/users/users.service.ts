@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -7,14 +8,21 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { isUUID } from 'class-validator';
-import { In, Repository } from 'typeorm';
+import { Brackets, In, Repository } from 'typeorm';
 import { PaginationMetaDto } from '../../common/dto/api-response.dto';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { RedisService } from '../../redis/redis.service';
 import { Friendship } from '../friends/entities/friendship.entity';
 import { FriendshipStatus } from '../friends/enums/friendship-status.enum';
+import {
+  AdminUserDetailResponseDto,
+  AdminUsersSummaryCountsDto,
+} from './dto/admin-user-detail-response.dto';
+import { AdminOnlineStatusResponseDto } from './dto/admin-online-status-query.dto';
+import { AdminUsersQueryDto } from './dto/admin-users-query.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { LockUserDto } from './dto/lock-user.dto';
 import {
   ProfileFriendPreviewDto,
   PublicProfileFriendshipStatus,
@@ -47,7 +55,13 @@ export class UsersService {
     @Optional()
     @InjectRepository(Friendship)
     private readonly friendshipRepository?: Repository<Friendship>,
+    @Optional()
+    private readonly redisService?: RedisService,
   ) {}
+
+  async setOnlineStatus(userId: string, isOnline: boolean): Promise<void> {
+    await this.userRepository.update(userId, { isOnline });
+  }
 
   async findByEmail(
     email: string,
@@ -191,7 +205,7 @@ export class UsersService {
       avatarUrl: targetUser.avatarUrl ?? null,
       coverUrl: targetUser.coverUrl ?? null,
       isActive: targetUser.isActive,
-      isOnline: false,
+      isOnline: Boolean(targetUser.isOnline),
       createdAt: targetUser.createdAt,
       friendshipStatus: relationship.friendshipStatus,
       friendsCount: relationship.friendsCount,
@@ -270,7 +284,15 @@ export class UsersService {
 
     const activeFriends = await this.userRepository.find({
       where: { id: In(targetFriendIds), isActive: true },
-      select: ['id', 'fullName', 'avatarUrl', 'workplace', 'bio', 'location'],
+      select: [
+        'id',
+        'fullName',
+        'avatarUrl',
+        'workplace',
+        'bio',
+        'location',
+        'isOnline',
+      ],
     });
 
     const activeFriendIdSet = new Set(activeFriends.map((u) => u.id));
@@ -296,7 +318,7 @@ export class UsersService {
       location: u.location ?? null,
       mutualFriendsCount: mutualCountByPartnerId.get(u.id) ?? 0,
       friendshipStatus: statusByPartnerId.get(u.id) ?? 'NONE',
-      isOnline: false,
+      isOnline: Boolean(u.isOnline),
     }));
 
     return {
@@ -410,26 +432,181 @@ export class UsersService {
     return 'NONE';
   }
 
-  async findAllPaginated(query: PaginationQueryDto): Promise<{
-    items: User[];
-    meta: PaginationMetaDto;
-  }> {
-    const { page = 1, limit = 10, search } = query;
-    const qb = this.userRepository
-      .createQueryBuilder('user')
-      .orderBy('user.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit);
-
-    if (search && search.trim()) {
-      qb.where('user.fullName ILIKE :search OR user.email ILIKE :search', {
-        search: `%${search.trim()}%`,
-      });
+  async getAdminUserProfile(
+    currentUser: AuthenticatedUser,
+    targetId: string,
+  ): Promise<AdminUserDetailResponseDto> {
+    const resolvedId = targetId.trim();
+    if (!isUUID(resolvedId)) {
+      throw new NotFoundException('Không tìm thấy thông tin người dùng');
     }
 
-    const [items, totalItems] = await qb.getManyAndCount();
+    const targetUser = await this.userRepository.findOne({
+      where: { id: resolvedId },
+    });
+    if (!targetUser) {
+      throw new NotFoundException('Không tìm thấy thông tin người dùng');
+    }
+
+    const relationship = await this.buildProfileRelationshipSummary(
+      currentUser.id,
+      targetUser.id,
+      true,
+    );
+
+    return {
+      id: targetUser.id,
+      email: targetUser.email,
+      fullName: targetUser.fullName,
+      role: targetUser.role,
+      phoneNumber: targetUser.phoneNumber ?? null,
+      bio: targetUser.bio ?? null,
+      location: targetUser.location ?? null,
+      hometown: targetUser.hometown ?? null,
+      workplace: targetUser.workplace ?? null,
+      education: targetUser.education ?? null,
+      website: targetUser.website ?? null,
+      avatarUrl: targetUser.avatarUrl ?? null,
+      coverUrl: targetUser.coverUrl ?? null,
+      isActive: targetUser.isActive,
+      isOnline: Boolean(targetUser.isOnline),
+      lockReason: targetUser.lockReason ?? null,
+      lockedAt: targetUser.lockedAt ?? null,
+      createdAt: targetUser.createdAt,
+      friendsCount: relationship.friendsCount,
+      friendsPreview: relationship.friendsPreview,
+    };
+  }
+
+  async lockUser(
+    adminUser: AuthenticatedUser,
+    targetId: string,
+    dto: LockUserDto,
+  ): Promise<User> {
+    if (targetId === adminUser.id) {
+      throw new BadRequestException(
+        'Bạn không thể tự khóa tài khoản của chính mình',
+      );
+    }
+
+    const target = await this.findById(targetId);
+    if (target.role === UserRole.ADMIN) {
+      throw new BadRequestException('Không thể khóa tài khoản quản trị viên');
+    }
+
+    target.isActive = false;
+    target.isOnline = false;
+    target.lockReason = dto.reason.trim();
+    target.lockedAt = new Date();
+
+    const saved = await this.userRepository.save(target);
+    await this.redisService?.revokeAllUserSessions(target.id);
+    return saved;
+  }
+
+  async unlockUser(targetId: string): Promise<User> {
+    const target = await this.findById(targetId);
+    target.isActive = true;
+    target.lockReason = null;
+    target.lockedAt = null;
+    return this.userRepository.save(target);
+  }
+
+  async findAllPaginated(query: AdminUsersQueryDto): Promise<{
+    items: User[];
+    meta: PaginationMetaDto;
+    summary: AdminUsersSummaryCountsDto;
+  }> {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      role = 'ALL',
+      status = 'ALL',
+      online = 'ALL',
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = query;
+
+    const qb = this.userRepository.createQueryBuilder('user');
+
+    if (role === UserRole.CLIENT || role === UserRole.ADMIN) {
+      qb.andWhere('user.role = :roleFilter', { roleFilter: role });
+    }
+
+    if (status === 'ACTIVE') {
+      qb.andWhere('user.isActive = true');
+    } else if (status === 'LOCKED') {
+      qb.andWhere('user.isActive = false');
+    }
+
+    if (online === 'ONLINE') {
+      qb.andWhere('user.isOnline = true');
+    } else if (online === 'OFFLINE') {
+      qb.andWhere('user.isOnline = false');
+    }
+
+    const keyword = search?.trim();
+    if (keyword) {
+      qb.andWhere(
+        new Brackets((searchQb) => {
+          searchQb
+            .where('user.fullName ILIKE :search', { search: `%${keyword}%` })
+            .orWhere('user.email ILIKE :search', { search: `%${keyword}%` });
+        }),
+      );
+    }
+
+    // Luôn ưu tiên tài khoản đang hoạt động lên trước; tài khoản bị khóa xuống cuối
+    qb.orderBy('user.isActive', 'DESC');
+
+    const safeOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+    if (sortBy === 'fullName') {
+      qb.addOrderBy('user.fullName', safeOrder);
+    } else if (sortBy === 'isOnline') {
+      qb.addOrderBy('user.isOnline', safeOrder);
+    } else {
+      qb.addOrderBy('user.createdAt', safeOrder);
+    }
+
+    if (sortBy !== 'createdAt') {
+      qb.addOrderBy('user.createdAt', 'DESC');
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const summaryQb = this.userRepository
+      .createQueryBuilder('user')
+      .select('COUNT(*)', 'allCount')
+      .addSelect(
+        'COUNT(*) FILTER (WHERE user.role = :clientRole)',
+        'clientCount',
+      )
+      .addSelect('COUNT(*) FILTER (WHERE user.role = :adminRole)', 'adminCount')
+      .addSelect('COUNT(*) FILTER (WHERE user.isActive = true)', 'activeCount')
+      .addSelect('COUNT(*) FILTER (WHERE user.isActive = false)', 'lockedCount')
+      .addSelect('COUNT(*) FILTER (WHERE user.isOnline = true)', 'onlineCount')
+      .setParameters({
+        clientRole: UserRole.CLIENT,
+        adminRole: UserRole.ADMIN,
+      });
+
+    const [[items, totalItems], rawSummary] = await Promise.all([
+      qb.getManyAndCount(),
+      summaryQb.getRawOne<Record<string, string | number | null>>(),
+    ]);
+
     const meta = new PaginationMetaDto(page, limit, totalItems);
-    return { items, meta };
+    const summary: AdminUsersSummaryCountsDto = {
+      all: Number(rawSummary?.allCount ?? 0),
+      client: Number(rawSummary?.clientCount ?? 0),
+      admin: Number(rawSummary?.adminCount ?? 0),
+      active: Number(rawSummary?.activeCount ?? 0),
+      locked: Number(rawSummary?.lockedCount ?? 0),
+      online: Number(rawSummary?.onlineCount ?? 0),
+    };
+
+    return { items, meta, summary };
   }
 
   async getStatistics(roleFilter?: UserRole): Promise<UserStatisticsDto> {
@@ -485,6 +662,40 @@ export class UsersService {
       newUsersToday: Number(rawCounts?.newUsersToday ?? 0),
       newUsersThisMonth: Number(rawCounts?.newUsersThisMonth ?? 0),
       recentUsers,
+    };
+  }
+
+  async getOnlineStatuses(
+    rawIds?: string,
+  ): Promise<AdminOnlineStatusResponseDto> {
+    const validIds = [
+      ...new Set(
+        (rawIds ?? '')
+          .split(',')
+          .map((item) => item.trim())
+          .filter((item) => isUUID(item)),
+      ),
+    ].slice(0, 100);
+
+    const [matchedUsers, onlineCount] = await Promise.all([
+      validIds.length > 0
+        ? this.userRepository.find({
+            select: { id: true, isOnline: true, isActive: true },
+            where: { id: In(validIds) },
+          })
+        : Promise.resolve([]),
+      this.userRepository.count({ where: { isOnline: true, isActive: true } }),
+    ]);
+
+    const statuses: Record<string, boolean> = {};
+    for (const user of matchedUsers) {
+      statuses[user.id] = Boolean(user.isOnline && user.isActive);
+    }
+
+    return {
+      statuses,
+      onlineCount,
+      checkedAt: new Date().toISOString(),
     };
   }
 }

@@ -11,6 +11,8 @@ import { UserRole } from '../../common/enums/role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { LockUserDto } from './dto/lock-user.dto';
 import { ProfileMediaService } from './services/profile-media.service';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -27,7 +29,12 @@ describe('UsersController Profile Endpoints (Pipe, Route Order & RBAC)', () => {
       | 'updateProfile'
       | 'findById'
       | 'findAllPaginated'
+      | 'createUser'
       | 'getStatistics'
+      | 'getOnlineStatuses'
+      | 'getAdminUserProfile'
+      | 'lockUser'
+      | 'unlockUser'
     >
   >;
   let profileMediaServiceMock: jest.Mocked<
@@ -94,7 +101,12 @@ describe('UsersController Profile Endpoints (Pipe, Route Order & RBAC)', () => {
       updateProfile: jest.fn().mockResolvedValue({ id: selfId }),
       findById: jest.fn().mockResolvedValue({ id: targetId }),
       findAllPaginated: jest.fn(),
+      createUser: jest.fn(),
       getStatistics: jest.fn(),
+      getOnlineStatuses: jest.fn(),
+      getAdminUserProfile: jest.fn(),
+      lockUser: jest.fn(),
+      unlockUser: jest.fn(),
     };
 
     profileMediaServiceMock = {
@@ -142,12 +154,19 @@ describe('UsersController Profile Endpoints (Pipe, Route Order & RBAC)', () => {
       routes.findIndex((entry) => entry.path === routePath);
 
     expect(pathIndex('me/profile')).toBeGreaterThanOrEqual(0);
+    expect(pathIndex('online-status')).toBeGreaterThanOrEqual(0);
     expect(pathIndex('me/media')).toBeGreaterThan(pathIndex('me/profile'));
-    expect(pathIndex(':id/profile')).toBeGreaterThan(pathIndex('me/media'));
+    expect(pathIndex(':id/admin-profile')).toBeGreaterThan(
+      pathIndex('me/media'),
+    );
+    expect(pathIndex(':id/profile')).toBeGreaterThan(
+      pathIndex(':id/admin-profile'),
+    );
     expect(pathIndex(':id')).toBeGreaterThan(pathIndex(':id/profile'));
+    expect(pathIndex(':id')).toBeGreaterThan(pathIndex('online-status'));
   });
 
-  it('allows CLIENT on profile endpoints and restricts :id and statistics to ADMIN', () => {
+  it('allows CLIENT on profile endpoints and restricts admin endpoints and statistics to ADMIN', () => {
     expect(
       rolesGuard.canActivate(
         createHttpContext('getMyProfile', currentTestUser),
@@ -176,9 +195,28 @@ describe('UsersController Profile Endpoints (Pipe, Route Order & RBAC)', () => {
       rolesGuard.canActivate(createHttpContext('findAll', currentTestUser)),
     ).toThrow(ForbiddenException);
     expect(() =>
+      rolesGuard.canActivate(createHttpContext('create', currentTestUser)),
+    ).toThrow(ForbiddenException);
+    expect(() =>
       rolesGuard.canActivate(
         createHttpContext('getStatistics', currentTestUser),
       ),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      rolesGuard.canActivate(
+        createHttpContext('getAdminUserProfile', currentTestUser),
+      ),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      rolesGuard.canActivate(
+        createHttpContext('getOnlineStatuses', currentTestUser),
+      ),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      rolesGuard.canActivate(createHttpContext('lockUser', currentTestUser)),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      rolesGuard.canActivate(createHttpContext('unlockUser', currentTestUser)),
     ).toThrow(ForbiddenException);
 
     const adminUser: AuthenticatedUser = {
@@ -189,6 +227,124 @@ describe('UsersController Profile Endpoints (Pipe, Route Order & RBAC)', () => {
     expect(
       rolesGuard.canActivate(createHttpContext('findOne', adminUser)),
     ).toBe(true);
+    expect(
+      rolesGuard.canActivate(
+        createHttpContext('getAdminUserProfile', adminUser),
+      ),
+    ).toBe(true);
+    expect(
+      rolesGuard.canActivate(createHttpContext('lockUser', adminUser)),
+    ).toBe(true);
+    expect(
+      rolesGuard.canActivate(createHttpContext('unlockUser', adminUser)),
+    ).toBe(true);
+    expect(rolesGuard.canActivate(createHttpContext('create', adminUser))).toBe(
+      true,
+    );
+  });
+
+  it('validates CreateUserDto inputs and delegates POST /users to UsersService.createUser', async () => {
+    await expect(
+      validationPipe.transform(
+        {
+          email: 'invalid-email',
+          password: 'password123',
+          fullName: 'Người dùng mới',
+          role: UserRole.CLIENT,
+        },
+        { type: 'body', metatype: CreateUserDto },
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    await expect(
+      validationPipe.transform(
+        {
+          email: 'user@lyora.vn',
+          password: '123',
+          fullName: 'Người dùng mới',
+          role: UserRole.CLIENT,
+        },
+        { type: 'body', metatype: CreateUserDto },
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    await expect(
+      validationPipe.transform(
+        {
+          email: 'user@lyora.vn',
+          password: 'password123',
+          fullName: '   ',
+          role: UserRole.CLIENT,
+        },
+        { type: 'body', metatype: CreateUserDto },
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    await expect(
+      validationPipe.transform(
+        {
+          email: 'user@lyora.vn',
+          password: 'password123',
+          fullName: 'Người dùng mới',
+          role: 'SUPER_ADMIN',
+        },
+        { type: 'body', metatype: CreateUserDto },
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    const dto = (await validationPipe.transform(
+      {
+        email: 'admin.new@lyora.vn',
+        password: 'password123',
+        fullName: 'Quản Trị Viên Mới',
+        role: UserRole.ADMIN,
+      },
+      { type: 'body', metatype: CreateUserDto },
+    )) as CreateUserDto;
+    usersServiceMock.createUser.mockResolvedValue({
+      id: targetId,
+      email: dto.email,
+      fullName: dto.fullName,
+      role: UserRole.ADMIN,
+      isActive: true,
+    } as never);
+
+    const created = await controller.create(dto);
+    expect(usersServiceMock.createUser).toHaveBeenCalledWith(dto);
+    expect(created.role).toBe(UserRole.ADMIN);
+  });
+
+  it('validates LockUserDto reason length and delegates lockUser to UsersService', async () => {
+    await expect(
+      validationPipe.transform(
+        { reason: 'Ngắn' },
+        { type: 'body', metatype: LockUserDto },
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    const adminUser: AuthenticatedUser = {
+      id: selfId,
+      email: 'admin@lyora.vn',
+      role: UserRole.ADMIN,
+    };
+    const dto = (await validationPipe.transform(
+      { reason: 'Spam bình luận quảng cáo lặp lại nhiều lần' },
+      { type: 'body', metatype: LockUserDto },
+    )) as LockUserDto;
+    usersServiceMock.lockUser.mockResolvedValue({
+      id: targetId,
+      isActive: false,
+      lockReason: dto.reason,
+    } as never);
+
+    const result = await controller.lockUser(adminUser, targetId, dto);
+
+    expect(usersServiceMock.lockUser).toHaveBeenCalledWith(
+      adminUser,
+      targetId,
+      dto,
+    );
+    expect(result.isActive).toBe(false);
   });
 
   it('delegates GET /users/:id/profile and GET /users/me/profile to UsersService', async () => {

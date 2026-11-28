@@ -1,4 +1,5 @@
 import type {
+  PostSharesQueryParams,
   AdminPostsQueryParams,
   PostReactionsQueryParams,
   PostsQueryParams,
@@ -12,6 +13,8 @@ export const postKeys = {
   friends: () => [...postKeys.all, 'friends'] as const,
   reactions: (postId: string, params: PostReactionsQueryParams = {}) =>
     [...postKeys.all, 'reactions', postId, params] as const,
+  shares: (postId: string, params: PostSharesQueryParams = {}) =>
+    [...postKeys.all, 'shares', postId, params] as const,
   details: () => [...postKeys.all, 'detail'] as const,
   detail: (id: string) => [...postKeys.details(), id] as const,
   adminAll: () => [...postKeys.all, 'admin'] as const,

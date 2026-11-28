@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { PostComment } from '../src/modules/posts/entities/post-comment.entity';
 import { PostReaction } from '../src/modules/posts/entities/post-reaction.entity';
+import { PostShare } from '../src/modules/posts/entities/post-share.entity';
 import { Post } from '../src/modules/posts/entities/post.entity';
 import {
   PostReactionType,
@@ -21,6 +22,7 @@ export async function seedPosts(
   const postRepository = dataSource.getRepository(Post);
   const commentRepository = dataSource.getRepository(PostComment);
   const reactionRepository = dataSource.getRepository(PostReaction);
+  const shareRepository = dataSource.getRepository(PostShare);
 
   const mainUser = await userRepository.findOne({
     where: { email: 'user@gmail.com' },
@@ -44,9 +46,13 @@ export async function seedPosts(
     content: string;
     visibility: PostVisibility;
     taggedUserIds?: string[] | null;
-    sharesCount: number;
+    shares: Array<{ user: User }>;
     reactions: Array<{ user: User; type: PostReactionType }>;
-    comments: Array<{ author: User; content: string }>;
+    comments: Array<{
+      author: User;
+      content: string;
+      replies?: Array<{ author: User; content: string }>;
+    }>;
   }> = [
     {
       author: mainUser,
@@ -54,7 +60,7 @@ export async function seedPosts(
         'Chào mừng mọi người đến với cộng đồng Lyora! Hôm nay trời Sài Gòn nắng đẹp, cùng chia sẻ những khoảnh khắc đáng nhớ nhé.',
       visibility: PostVisibility.PUBLIC,
       taggedUserIds: [friend1.id, friend2.id],
-      sharesCount: 1,
+      shares: [{ user: friend1 }],
       reactions: [
         { user: friend1, type: PostReactionType.LOVE },
         { user: friend2, type: PostReactionType.LIKE },
@@ -64,6 +70,12 @@ export async function seedPosts(
           author: friend1,
           content:
             'Chào cả nhà! Rất vui được kết nối cùng mọi người trên Lyora.',
+          replies: [
+            {
+              author: mainUser,
+              content: 'Cảm ơn Minh Anh đã tham gia sớm nhất nhé!',
+            },
+          ],
         },
         {
           author: friend2,
@@ -77,7 +89,7 @@ export async function seedPosts(
         'Cuối tuần vừa rồi có dịp dạo quanh Đà Nẵng và nghe lại vài bản nhạc acoustic nhẹ nhàng. Có ai cùng sở thích không?',
       visibility: PostVisibility.PUBLIC,
       taggedUserIds: null,
-      sharesCount: 0,
+      shares: [],
       reactions: [
         { user: mainUser, type: PostReactionType.LIKE },
         { user: friend3, type: PostReactionType.WOW },
@@ -95,7 +107,7 @@ export async function seedPosts(
         'Đang hoàn thiện bảng màu và hệ thống biểu tượng cho bản thiết kế mới. Cảm ơn mọi người đã góp ý nhiệt tình.',
       visibility: PostVisibility.FRIENDS,
       taggedUserIds: [mainUser.id],
-      sharesCount: 0,
+      shares: [],
       reactions: [{ user: mainUser, type: PostReactionType.LOVE }],
       comments: [
         {
@@ -110,7 +122,7 @@ export async function seedPosts(
         'Ghi chú cá nhân: Lên kế hoạch chụp bộ ảnh đường phố vào sáng Chủ nhật tuần này.',
       visibility: PostVisibility.PRIVATE,
       taggedUserIds: null,
-      sharesCount: 0,
+      shares: [],
       reactions: [],
       comments: [],
     },
@@ -120,7 +132,7 @@ export async function seedPosts(
         'Vừa tối ưu xong luồng đồng bộ thời gian thực cho ứng dụng trò chuyện nhóm. Cảm giác chạy mượt mà thật sự rất đã!',
       visibility: PostVisibility.PUBLIC,
       taggedUserIds: null,
-      sharesCount: 2,
+      shares: [{ user: mainUser }, { user: friend1 }],
       reactions: [{ user: friend1, type: PostReactionType.HAHA }],
       comments: [],
     },
@@ -139,6 +151,10 @@ export async function seedPosts(
     });
 
     if (!post) {
+      const totalCommentsCount = spec.comments.reduce(
+        (sum, c) => sum + 1 + (c.replies?.length ?? 0),
+        0,
+      );
       post = await postRepository.save(
         postRepository.create({
           authorId: spec.author.id,
@@ -147,11 +163,28 @@ export async function seedPosts(
           media: [],
           taggedUserIds: spec.taggedUserIds ?? null,
           reactionsCount: spec.reactions.length,
-          commentsCount: spec.comments.length,
-          sharesCount: spec.sharesCount,
+          commentsCount: totalCommentsCount,
+          sharesCount: spec.shares.length,
         }),
       );
       postsCount++;
+    }
+
+    for (const shareSpec of spec.shares) {
+      const existingShare = await shareRepository.findOne({
+        where: {
+          postId: post.id,
+          userId: shareSpec.user.id,
+        },
+      });
+      if (!existingShare) {
+        await shareRepository.save(
+          shareRepository.create({
+            postId: post.id,
+            userId: shareSpec.user.id,
+          }),
+        );
+      }
     }
 
     for (const reactionSpec of spec.reactions) {
@@ -174,7 +207,7 @@ export async function seedPosts(
     }
 
     for (const commentSpec of spec.comments) {
-      const existingComment = await commentRepository.findOne({
+      let existingComment = await commentRepository.findOne({
         where: {
           postId: post.id,
           authorId: commentSpec.author.id,
@@ -182,15 +215,39 @@ export async function seedPosts(
         },
       });
       if (!existingComment) {
-        await commentRepository.save(
+        existingComment = await commentRepository.save(
           commentRepository.create({
             postId: post.id,
             authorId: commentSpec.author.id,
             content: commentSpec.content,
             media: null,
+            parentId: null,
           }),
         );
         commentsCount++;
+      }
+
+      for (const replySpec of commentSpec.replies ?? []) {
+        const existingReply = await commentRepository.findOne({
+          where: {
+            postId: post.id,
+            parentId: existingComment.id,
+            authorId: replySpec.author.id,
+            content: replySpec.content,
+          },
+        });
+        if (!existingReply) {
+          await commentRepository.save(
+            commentRepository.create({
+              postId: post.id,
+              parentId: existingComment.id,
+              authorId: replySpec.author.id,
+              content: replySpec.content,
+              media: null,
+            }),
+          );
+          commentsCount++;
+        }
       }
     }
   }
