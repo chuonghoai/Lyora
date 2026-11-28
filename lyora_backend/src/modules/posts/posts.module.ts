@@ -2,12 +2,15 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiModule } from '../ai/ai.module';
 import { Friendship } from '../friends/entities/friendship.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { User } from '../users/entities/user.entity';
+import { AdminPostsController } from './admin-posts.controller';
 import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
 import { Post } from './entities/post.entity';
 import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
+import { AdminPostsService } from './services/admin-posts.service';
 import { CloudinaryService } from './services/cloudinary.service';
 import { MediaUploadService } from './services/media-upload.service';
 import { PostAiSuggestionService } from './services/post-ai-suggestion.service';
@@ -22,14 +25,16 @@ import { PostAiSuggestionService } from './services/post-ai-suggestion.service';
       Friendship,
     ]),
     AiModule,
+    NotificationsModule,
   ],
-  controllers: [PostsController],
+  controllers: [PostsController, AdminPostsController],
   providers: [
     PostsService,
+    AdminPostsService,
     CloudinaryService,
     MediaUploadService,
     PostAiSuggestionService,
   ],
-  exports: [PostsService],
+  exports: [PostsService, AdminPostsService],
 })
 export class PostsModule {}

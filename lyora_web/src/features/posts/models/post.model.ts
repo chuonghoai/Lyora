@@ -149,3 +149,30 @@ export const suggestPostContentSchema = z
   );
 
 export type SuggestPostContentFormValues = z.infer<typeof suggestPostContentSchema>;
+
+export const MODERATION_REASON_PRESETS: readonly string[] = [
+  'Nội dung spam, quảng cáo hoặc bán hàng trái quy định cộng đồng',
+  'Ngôn từ công kích cá nhân, gây thù ghét hoặc thiếu văn minh',
+  'Chia sẻ thông tin sai sự thật, gây hoang mang cộng đồng',
+  'Nội dung nhạy cảm hoặc xâm phạm quyền riêng tư của người khác',
+] as const;
+
+export const hidePostModerationSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(5, 'Vui lòng nhập lý do ẩn bài viết tối thiểu 5 ký tự')
+    .max(500, 'Lý do ẩn bài viết tối đa 500 ký tự'),
+});
+
+export type HidePostModerationFormValues = z.infer<typeof hidePostModerationSchema>;
+
+export const removeModerationReasonSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .max(500, 'Lý do gỡ bỏ tối đa 500 ký tự')
+    .optional(),
+});
+
+export type RemoveModerationReasonFormValues = z.infer<typeof removeModerationReasonSchema>;

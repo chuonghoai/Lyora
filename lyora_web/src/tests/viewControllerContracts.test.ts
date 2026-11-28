@@ -5,6 +5,7 @@ import type { ForgotPasswordController } from '@/ui/auth/forgot-password/forgot-
 import type { HomeController } from '@/ui/client/home/home.controller';
 import type { ProfileController } from '@/ui/client/profile/profile.controller';
 import type { DashboardController } from '@/ui/admin/dashboard/dashboard.controller';
+import type { AdminPostsController } from '@/ui/admin/posts/admin-posts.controller';
 import type { ClientLayoutController } from '@/ui/client/client-layout.controller';
 import type { AdminLayoutController } from '@/ui/admin/admin-layout.controller';
 import type { MessagesController } from '@/ui/client/messages/messages.controller';
@@ -338,6 +339,102 @@ describe('View-Controller Contract & Integration Types', () => {
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<AdminLayoutController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('AdminPostsController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'stats'
+      | 'isStatsLoading'
+      | 'isStatsError'
+      | 'posts'
+      | 'paginationMeta'
+      | 'isPostsLoading'
+      | 'isPostsFetching'
+      | 'isPostsError'
+      | 'isManualRefreshing'
+      | 'searchQuery'
+      | 'debouncedSearch'
+      | 'statusFilter'
+      | 'visibilityFilter'
+      | 'authorRoleFilter'
+      | 'mediaFilter'
+      | 'hasActiveFilters'
+      | 'isDetailModalOpen'
+      | 'detailPostId'
+      | 'detailPost'
+      | 'isDetailLoading'
+      | 'isDetailError'
+      | 'moderationMode'
+      | 'lastModerationMode'
+      | 'moderationTargetPost'
+      | 'moderationReason'
+      | 'moderationError'
+      | 'isModeratingPost'
+      | 'restoringPostId'
+      | 'removeCommentTarget'
+      | 'removeCommentReason'
+      | 'removeCommentError'
+      | 'isRemovingComment'
+      | 'isCreateModalOpen'
+      | 'isComposerDirty'
+      | 'composerContent'
+      | 'composerVisibility'
+      | 'composerMedia'
+      | 'composerError'
+      | 'isPublishingPost'
+      | 'isAiPanelOpen'
+      | 'aiTopic'
+      | 'aiTone'
+      | 'aiSuggestions'
+      | 'isGeneratingAi'
+      | 'aiError'
+      | 'canUndoAiApply'
+      | 'handleSearchChange'
+      | 'handleClearSearch'
+      | 'handleSelectStatusFilter'
+      | 'handleSelectVisibilityFilter'
+      | 'handleSelectAuthorRoleFilter'
+      | 'handleSelectMediaFilter'
+      | 'handleResetFilters'
+      | 'handleChangePage'
+      | 'handleRefreshAll'
+      | 'handleRetryLoad'
+      | 'handleOpenDetail'
+      | 'handleCloseDetail'
+      | 'handleRetryDetail'
+      | 'handleOpenHideModal'
+      | 'handleOpenRemoveModal'
+      | 'handleCloseModerationModal'
+      | 'handleModerationReasonChange'
+      | 'handleSelectReasonPreset'
+      | 'handleConfirmModeration'
+      | 'handleRestorePost'
+      | 'handlePromptRemoveComment'
+      | 'handleCancelRemoveComment'
+      | 'handleRemoveCommentReasonChange'
+      | 'handleRemoveCommentCompositionEnd'
+      | 'handleRemoveCommentReasonKeyDown'
+      | 'handleConfirmRemoveComment'
+      | 'handleOpenCreateModal'
+      | 'handleCloseCreateModal'
+      | 'handleComposerContentChange'
+      | 'handleComposerVisibilityChange'
+      | 'handlePickComposerMedia'
+      | 'handleRemoveComposerMedia'
+      | 'handleToggleAiPanel'
+      | 'handleAiTopicChange'
+      | 'handleAiTopicCompositionEnd'
+      | 'handleAiTopicKeyDown'
+      | 'handleAiToneChange'
+      | 'handleRequestAiSuggestions'
+      | 'handleApplyAiSuggestion'
+      | 'handleUndoAiApply'
+      | 'handleSubmitAdminPost';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<AdminPostsController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });

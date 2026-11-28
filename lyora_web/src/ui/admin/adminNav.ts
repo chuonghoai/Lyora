@@ -54,9 +54,9 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       {
         id: 'posts',
         label: 'Quản lý bài viết',
-        path: '/admin/posts',
+        path: ROUTES.ADMIN.POSTS,
         icon: 'posts',
-        implemented: false,
+        implemented: true,
       },
       {
         id: 'comments',

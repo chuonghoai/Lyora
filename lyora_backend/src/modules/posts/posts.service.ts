@@ -19,7 +19,11 @@ import { PostQueryDto } from './dto/post-query.dto';
 import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
 import { Post } from './entities/post.entity';
-import { PostReactionType, PostVisibility } from './enums/post.enums';
+import {
+  PostModerationStatus,
+  PostReactionType,
+  PostVisibility,
+} from './enums/post.enums';
 import {
   PostCommentResponse,
   PostResponse,
@@ -133,6 +137,10 @@ export class PostsService {
       );
     }
 
+    qb.andWhere('post.moderationStatus = :activeModerationStatus', {
+      activeModerationStatus: PostModerationStatus.ACTIVE,
+    });
+
     if (visibility) {
       qb.andWhere('post.visibility = :visibility', { visibility });
     }
@@ -161,6 +169,15 @@ export class PostsService {
     id: string,
   ): Promise<PostResponse> {
     const post = await this.getPostOrThrow(id);
+    const isHidden = post.moderationStatus === PostModerationStatus.HIDDEN;
+    if (
+      isHidden &&
+      post.authorId !== currentUser.id &&
+      currentUser.role !== UserRole.ADMIN
+    ) {
+      throw new NotFoundException('Không tìm thấy bài viết');
+    }
+
     const isFriendVisible =
       post.visibility === PostVisibility.FRIENDS &&
       (await this.isAcceptedFriend(currentUser.id, post.authorId));

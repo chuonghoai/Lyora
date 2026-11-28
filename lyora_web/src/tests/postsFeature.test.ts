@@ -8,9 +8,12 @@ import {
   createCommentSchema,
   createPostSchema,
   getTopReactions,
+  hidePostModerationSchema,
   postKeys,
   PostService,
   suggestPostContentSchema,
+  type AdminPostDetail,
+  type AdminPostStatistics,
   type IPostRepository,
   type Post,
 } from '@/features/posts';
@@ -123,6 +126,13 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       hidePost: vi.fn(),
       unhidePost: vi.fn(),
       addComment: vi.fn(),
+      getAdminPostStatistics: vi.fn(),
+      getAdminPosts: vi.fn(),
+      getAdminPostDetail: vi.fn(),
+      hideAdminPost: vi.fn(),
+      restoreAdminPost: vi.fn(),
+      removeAdminPost: vi.fn(),
+      removeAdminComment: vi.fn(),
     };
 
     const service = new PostService(mockRepo);
@@ -153,6 +163,13 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       hidePost: vi.fn().mockRejectedValue(notFoundError),
       unhidePost: vi.fn().mockRejectedValue(notFoundError),
       addComment: vi.fn().mockRejectedValue(notFoundError),
+      getAdminPostStatistics: vi.fn().mockRejectedValue(notFoundError),
+      getAdminPosts: vi.fn().mockRejectedValue(notFoundError),
+      getAdminPostDetail: vi.fn().mockRejectedValue(notFoundError),
+      hideAdminPost: vi.fn().mockRejectedValue(notFoundError),
+      restoreAdminPost: vi.fn().mockRejectedValue(notFoundError),
+      removeAdminPost: vi.fn().mockRejectedValue(notFoundError),
+      removeAdminComment: vi.fn().mockRejectedValue(notFoundError),
     };
 
     const service = new PostService(mockRepo);
@@ -206,6 +223,13 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       hidePost: vi.fn(),
       unhidePost: vi.fn(),
       addComment: vi.fn(),
+      getAdminPostStatistics: vi.fn(),
+      getAdminPosts: vi.fn(),
+      getAdminPostDetail: vi.fn(),
+      hideAdminPost: vi.fn(),
+      restoreAdminPost: vi.fn(),
+      removeAdminPost: vi.fn(),
+      removeAdminComment: vi.fn(),
     };
 
     const service = new PostService(mockRepo);
@@ -406,5 +430,154 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     await expect(
       failingService.suggestContent({ topic: 'Cà phê sáng', tone: 'FUNNY' }),
     ).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('supports Admin Post Management keys, schemas, and service operations', async () => {
+    expect(postKeys.adminAll()).toEqual(['posts', 'admin']);
+    expect(postKeys.adminStats()).toEqual(['posts', 'admin', 'statistics']);
+    expect(postKeys.adminList({ page: 1, status: 'HIDDEN' })).toEqual([
+      'posts',
+      'admin',
+      'list',
+      { page: 1, status: 'HIDDEN' },
+    ]);
+    expect(postKeys.adminDetail('post-1')).toEqual([
+      'posts',
+      'admin',
+      'detail',
+      'post-1',
+    ]);
+
+    expect(hidePostModerationSchema.safeParse({ reason: 'abc' }).success).toBe(
+      false,
+    );
+    expect(
+      hidePostModerationSchema.safeParse({
+        reason: 'Vi phạm quy tắc cộng đồng',
+      }).success,
+    ).toBe(true);
+
+    const mockStats: AdminPostStatistics = {
+      totalPosts: 12,
+      activePosts: 10,
+      hiddenPosts: 2,
+      postsToday: 3,
+      postsThisMonth: 9,
+      withMediaCount: 5,
+      adminPostsCount: 2,
+      visibilityBreakdown: { PUBLIC: 8, FRIENDS: 2, PRIVATE: 2 },
+    };
+
+    const mockDetail: AdminPostDetail = {
+      id: 'post-admin-1',
+      author: {
+        id: 'user-1',
+        fullName: 'Nguyễn Minh Anh',
+        email: 'minhanh@lyora.vn',
+        avatarUrl: null,
+        role: 'CLIENT',
+      },
+      content: 'Bài viết cần kiểm duyệt',
+      visibility: 'PUBLIC',
+      media: [],
+      taggedUserIds: [],
+      moderationStatus: 'HIDDEN',
+      moderationReason: 'Nội dung quảng cáo trái phép',
+      moderatedAt: new Date().toISOString(),
+      moderatedBy: {
+        id: 'admin-1',
+        fullName: 'Quản Trị',
+        email: 'admin@lyora.vn',
+      },
+      reactionCount: 0,
+      reactionBreakdown: {
+        LIKE: 0,
+        LOVE: 0,
+        HAHA: 0,
+        WOW: 0,
+        SAD: 0,
+        ANGRY: 0,
+      },
+      commentCount: 0,
+      comments: [],
+      shareCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const adminRepo = {
+      getAdminPostStatistics: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: mockStats }),
+      getAdminPosts: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: [mockDetail] }),
+      getAdminPostDetail: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: mockDetail }),
+      hideAdminPost: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: mockDetail }),
+      restoreAdminPost: vi.fn().mockResolvedValue({
+        success: true,
+        data: {
+          ...mockDetail,
+          moderationStatus: 'ACTIVE',
+          moderationReason: null,
+        },
+      }),
+      removeAdminPost: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: null }),
+      removeAdminComment: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: null }),
+    } as unknown as IPostRepository;
+
+    const service = new PostService(adminRepo);
+    expect(await service.getAdminPostStatistics()).toEqual(mockStats);
+
+    const listRes = await service.getAdminPosts({
+      page: 1,
+      limit: 10,
+      search: '  kiểm duyệt ',
+      status: 'ALL',
+    });
+    expect(adminRepo.getAdminPosts).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      search: 'kiểm duyệt',
+    });
+    expect(listRes.items).toHaveLength(1);
+
+    await expect(service.hidePostAsAdmin('post-admin-1', '  ')).rejects.toThrow(
+      'Vui lòng nhập lý do ẩn bài viết tối thiểu 5 ký tự',
+    );
+
+    const hidden = await service.hidePostAsAdmin(
+      'post-admin-1',
+      '  Nội dung quảng cáo trái phép  ',
+    );
+    expect(adminRepo.hideAdminPost).toHaveBeenCalledWith(
+      'post-admin-1',
+      'Nội dung quảng cáo trái phép',
+    );
+    expect(hidden.moderationStatus).toBe('HIDDEN');
+
+    const restored = await service.restorePostAsAdmin('post-admin-1');
+    expect(restored.moderationStatus).toBe('ACTIVE');
+
+    await service.removePostAsAdmin('post-admin-1', '  Vi phạm lặp lại  ');
+    expect(adminRepo.removeAdminPost).toHaveBeenCalledWith(
+      'post-admin-1',
+      'Vi phạm lặp lại',
+    );
+
+    await service.removeCommentAsAdmin('post-admin-1', 'cmt-1', '  Spam  ');
+    expect(adminRepo.removeAdminComment).toHaveBeenCalledWith(
+      'post-admin-1',
+      'cmt-1',
+      'Spam',
+    );
   });
 });

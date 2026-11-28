@@ -22,6 +22,8 @@ export const CORE_CONSTANTS = {
     USERS: "/users",
     USERS_STATISTICS: "/users/statistics",
     POSTS: "/posts",
+    ADMIN_POSTS: "/admin/posts",
+    ADMIN_POSTS_STATISTICS: "/admin/posts/statistics",
     FRIENDS: "/friends",
     NOTIFICATIONS: "/notifications",
     CONVERSATIONS: "/conversations",
