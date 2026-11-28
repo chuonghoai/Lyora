@@ -33,6 +33,15 @@ export class FriendsController {
     return this.friendsService.getAcceptedFriends(currentUser.id);
   }
 
+  @Get('suggestions')
+  @Roles(UserRole.CLIENT)
+  @ResponseMessage('Lấy gợi ý kết bạn thành công')
+  async getSuggestions(
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ): Promise<FriendDiscoveryResponseDto[]> {
+    return this.friendsService.getSuggestions(currentUser.id);
+  }
+
   @Get('search')
   @Roles(UserRole.CLIENT)
   @ResponseMessage('Tìm kiếm thành viên thành công')

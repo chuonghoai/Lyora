@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 export interface CreateModerationNoticeParams {
   recipientId: string;
@@ -21,6 +22,7 @@ export class NotificationsService {
   constructor(
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
+    private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
   async createFriendRequest(
@@ -28,7 +30,7 @@ export class NotificationsService {
     actorName: string,
     actorId: string,
   ) {
-    return this.notificationRepository.save(
+    const notification = await this.notificationRepository.save(
       this.notificationRepository.create({
         recipientId,
         actorId,
@@ -39,6 +41,12 @@ export class NotificationsService {
         isRead: false,
       }),
     );
+    this.realtimeGateway.emitToUser(
+      recipientId,
+      'notification.created',
+      notification,
+    );
+    return notification;
   }
 
   async createFriendRequestAccepted(
@@ -46,7 +54,7 @@ export class NotificationsService {
     actorName: string,
     actorId: string,
   ) {
-    return this.notificationRepository.save(
+    const notification = await this.notificationRepository.save(
       this.notificationRepository.create({
         recipientId,
         actorId,
@@ -57,6 +65,12 @@ export class NotificationsService {
         isRead: false,
       }),
     );
+    this.realtimeGateway.emitToUser(
+      recipientId,
+      'notification.created',
+      notification,
+    );
+    return notification;
   }
 
   async createModerationNotice(params: CreateModerationNoticeParams) {

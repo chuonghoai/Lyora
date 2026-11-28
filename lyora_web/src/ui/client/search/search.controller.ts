@@ -1,22 +1,38 @@
-import { useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useFriendSearchQuery } from '@/features/friends';
-import { useInfinitePostsQuery } from '@/features/posts';
-import { ROUTES } from '@/routes/paths';
+import { useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { isApiError, toast } from "@/core";
+import {
+  useAcceptFriendRequestMutation,
+  useFriendSearchQuery,
+  useRemoveFriendRequestMutation,
+  useSendFriendRequestMutation,
+} from "@/features/friends";
+import { useInfinitePostsQuery } from "@/features/posts";
+import { ROUTES } from "@/routes/paths";
 
-export type SearchResultTab = 'all' | 'people' | 'posts';
+export type SearchResultTab = "all" | "people" | "posts" | "pages";
+
+function getErrorMessage(error: unknown): string {
+  return isApiError(error)
+    ? error.message
+    : "Không thể hoàn tất thao tác. Vui lòng thử lại.";
+}
 
 export function useSearchController() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const query = (searchParams.get('q') ?? '').trim();
-  const tabParam = searchParams.get('tab');
+  const query = (searchParams.get("q") ?? "").trim();
+  const tabParam = searchParams.get("tab");
   const activeTab: SearchResultTab =
-    tabParam === 'people' || tabParam === 'posts' ? tabParam : 'all';
-
+    tabParam === "people" || tabParam === "posts" || tabParam === "pages"
+      ? tabParam
+      : "all";
   const peopleQuery = useFriendSearchQuery(query);
+  const sendRequestMutation = useSendFriendRequestMutation();
+  const acceptRequestMutation = useAcceptFriendRequestMutation();
+  const removeRequestMutation = useRemoveFriendRequestMutation();
   const postsQuery = useInfinitePostsQuery(
-    { search: query, limit: 10, filter: 'all' },
+    { search: query, limit: 10, filter: "all" },
     { enabled: query.length >= 2 },
   );
 
@@ -28,29 +44,55 @@ export function useSearchController() {
   const handleSelectTab = (tab: SearchResultTab) => {
     setSearchParams((previous) => {
       const next = new URLSearchParams(previous);
-      if (tab === 'all') next.delete('tab');
-      else next.set('tab', tab);
+      if (tab === "all") next.delete("tab");
+      else next.set("tab", tab);
       return next;
     });
   };
 
-  const handleRetryPeople = () => {
-    void peopleQuery.refetch();
+  const handleSendRequest = async (userId: string, fullName: string) => {
+    try {
+      await sendRequestMutation.mutateAsync(userId);
+      toast.success(`Đã gửi lời mời kết bạn đến ${fullName}.`);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
   };
 
-  const handleRetryPosts = () => {
-    void postsQuery.refetch();
+  const handleAcceptRequest = async (userId: string, fullName: string) => {
+    try {
+      await acceptRequestMutation.mutateAsync(userId);
+      toast.success(`Bạn và ${fullName} hiện là bạn bè.`);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
   };
 
+  const handleRemoveRequest = async (
+    userId: string,
+    fullName: string,
+    isIncoming: boolean,
+  ) => {
+    try {
+      await removeRequestMutation.mutateAsync(userId);
+      toast.info(
+        isIncoming
+          ? `Đã từ chối lời mời của ${fullName}.`
+          : `Đã hủy lời mời đến ${fullName}.`,
+      );
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleRetryPeople = () => void peopleQuery.refetch();
+  const handleRetryPosts = () => void postsQuery.refetch();
   const handleLoadMorePosts = () => {
     if (postsQuery.hasNextPage && !postsQuery.isFetchingNextPage) {
       void postsQuery.fetchNextPage();
     }
   };
-
-  const handleBackToFeed = () => {
-    navigate(ROUTES.CLIENT.ROOT);
-  };
+  const handleBackToFeed = () => navigate(ROUTES.CLIENT.ROOT);
 
   return {
     query,
@@ -63,7 +105,14 @@ export function useSearchController() {
     isPostsError: postsQuery.isError,
     hasNextPostsPage: Boolean(postsQuery.hasNextPage),
     isFetchingNextPosts: postsQuery.isFetchingNextPage,
+    isActionPending: (userId: string) =>
+      (sendRequestMutation.isPending && sendRequestMutation.variables === userId) ||
+      (acceptRequestMutation.isPending && acceptRequestMutation.variables === userId) ||
+      (removeRequestMutation.isPending && removeRequestMutation.variables === userId),
     handleSelectTab,
+    handleSendRequest,
+    handleAcceptRequest,
+    handleRemoveRequest,
     handleRetryPeople,
     handleRetryPosts,
     handleLoadMorePosts,

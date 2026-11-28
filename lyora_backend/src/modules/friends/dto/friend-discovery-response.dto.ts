@@ -8,4 +8,5 @@ export class FriendDiscoveryResponseDto {
   workplace: string | null;
   location: string | null;
   friendshipStatus: FriendRelationshipStatus;
+  mutualFriendsCount: number;
 }

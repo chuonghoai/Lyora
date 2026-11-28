@@ -10,6 +10,7 @@ import { In, Repository } from 'typeorm';
 import { UserRole } from '../../common/enums/role.enum';
 import { User } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { FriendResponseDto } from './dto/friend-response.dto';
 import {
   FriendDiscoveryResponseDto,
@@ -29,6 +30,7 @@ export class FriendsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly notificationsService: NotificationsService,
+    private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
   /**
@@ -66,6 +68,7 @@ export class FriendsService {
         'location',
         'isActive',
         'isOnline',
+        'isOnline',
       ],
     });
 
@@ -76,6 +79,7 @@ export class FriendsService {
       workplace: u.workplace ?? null,
       location: u.location ?? null,
       friendshipStatus: 'FRIEND',
+      mutualFriendsCount: 0,
       isOnline: Boolean(u.isOnline),
     }));
   }
@@ -89,6 +93,7 @@ export class FriendsService {
       .createQueryBuilder('user')
       .where('user.id != :currentUserId', { currentUserId })
       .andWhere('user.isActive = true')
+      .andWhere('user.role = :clientRole', { clientRole: UserRole.CLIENT })
       .andWhere('user.role = :clientRole', { clientRole: UserRole.CLIENT })
       .andWhere('user.fullName ILIKE :keyword', { keyword: `%${keyword}%` })
       .andWhere(
@@ -123,6 +128,10 @@ export class FriendsService {
         relationship,
       ]),
     );
+    const mutualFriendsByUserId = await this.getMutualFriendsByUserId(
+      currentUserId,
+      candidateIds,
+    );
 
     return {
       totalItems,
@@ -133,9 +142,90 @@ export class FriendsService {
             relationByUserId.get(user.id),
             currentUserId,
           ),
+          mutualFriendsByUserId.get(user.id) ?? 0,
         ),
       ),
     };
+  }
+
+  /**
+   * Đề xuất thành viên chưa có quan hệ với người dùng hiện tại.
+   * Ưu tiên người có nhiều bạn chung, sau đó là các thành viên Lyora khác.
+   */
+  async getSuggestions(
+    currentUserId: string,
+  ): Promise<FriendDiscoveryResponseDto[]> {
+    const currentRelationships = await this.friendshipRepository
+      .createQueryBuilder('friendship')
+      .where(
+        '(friendship.userId = :currentUserId OR friendship.friendId = :currentUserId)',
+        { currentUserId },
+      )
+      .getMany();
+
+    const excludedUserIds = new Set<string>([currentUserId]);
+    const acceptedFriendIds = new Set<string>();
+    for (const relationship of currentRelationships) {
+      const otherUserId =
+        relationship.userId === currentUserId
+          ? relationship.friendId
+          : relationship.userId;
+      excludedUserIds.add(otherUserId);
+      if (relationship.status === FriendshipStatus.ACCEPTED) {
+        acceptedFriendIds.add(otherUserId);
+      }
+    }
+
+    const mutualFriendsByUserId = new Map<string, number>();
+    if (acceptedFriendIds.size > 0) {
+      const friendRelationships = await this.friendshipRepository
+        .createQueryBuilder('friendship')
+        .where('friendship.status = :status', {
+          status: FriendshipStatus.ACCEPTED,
+        })
+        .andWhere(
+          '(friendship.userId IN (:...friendIds) OR friendship.friendId IN (:...friendIds))',
+          { friendIds: [...acceptedFriendIds] },
+        )
+        .getMany();
+
+      for (const relationship of friendRelationships) {
+        const otherUserId = acceptedFriendIds.has(relationship.userId)
+          ? relationship.friendId
+          : relationship.userId;
+        if (
+          otherUserId !== currentUserId &&
+          !acceptedFriendIds.has(otherUserId) &&
+          !excludedUserIds.has(otherUserId)
+        ) {
+          mutualFriendsByUserId.set(
+            otherUserId,
+            (mutualFriendsByUserId.get(otherUserId) ?? 0) + 1,
+          );
+        }
+      }
+    }
+
+    const users = await this.userRepository.find({
+      where: { isActive: true, role: UserRole.CLIENT },
+      select: ['id', 'fullName', 'avatarUrl', 'workplace', 'location'],
+    });
+
+    return users
+      .filter((user) => !excludedUserIds.has(user.id))
+      .map((user) =>
+        this.toDiscoveryResponse(
+          user,
+          'NONE',
+          mutualFriendsByUserId.get(user.id) ?? 0,
+        ),
+      )
+      .sort(
+        (first, second) =>
+          second.mutualFriendsCount - first.mutualFriendsCount ||
+          first.fullName.localeCompare(second.fullName, 'vi'),
+      )
+      .slice(0, 12);
   }
 
   async getReceivedRequests(
@@ -198,6 +288,12 @@ export class FriendsService {
         currentUserId,
       );
     });
+    this.emitFriendshipUpdate(
+      currentUserId,
+      targetUserId,
+      'REQUEST_SENT',
+      'REQUEST_RECEIVED',
+    );
   }
 
   async acceptRequest(
@@ -224,6 +320,7 @@ export class FriendsService {
         currentUserId,
       );
     });
+    this.emitFriendshipUpdate(currentUserId, requesterId, 'FRIEND', 'FRIEND');
   }
 
   async removeRequest(
@@ -235,6 +332,7 @@ export class FriendsService {
       throw new NotFoundException('Không tìm thấy lời mời kết bạn đang chờ');
     }
     await this.friendshipRepository.remove(request);
+    this.emitFriendshipUpdate(currentUserId, targetUserId, 'NONE', 'NONE');
   }
 
   async unfriend(currentUserId: string, targetUserId: string): Promise<void> {
@@ -246,6 +344,7 @@ export class FriendsService {
       throw new NotFoundException('Hai người chưa là bạn bè');
     }
     await this.friendshipRepository.remove(relationship);
+    this.emitFriendshipUpdate(currentUserId, targetUserId, 'NONE', 'NONE');
   }
 
   /**
@@ -378,9 +477,77 @@ export class FriendsService {
       .getOne();
   }
 
+  private async getMutualFriendsByUserId(
+    currentUserId: string,
+    candidateIds: string[],
+  ): Promise<Map<string, number>> {
+    if (candidateIds.length === 0) return new Map();
+
+    const currentFriendships = await this.friendshipRepository
+      .createQueryBuilder('friendship')
+      .where('friendship.status = :status', {
+        status: FriendshipStatus.ACCEPTED,
+      })
+      .andWhere(
+        '(friendship.userId = :currentUserId OR friendship.friendId = :currentUserId)',
+        { currentUserId },
+      )
+      .getMany();
+    const currentFriendIds = new Set(
+      currentFriendships.map((friendship) =>
+        friendship.userId === currentUserId
+          ? friendship.friendId
+          : friendship.userId,
+      ),
+    );
+    if (currentFriendIds.size === 0) return new Map();
+
+    const candidateIdSet = new Set(candidateIds);
+    const friendRelationships = await this.friendshipRepository
+      .createQueryBuilder('friendship')
+      .where('friendship.status = :status', {
+        status: FriendshipStatus.ACCEPTED,
+      })
+      .andWhere(
+        '(friendship.userId IN (:...friendIds) OR friendship.friendId IN (:...friendIds))',
+        { friendIds: [...currentFriendIds] },
+      )
+      .getMany();
+    const mutualFriendsByUserId = new Map<string, number>();
+    for (const relationship of friendRelationships) {
+      const otherUserId = currentFriendIds.has(relationship.userId)
+        ? relationship.friendId
+        : relationship.userId;
+      if (candidateIdSet.has(otherUserId)) {
+        mutualFriendsByUserId.set(
+          otherUserId,
+          (mutualFriendsByUserId.get(otherUserId) ?? 0) + 1,
+        );
+      }
+    }
+    return mutualFriendsByUserId;
+  }
+
+  private emitFriendshipUpdate(
+    firstUserId: string,
+    secondUserId: string,
+    firstStatus: FriendRelationshipStatus,
+    secondStatus: FriendRelationshipStatus,
+  ): void {
+    this.realtimeGateway.emitToUser(firstUserId, 'friendship.updated', {
+      userId: secondUserId,
+      friendshipStatus: firstStatus,
+    });
+    this.realtimeGateway.emitToUser(secondUserId, 'friendship.updated', {
+      userId: firstUserId,
+      friendshipStatus: secondStatus,
+    });
+  }
+
   private toDiscoveryResponse(
     user: User,
     friendshipStatus: FriendRelationshipStatus,
+    mutualFriendsCount = 0,
   ): FriendDiscoveryResponseDto {
     return {
       id: user.id,
@@ -389,6 +556,7 @@ export class FriendsService {
       workplace: user.workplace ?? null,
       location: user.location ?? null,
       friendshipStatus,
+      mutualFriendsCount,
     };
   }
 

@@ -35,6 +35,10 @@ export default defineConfig({
       '/friends': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        // `/friends` cũng là route của SPA. Khi người dùng F5/navigate trực tiếp,
+        // để Vite trả index.html thay vì proxy document request sang Nest API.
+        bypass: (request) =>
+          request.headers.accept?.includes('text/html') ? '/friends' : undefined,
       },
       '/notifications': {
         target: 'http://localhost:3000',

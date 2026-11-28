@@ -72,7 +72,7 @@ export const ClientLayout: React.FC = () => {
               >
                 <SearchIcon className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="search"
+                  type="text"
                   value={controller.searchQuery}
                   onChange={controller.handleSearchChange}
                   onFocus={controller.handleOpenSearch}
