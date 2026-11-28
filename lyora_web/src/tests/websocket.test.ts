@@ -6,9 +6,7 @@ describe('WebSocketService Lifecycle & Event Registry', () => {
 
   beforeEach(() => {
     wsService = new WebSocketService({
-      url: 'ws://localhost:3000/ws',
-      heartbeatIntervalMs: 5000,
-      reconnectIntervalMs: 1000,
+      url: 'http://localhost:3000',
       maxReconnectAttempts: 3,
     });
   });

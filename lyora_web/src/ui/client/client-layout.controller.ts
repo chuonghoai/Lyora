@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   localStorageService,
   toast,
   useAuthStore,
   useClickOutside,
+  webSocketService,
 } from "@/core";
 import { useLogoutMutation, useRefreshSessionMutation } from "@/features/auth";
 import {
@@ -19,6 +21,8 @@ import {
   useMarkNotificationReadMutation,
   useNotificationsQuery,
 } from "@/features/notifications";
+import { friendsKeys } from "@/features/friends/hooks/friends.keys";
+import { notificationsKeys } from "@/features/notifications/hooks/notifications.keys";
 import type { PostsFeedFilter } from "@/features/posts";
 import {
   getClientProfilePath,
@@ -84,6 +88,7 @@ export function useClientLayoutController() {
   const appTitle = import.meta.env.VITE_APP_TITLE || "Lyora";
 
   const user = useAuthStore((s) => s.user);
+  const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setAuth = useAuthStore((s) => s.setAuth);
   const logoutMutation = useLogoutMutation();
@@ -186,6 +191,36 @@ export function useClientLayoutController() {
     hasAttemptedMountRefreshRef.current = true;
     triggerRefreshSession();
   }, [isAuthenticated, triggerRefreshSession]);
+
+  // Socket only invalidates cache; REST remains the persistent source on initial load/reconnect.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      webSocketService.disconnect();
+      return;
+    }
+    webSocketService.connect();
+    const refreshFriends = () => {
+      void queryClient.invalidateQueries({ queryKey: friendsKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["users", "profile-page"] });
+      void queryClient.invalidateQueries({ queryKey: ["users", "friends-directory"] });
+    };
+    const unsubscribeNotification = webSocketService.subscribe(
+      "notification.created",
+      () => {
+        void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+        refreshFriends();
+      },
+    );
+    const unsubscribeFriendship = webSocketService.subscribe(
+      "friendship.updated",
+      refreshFriends,
+    );
+    return () => {
+      unsubscribeNotification();
+      unsubscribeFriendship();
+      webSocketService.disconnect();
+    };
+  }, [isAuthenticated, queryClient]);
 
   // Chỉ đồng bộ ô tìm kiếm với URL khi đang xem trang kết quả tìm kiếm.
   useEffect(() => {

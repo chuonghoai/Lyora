@@ -10,6 +10,7 @@ import { In, Repository } from 'typeorm';
 import { UserRole } from '../../common/enums/role.enum';
 import { User } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { FriendResponseDto } from './dto/friend-response.dto';
 import {
   FriendDiscoveryResponseDto,
@@ -29,6 +30,7 @@ export class FriendsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly notificationsService: NotificationsService,
+    private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
   /**
@@ -196,6 +198,7 @@ export class FriendsService {
         currentUserId,
       );
     });
+    this.emitFriendshipUpdate([currentUserId, targetUserId], 'REQUEST_SENT');
   }
 
   async acceptRequest(
@@ -222,6 +225,7 @@ export class FriendsService {
         currentUserId,
       );
     });
+    this.emitFriendshipUpdate([currentUserId, requesterId], 'ACCEPTED');
   }
 
   async removeRequest(
@@ -233,6 +237,7 @@ export class FriendsService {
       throw new NotFoundException('Không tìm thấy lời mời kết bạn đang chờ');
     }
     await this.friendshipRepository.remove(request);
+    this.emitFriendshipUpdate([currentUserId, targetUserId], 'REQUEST_REMOVED');
   }
 
   async unfriend(currentUserId: string, targetUserId: string): Promise<void> {
@@ -244,6 +249,7 @@ export class FriendsService {
       throw new NotFoundException('Hai người chưa là bạn bè');
     }
     await this.friendshipRepository.remove(relationship);
+    this.emitFriendshipUpdate([currentUserId, targetUserId], 'UNFRIENDED');
   }
 
   /**
@@ -374,6 +380,10 @@ export class FriendsService {
         { currentUserId, targetUserId },
       )
       .getOne();
+  }
+
+  private emitFriendshipUpdate(userIds: string[], action: string): void {
+    this.realtimeGateway.emitToUsers(userIds, 'friendship.updated', { action });
   }
 
   private toDiscoveryResponse(
