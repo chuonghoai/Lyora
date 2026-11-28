@@ -26,7 +26,6 @@ import {
   type PostContentSuggestion,
   type PostMediaItem,
   type PostSuggestionTone,
-  type PostVisibility,
   type SuggestPostMediaContextItem,
 } from '@/features/posts';
 import { useQueryClient } from '@tanstack/react-query';
@@ -139,8 +138,6 @@ export function useAdminPostsController() {
   // Admin Official Post Composer Modal + AI Assistant States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [composerContent, setComposerContent] = useState('');
-  const [composerVisibility, setComposerVisibility] =
-    useState<PostVisibility>('PUBLIC');
   const [composerMedia, setComposerMedia] = useState<PostMediaItem[]>([]);
   const [composerError, setComposerError] = useState<string | null>(null);
   const composerFilesRef = useRef<Map<string, File>>(new Map());
@@ -466,7 +463,6 @@ export function useAdminPostsController() {
     });
     composerFilesRef.current.clear();
     setComposerContent('');
-    setComposerVisibility('PUBLIC');
     setComposerMedia([]);
     setComposerError(null);
     setIsAiPanelOpen(false);
@@ -499,10 +495,6 @@ export function useAdminPostsController() {
     setComposerContent(e.target.value);
     setAiPreviousContent(null);
     if (composerError) setComposerError(null);
-  };
-
-  const handleComposerVisibilityChange = (visibility: PostVisibility) => {
-    setComposerVisibility(visibility);
   };
 
   const handlePickComposerMedia = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -602,7 +594,7 @@ export function useAdminPostsController() {
       topic: aiTopic,
       currentContent: composerContent,
       tone: aiTone,
-      visibility: composerVisibility,
+      visibility: 'PUBLIC',
       ...(mediaItems.length > 0 ? { mediaItems } : {}),
       ...(selectedFiles.length > 0 ? { mediaFiles: selectedFiles } : {}),
     });
@@ -676,7 +668,7 @@ export function useAdminPostsController() {
     e.preventDefault();
     const validation = createPostSchema.safeParse({
       content: composerContent,
-      visibility: composerVisibility,
+      visibility: 'PUBLIC',
       media: composerMedia,
     });
 
@@ -789,7 +781,6 @@ export function useAdminPostsController() {
     isComposerDirty:
       composerContent.trim().length > 0 || composerMedia.length > 0,
     composerContent,
-    composerVisibility,
     composerMedia,
     composerError,
     isPublishingPost:
@@ -832,7 +823,6 @@ export function useAdminPostsController() {
     handleOpenCreateModal,
     handleCloseCreateModal,
     handleComposerContentChange,
-    handleComposerVisibilityChange,
     handlePickComposerMedia,
     handleRemoveComposerMedia,
     handleToggleAiPanel,
