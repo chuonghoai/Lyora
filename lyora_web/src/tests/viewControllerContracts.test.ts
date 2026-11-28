@@ -362,6 +362,9 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'isError'
       | 'isTransitioningData'
       | 'isRefreshingOnlineStatus'
+      | 'isCreateModalOpen'
+      | 'isCreatingUser'
+      | 'createUserError'
       | 'handleSelectRoleTab'
       | 'handleStatusFilterChange'
       | 'handleOnlineFilterChange'
@@ -371,7 +374,10 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleResetFilters'
       | 'handlePageChange'
       | 'handleRefresh'
-      | 'handleOpenUserDetail';
+      | 'handleOpenUserDetail'
+      | 'handleOpenCreateModal'
+      | 'handleCloseCreateModal'
+      | 'handleCreateUser';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<AdminUsersController, ExpectedKeys>;

@@ -1,4 +1,9 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { UserRole } from '../../common/enums/role.enum';
 import { RedisService } from '../../redis/redis.service';
@@ -23,6 +28,7 @@ describe('UsersService - Statistics, Profile Update & Public Profile', () => {
   beforeEach(() => {
     userRepository = {
       count: jest.fn(),
+      create: jest.fn((payload) => payload as User),
       createQueryBuilder: jest.fn(),
       find: jest.fn(),
       findOne: jest.fn(),
@@ -576,5 +582,57 @@ describe('UsersService - Statistics, Profile Update & Public Profile', () => {
     });
     expect(result.onlineCount).toBe(5);
     expect(result.checkedAt).toBeTruthy();
+  });
+
+  it('createUser normalizes email, hashes password with bcrypt, sets chosen role, and rejects duplicates', async () => {
+    let createdArg: Partial<User> = {};
+    (userRepository.create as jest.Mock).mockImplementationOnce(
+      (payload: Partial<User>) => {
+        createdArg = payload;
+        return payload as User;
+      },
+    );
+    (userRepository.findOne as jest.Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: targetId,
+        email: 'newadmin@lyora.vn',
+        fullName: 'Quản Trị Mới',
+        role: UserRole.ADMIN,
+        isActive: true,
+      });
+    (userRepository.save as jest.Mock).mockResolvedValueOnce({ id: targetId });
+
+    const created = await usersService.createUser({
+      email: '  NewAdmin@Lyora.VN  ',
+      password: 'Password123',
+      fullName: '  Quản Trị Mới  ',
+      role: UserRole.ADMIN,
+    });
+
+    expect(createdArg.email).toBe('newadmin@lyora.vn');
+    expect(createdArg.fullName).toBe('Quản Trị Mới');
+    expect(createdArg.role).toBe(UserRole.ADMIN);
+    expect(createdArg.isActive).toBe(true);
+    expect(createdArg.passwordHash).toBeDefined();
+    expect(createdArg.passwordHash).not.toBe('Password123');
+    expect(
+      await bcrypt.compare('Password123', createdArg.passwordHash ?? ''),
+    ).toBe(true);
+    expect(created.role).toBe(UserRole.ADMIN);
+
+    (userRepository.findOne as jest.Mock).mockResolvedValueOnce({
+      id: targetId,
+      email: 'newadmin@lyora.vn',
+    });
+
+    await expect(
+      usersService.createUser({
+        email: 'newadmin@lyora.vn',
+        password: 'Password123',
+        fullName: 'Quản Trị Mới',
+        role: UserRole.CLIENT,
+      }),
+    ).rejects.toThrow(ConflictException);
   });
 });

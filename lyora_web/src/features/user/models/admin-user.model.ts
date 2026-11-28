@@ -75,3 +75,46 @@ export function buildFinalLockReason(
   }
   return matched.label.slice(0, 500);
 }
+
+export const ADMIN_USER_ROLE_OPTIONS = [
+  {
+    value: 'CLIENT',
+    label: 'Người dùng',
+    description: 'Tài khoản thành viên cộng đồng tiêu chuẩn (đăng bài, bình luận, nhắn tin).',
+  },
+  {
+    value: 'ADMIN',
+    label: 'Quản trị',
+    description: 'Tài khoản quản trị viên có toàn quyền truy cập Trung Tâm Quản Trị.',
+  },
+] as const;
+
+export const createAdminUserFormSchema = z
+  .object({
+    fullName: z
+      .string()
+      .trim()
+      .min(1, 'Họ và tên không được để trống')
+      .max(150, 'Họ và tên không được vượt quá 150 ký tự'),
+    email: z
+      .string()
+      .trim()
+      .min(1, 'Email không được để trống')
+      .email('Định dạng email không hợp lệ')
+      .max(255, 'Email không được vượt quá 255 ký tự'),
+    password: z
+      .string()
+      .min(1, 'Mật khẩu không được để trống')
+      .min(6, 'Mật khẩu phải có ít nhất 6 ký tự')
+      .max(128, 'Mật khẩu không được vượt quá 128 ký tự'),
+    confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu'),
+    role: z.enum(['CLIENT', 'ADMIN'], {
+      message: 'Vui lòng chọn vai trò hợp lệ',
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Mật khẩu xác nhận không khớp',
+    path: ['confirmPassword'],
+  });
+
+export type CreateAdminUserFormValues = z.infer<typeof createAdminUserFormSchema>;

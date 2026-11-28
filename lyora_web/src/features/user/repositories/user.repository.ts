@@ -5,6 +5,7 @@ import type {
   AdminUsersQueryParams,
   AdminUsersSummaryCounts,
   AdminUserSummaryItem,
+  CreateAdminUserPayload,
   LockUserPayload,
   UpdateUserProfilePayload,
   UserStatistics,
@@ -19,6 +20,7 @@ export interface IUserRepository {
   ): Promise<ApiResponse<{ items: AdminUserSummaryItem[]; summary: AdminUsersSummaryCounts }>>;
   getUsersOnlineStatus(ids: string[]): Promise<ApiResponse<AdminOnlineStatusResponse>>;
   getAdminUserDetail(userId: string): Promise<ApiResponse<AdminUserDetail>>;
+  createUser(payload: CreateAdminUserPayload): Promise<ApiResponse<AdminUserSummaryItem>>;
   lockUser(userId: string, payload: LockUserPayload): Promise<ApiResponse<AdminUserSummaryItem>>;
   unlockUser(userId: string): Promise<ApiResponse<AdminUserSummaryItem>>;
 }
@@ -65,6 +67,13 @@ export class UserRepository implements IUserRepository {
   async getAdminUserDetail(userId: string): Promise<ApiResponse<AdminUserDetail>> {
     return apiClient.get<ApiResponse<AdminUserDetail>, ApiResponse<AdminUserDetail>>(
       `${CORE_CONSTANTS.API_ENDPOINTS.USERS}/${encodeURIComponent(userId)}/admin-profile`,
+    );
+  }
+
+  async createUser(payload: CreateAdminUserPayload): Promise<ApiResponse<AdminUserSummaryItem>> {
+    return apiClient.post<ApiResponse<AdminUserSummaryItem>, ApiResponse<AdminUserSummaryItem>>(
+      CORE_CONSTANTS.API_ENDPOINTS.USERS,
+      payload,
     );
   }
 

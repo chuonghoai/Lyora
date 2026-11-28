@@ -103,6 +103,7 @@ describe('Query Key Factories & Data Layer Hooks', () => {
         getAdminUsers: vi.fn(),
         getUsersOnlineStatus: vi.fn(),
         getAdminUserDetail: vi.fn(),
+        createUser: vi.fn(),
         lockUser: vi.fn(),
         unlockUser: vi.fn(),
       };

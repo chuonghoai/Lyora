@@ -62,6 +62,13 @@ export interface AdminOnlineStatusResponse {
   checkedAt: string;
 }
 
+export interface CreateAdminUserPayload {
+  fullName: string;
+  email: string;
+  password: string;
+  role: UserRole;
+}
+
 export interface AdminUserDetail {
   id: string;
   email: string;

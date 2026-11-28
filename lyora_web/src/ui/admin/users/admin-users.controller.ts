@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast, useDebounce } from '@/core';
+import { isApiError, toast, useDebounce } from '@/core';
 import {
   useAdminUsersOnlineStatusQuery,
   useAdminUsersQuery,
+  useCreateAdminUserMutation,
   type AdminUserOnlineFilter,
   type AdminUserRoleTab,
   type AdminUserSortBy,
   type AdminUserSortOrder,
   type AdminUserStatusFilter,
+  type CreateAdminUserPayload,
 } from '@/features/user';
 import { getAdminUserDetailPath } from '@/routes/paths';
 
@@ -37,6 +39,10 @@ export function useAdminUsersController() {
   const [sortOption, setSortOption] = useState<AdminUserSortOption>('createdAt:DESC');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createUserError, setCreateUserError] = useState<string | null>(null);
+
+  const createUserMutation = useCreateAdminUserMutation();
 
   const debouncedSearch = useDebounce(searchQuery.trim(), 350);
   const { sortBy, sortOrder } = parseSortOption(sortOption);
@@ -141,6 +147,32 @@ export function useAdminUsersController() {
     navigate(getAdminUserDetailPath(userId));
   };
 
+  const handleOpenCreateModal = () => {
+    setCreateUserError(null);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    if (createUserMutation.isPending) return;
+    setCreateUserError(null);
+    setIsCreateModalOpen(false);
+  };
+
+  const handleCreateUser = async (payload: CreateAdminUserPayload) => {
+    setCreateUserError(null);
+    try {
+      const created = await createUserMutation.mutateAsync(payload);
+      setIsCreateModalOpen(false);
+      setPage(1);
+      toast.success(`Đã tạo tài khoản ${created.fullName} (${created.email}).`);
+    } catch (err) {
+      const message = isApiError(err)
+        ? err.message
+        : 'Không thể tạo tài khoản mới lúc này. Vui lòng thử lại.';
+      setCreateUserError(message);
+    }
+  };
+
   const data = usersQuery.data;
   const onlineStatusesMap = onlineStatusQuery.data?.statuses;
 
@@ -201,6 +233,9 @@ export function useAdminUsersController() {
     isRefreshingOnlineStatus: onlineStatusQuery.isFetching,
     lastOnlineCheckedAt: onlineStatusQuery.data?.checkedAt ?? null,
     isError: usersQuery.isError,
+    isCreateModalOpen,
+    isCreatingUser: createUserMutation.isPending,
+    createUserError,
     handleSelectRoleTab,
     handleStatusFilterChange,
     handleOnlineFilterChange,
@@ -211,6 +246,9 @@ export function useAdminUsersController() {
     handlePageChange,
     handleRefresh,
     handleOpenUserDetail,
+    handleOpenCreateModal,
+    handleCloseCreateModal,
+    handleCreateUser,
   };
 }
 

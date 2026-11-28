@@ -1,6 +1,10 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../services/user.service';
-import type { AdminUsersQueryParams, LockUserPayload } from '../types/user.types';
+import type {
+  AdminUsersQueryParams,
+  CreateAdminUserPayload,
+  LockUserPayload,
+} from '../types/user.types';
 import { userKeys } from './user.keys';
 
 export function useAdminUsersQuery(params: AdminUsersQueryParams) {
@@ -69,6 +73,17 @@ export function useUnlockUserMutation() {
 
   return useMutation({
     mutationFn: (userId: string) => userService.unlockUser(userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
+
+export function useCreateAdminUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateAdminUserPayload) => userService.createUser(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: userKeys.all });
     },
