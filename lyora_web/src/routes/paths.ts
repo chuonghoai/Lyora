@@ -12,6 +12,7 @@ export const ROUTES = {
     DASHBOARD: '/admin',
     USERS: '/admin/users',
     USER_DETAIL: '/admin/users/:userId',
+    POSTS: '/admin/posts',
   },
   AUTH: {
     LOGIN: '/login',

@@ -25,7 +25,11 @@ import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
 import { PostShare } from './entities/post-share.entity';
 import { Post } from './entities/post.entity';
-import { PostReactionType, PostVisibility } from './enums/post.enums';
+import {
+  PostModerationStatus,
+  PostReactionType,
+  PostVisibility,
+} from './enums/post.enums';
 import {
   PostCommentResponse,
   PostReactionUserResponse,
@@ -95,11 +99,16 @@ export class PostsService {
       currentUser.id,
     );
 
+    const visibility =
+      currentUser.role === UserRole.ADMIN
+        ? PostVisibility.PUBLIC
+        : (dto.visibility ?? PostVisibility.PUBLIC);
+
     const created = await this.postRepository.save(
       this.postRepository.create({
         authorId: currentUser.id,
         content,
-        visibility: dto.visibility ?? PostVisibility.PUBLIC,
+        visibility,
         media,
         taggedUserIds: taggedUserIds.length > 0 ? taggedUserIds : null,
       }),
@@ -156,6 +165,10 @@ export class PostsService {
         }),
       );
     }
+
+    qb.andWhere('post.moderationStatus = :activeModerationStatus', {
+      activeModerationStatus: PostModerationStatus.ACTIVE,
+    });
 
     if (visibility) {
       qb.andWhere('post.visibility = :visibility', { visibility });
@@ -279,6 +292,15 @@ export class PostsService {
     id: string,
   ): Promise<Post> {
     const post = await this.getPostOrThrow(id);
+    const isHidden = post.moderationStatus === PostModerationStatus.HIDDEN;
+    if (
+      isHidden &&
+      post.authorId !== currentUser.id &&
+      currentUser.role !== UserRole.ADMIN
+    ) {
+      throw new NotFoundException('Không tìm thấy bài viết');
+    }
+
     const isFriendVisible =
       post.visibility === PostVisibility.FRIENDS &&
       (await this.isAcceptedFriend(currentUser.id, post.authorId));

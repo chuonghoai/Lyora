@@ -18,3 +18,8 @@ export enum PostReactionType {
   SAD = 'SAD',
   ANGRY = 'ANGRY',
 }
+
+export enum PostModerationStatus {
+  ACTIVE = 'ACTIVE',
+  HIDDEN = 'HIDDEN',
+}
