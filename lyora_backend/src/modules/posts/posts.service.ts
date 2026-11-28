@@ -8,7 +8,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isUUID } from 'class-validator';
-import { Brackets, In, IsNull, Repository } from 'typeorm';
+import {
+  Brackets,
+  DataSource,
+  EntityManager,
+  In,
+  IsNull,
+  Repository,
+} from 'typeorm';
 import { PaginationMetaDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/role.enum';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
@@ -18,6 +25,7 @@ import { NotificationType } from '../notifications/entities/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service';
 import { buildAvatarViolation } from '../users/dto/flag-profile-media-violation.dto';
 import { User } from '../users/entities/user.entity';
+import { CreatePostCommentDto } from './dto/create-post-comment.dto';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreatePostAppealDto } from './dto/post-appeal.dto';
 import {
@@ -26,6 +34,7 @@ import {
   PostSharesQueryDto,
 } from './dto/post-interactions-query.dto';
 import { PostQueryDto } from './dto/post-query.dto';
+import { ReactPostDto } from './dto/react-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostAppeal } from './entities/post-appeal.entity';
 import { PostComment } from './entities/post-comment.entity';
@@ -107,6 +116,8 @@ export class PostsService {
     private readonly postAppealRepository?: Repository<PostAppeal>,
     @Optional()
     private readonly notificationsService?: NotificationsService,
+    @Optional()
+    private readonly dataSource?: DataSource,
   ) {}
 
   async create(
@@ -210,7 +221,8 @@ export class PostsService {
     currentUser: AuthenticatedUser,
     query: PostQueryDto,
   ): Promise<PaginatedPosts> {
-    const { page, limit, search, visibility, authorId, filter } = query;
+    const { page, limit, search, visibility, authorId, filter, mediaType } =
+      query;
 
     if (filter === 'saved') {
       throw new NotImplementedException(
@@ -277,6 +289,11 @@ export class PostsService {
     const keyword = search?.trim();
     if (keyword) {
       qb.andWhere('post.content ILIKE :keyword', { keyword: `%${keyword}%` });
+    }
+    if (mediaType) {
+      qb.andWhere('post.media @> CAST(:mediaFilter AS jsonb)', {
+        mediaFilter: JSON.stringify([{ type: mediaType }]),
+      });
     }
 
     const [posts, totalItems] = await qb
@@ -420,6 +437,183 @@ export class PostsService {
       resolvedAt: created.resolvedAt ? created.resolvedAt.toISOString() : null,
       resolvedBy: null,
     };
+  }
+
+  async reactToPost(
+    currentUser: AuthenticatedUser,
+    postId: string,
+    dto: ReactPostDto,
+  ): Promise<PostResponse> {
+    const post = await this.assertCanViewPost(currentUser, postId);
+    if (post.moderationStatus === PostModerationStatus.HIDDEN) {
+      throw new BadRequestException(
+        'Không thể bày tỏ cảm xúc với bài viết đang bị ẩn',
+      );
+    }
+
+    await this.runInTransaction(async (manager) => {
+      const reactionRepo = manager
+        ? manager.getRepository(PostReaction)
+        : this.postReactionRepository;
+      const postRepo = manager
+        ? manager.getRepository(Post)
+        : this.postRepository;
+
+      const existing = await reactionRepo.findOne({
+        where: { postId: post.id, userId: currentUser.id },
+      });
+
+      if (existing) {
+        if (existing.type === dto.reactionType) {
+          await reactionRepo.delete(existing.id);
+        } else {
+          existing.type = dto.reactionType;
+          await reactionRepo.save(existing);
+        }
+      } else {
+        await reactionRepo.save(
+          reactionRepo.create({
+            postId: post.id,
+            userId: currentUser.id,
+            type: dto.reactionType,
+          }),
+        );
+      }
+
+      const reactionsCount = await reactionRepo.count({
+        where: { postId: post.id },
+      });
+      await postRepo.update(post.id, { reactionsCount });
+    });
+
+    const refreshed = await this.getPostOrThrow(post.id);
+    const [response] = await this.toResponses([refreshed], currentUser);
+    return response;
+  }
+
+  async addComment(
+    currentUser: AuthenticatedUser,
+    postId: string,
+    dto: CreatePostCommentDto,
+  ): Promise<PostCommentResponse> {
+    const content = dto.content?.trim() ?? '';
+    const media = dto.media ?? null;
+
+    if (content.length === 0 && !media) {
+      throw new BadRequestException(
+        'Vui lòng nhập nội dung hoặc đính kèm ảnh/video cho bình luận',
+      );
+    }
+
+    const post = await this.assertCanViewPost(currentUser, postId);
+    if (post.moderationStatus === PostModerationStatus.HIDDEN) {
+      throw new BadRequestException(
+        'Không thể bình luận vào bài viết đang bị ẩn',
+      );
+    }
+
+    const savedComment = await this.runInTransaction(async (manager) => {
+      const commentRepo = manager
+        ? manager.getRepository(PostComment)
+        : this.postCommentRepository;
+      const postRepo = manager
+        ? manager.getRepository(Post)
+        : this.postRepository;
+
+      if (dto.parentId) {
+        const parentComment = await commentRepo.findOne({
+          where: { id: dto.parentId, postId: post.id },
+        });
+        if (!parentComment) {
+          throw new BadRequestException('Bình luận gốc không tồn tại');
+        }
+      }
+
+      const created = await commentRepo.save(
+        commentRepo.create({
+          postId: post.id,
+          authorId: currentUser.id,
+          parentId: dto.parentId ?? null,
+          content,
+          media,
+        }),
+      );
+
+      const commentsCount = await commentRepo.count({
+        where: { postId: post.id },
+      });
+      await postRepo.update(post.id, { commentsCount });
+
+      return created;
+    });
+
+    const author =
+      savedComment.author ??
+      (await this.userRepository.findOne({
+        where: { id: currentUser.id },
+      }));
+
+    return {
+      id: savedComment.id,
+      parentId: savedComment.parentId ?? null,
+      author: {
+        id: author?.id ?? currentUser.id,
+        fullName: author?.fullName ?? 'Người dùng Lyora',
+        avatarUrl: author?.avatarUrl ?? null,
+      },
+      content: savedComment.content,
+      media: savedComment.media ?? null,
+      createdAt: (savedComment.createdAt ?? new Date()).toISOString(),
+    };
+  }
+
+  async sharePost(
+    currentUser: AuthenticatedUser,
+    postId: string,
+  ): Promise<PostResponse> {
+    const post = await this.assertCanViewPost(currentUser, postId);
+    if (post.moderationStatus === PostModerationStatus.HIDDEN) {
+      throw new BadRequestException('Không thể chia sẻ bài viết đang bị ẩn');
+    }
+
+    await this.runInTransaction(async (manager) => {
+      const postRepo = manager
+        ? manager.getRepository(Post)
+        : this.postRepository;
+      const shareRepo = manager
+        ? manager.getRepository(PostShare)
+        : this.postShareRepository;
+
+      if (shareRepo) {
+        await shareRepo.save(
+          shareRepo.create({
+            postId: post.id,
+            userId: currentUser.id,
+          }),
+        );
+        const sharesCount = await shareRepo.count({
+          where: { postId: post.id },
+        });
+        await postRepo.update(post.id, { sharesCount });
+      } else {
+        await postRepo.update(post.id, {
+          sharesCount: post.sharesCount + 1,
+        });
+      }
+    });
+
+    const refreshed = await this.getPostOrThrow(post.id);
+    const [response] = await this.toResponses([refreshed], currentUser);
+    return response;
+  }
+
+  private async runInTransaction<T>(
+    work: (manager?: EntityManager) => Promise<T>,
+  ): Promise<T> {
+    if (this.dataSource) {
+      return this.dataSource.transaction((manager) => work(manager));
+    }
+    return work(undefined);
   }
 
   async getPostReactions(

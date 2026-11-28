@@ -19,6 +19,7 @@ import { memoryStorage } from 'multer';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { CreatePostCommentDto } from './dto/create-post-comment.dto';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreatePostAppealDto } from './dto/post-appeal.dto';
 import {
@@ -27,6 +28,7 @@ import {
   PostSharesQueryDto,
 } from './dto/post-interactions-query.dto';
 import { PostQueryDto } from './dto/post-query.dto';
+import { ReactPostDto } from './dto/react-post.dto';
 import { SuggestPostContentDto } from './dto/suggest-post-content.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
@@ -119,6 +121,41 @@ export class PostsController {
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
     return this.postAiSuggestionService.suggest(currentUser, dto, files);
+  }
+
+  @Post(':id/reactions')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Cập nhật cảm xúc bài viết thành công')
+  async reactToPost(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: ReactPostDto,
+  ) {
+    return this.postsService.reactToPost(currentUser, id, dto);
+  }
+
+  @Post(':id/comments')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Đăng bình luận thành công')
+  async addComment(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: CreatePostCommentDto,
+  ) {
+    return this.postsService.addComment(currentUser, id, dto);
+  }
+
+  @Post(':id/share')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Chia sẻ bài viết thành công')
+  async sharePost(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.postsService.sharePost(currentUser, id);
   }
 
   @Get(':id/reactions')

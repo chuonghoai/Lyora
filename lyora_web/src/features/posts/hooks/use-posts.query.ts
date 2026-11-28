@@ -34,6 +34,7 @@ export function useInfinitePostsQuery(
     filter: params.filter ?? 'all',
     authorId: params.authorId?.trim() || undefined,
     visibility: params.visibility,
+    mediaType: params.mediaType,
   };
 
   return useInfiniteQuery({
@@ -286,6 +287,15 @@ export function useCreateCommentMutation() {
             })),
           };
         },
+      );
+      queryClient.setQueryData<Post>(postKeys.detail(postId), (oldPost) =>
+        oldPost
+          ? {
+              ...oldPost,
+              commentCount: oldPost.commentCount + 1,
+              comments: [...oldPost.comments, createdComment],
+            }
+          : oldPost,
       );
       void queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
       void queryClient.invalidateQueries({ queryKey: postKeys.comments(postId) });

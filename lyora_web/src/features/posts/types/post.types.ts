@@ -111,6 +111,7 @@ export interface PostsQueryParams {
   filter?: PostsFeedFilter;
   authorId?: string;
   visibility?: PostVisibility;
+  mediaType?: PostMediaType;
 }
 
 export interface PaginatedPostsResult {

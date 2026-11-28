@@ -1,6 +1,7 @@
 export const ROUTES = {
   CLIENT: {
     ROOT: '/',
+    VIDEOS: '/videos',
     SEARCH: '/search',
     FRIENDS: '/friends',
     MESSAGES: '/messages',
@@ -46,6 +47,7 @@ export function getClientPostDetailPath(postId: string): string {
 
 const RESERVED_TOP_LEVEL_PATHS = new Set<string>([
   ROUTES.CLIENT.ROOT,
+  ROUTES.CLIENT.VIDEOS,
   ROUTES.CLIENT.SEARCH,
   ROUTES.CLIENT.FRIENDS,
   ROUTES.CLIENT.MESSAGES,
