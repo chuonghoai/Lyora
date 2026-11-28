@@ -1,8 +1,16 @@
 import type { PaginationMeta } from '@/core';
-import { suggestPostContentSchema } from '../models/post.model';
+import {
+  hidePostModerationSchema,
+  removeModerationReasonSchema,
+  suggestPostContentSchema,
+} from '../models/post.model';
 import { postRepository, type IPostRepository } from '../repositories/post.repository';
 import type {
+  AdminPostDetail,
+  AdminPostsQueryParams,
+  AdminPostStatistics,
   CreatePostPayload,
+  PaginatedAdminPostsResult,
   PaginatedPostReactionsResult,
   PaginatedPostSharesResult,
   PaginatedPostsResult,
@@ -43,6 +51,17 @@ export interface IPostService {
     content: string,
     media?: PostMediaItem | null,
   ): Promise<PostComment>;
+  getAdminPostStatistics(): Promise<AdminPostStatistics>;
+  getAdminPosts(params: AdminPostsQueryParams): Promise<PaginatedAdminPostsResult>;
+  getAdminPostDetail(postId: string): Promise<AdminPostDetail>;
+  hidePostAsAdmin(postId: string, reason: string): Promise<AdminPostDetail>;
+  restorePostAsAdmin(postId: string): Promise<AdminPostDetail>;
+  removePostAsAdmin(postId: string, reason?: string): Promise<void>;
+  removeCommentAsAdmin(
+    postId: string,
+    commentId: string,
+    reason?: string,
+  ): Promise<void>;
 }
 
 function createEmptyBreakdown(): ReactionBreakdown {
@@ -217,6 +236,98 @@ export class PostService implements IPostService {
   ): Promise<PostComment> {
     const response = await this.repository.addComment(postId, content, media);
     return response.data;
+  }
+
+  async getAdminPostStatistics(): Promise<AdminPostStatistics> {
+    const response = await this.repository.getAdminPostStatistics();
+    return response.data;
+  }
+
+  async getAdminPosts(
+    params: AdminPostsQueryParams = {},
+  ): Promise<PaginatedAdminPostsResult> {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const cleanParams: AdminPostsQueryParams = {
+      page,
+      limit,
+      ...(params.search?.trim() ? { search: params.search.trim() } : {}),
+      ...(params.status && params.status !== 'ALL'
+        ? { status: params.status }
+        : {}),
+      ...(params.visibility ? { visibility: params.visibility } : {}),
+      ...(params.authorRole ? { authorRole: params.authorRole } : {}),
+      ...(params.hasMedia ? { hasMedia: params.hasMedia } : {}),
+    };
+
+    const response = await this.repository.getAdminPosts(cleanParams);
+    const items = response.data ?? [];
+    const fallbackMeta: PaginationMeta = {
+      page,
+      limit,
+      totalItems: items.length,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPrevPage: page > 1,
+    };
+
+    return {
+      items,
+      meta: response.meta ?? fallbackMeta,
+    };
+  }
+
+  async getAdminPostDetail(postId: string): Promise<AdminPostDetail> {
+    const response = await this.repository.getAdminPostDetail(postId);
+    return response.data;
+  }
+
+  async hidePostAsAdmin(
+    postId: string,
+    reason: string,
+  ): Promise<AdminPostDetail> {
+    const parsed = hidePostModerationSchema.safeParse({ reason });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Lý do ẩn bài viết chưa hợp lệ',
+      );
+    }
+    const response = await this.repository.hideAdminPost(
+      postId,
+      parsed.data.reason,
+    );
+    return response.data;
+  }
+
+  async restorePostAsAdmin(postId: string): Promise<AdminPostDetail> {
+    const response = await this.repository.restoreAdminPost(postId);
+    return response.data;
+  }
+
+  async removePostAsAdmin(postId: string, reason?: string): Promise<void> {
+    const parsed = removeModerationReasonSchema.safeParse({ reason });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Lý do gỡ bỏ chưa hợp lệ',
+      );
+    }
+    const cleanReason = parsed.data.reason?.trim() || undefined;
+    await this.repository.removeAdminPost(postId, cleanReason);
+  }
+
+  async removeCommentAsAdmin(
+    postId: string,
+    commentId: string,
+    reason?: string,
+  ): Promise<void> {
+    const parsed = removeModerationReasonSchema.safeParse({ reason });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Lý do gỡ bình luận chưa hợp lệ',
+      );
+    }
+    const cleanReason = parsed.data.reason?.trim() || undefined;
+    await this.repository.removeAdminComment(postId, commentId, cleanReason);
   }
 }
 

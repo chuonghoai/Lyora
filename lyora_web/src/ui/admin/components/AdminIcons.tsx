@@ -155,6 +155,57 @@ export const LogoutIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
   </svg>
 );
 
+export const PlusIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const EyeIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+export const EyeOffIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.4 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94" />
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.4 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19" />
+    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+    <line x1="2" y1="2" x2="22" y2="22" />
+  </svg>
+);
+
+export const RotateCcwIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+    <path d="M3 3v5h5" />
+  </svg>
+);
+
+export const TrashIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+
+export const ImageIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <circle cx="8.5" cy="9.5" r="1.5" />
+    <path d="m21 15-4.5-4.5L7 20" />
+  </svg>
+);
+
+export const SparklesIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
+  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3Z" />
+    <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
+  </svg>
+);
+
 export const FutureMetricIcon: React.FC<{
   kind: 'posts' | 'engagement' | 'comments' | 'messaging' | 'ai' | 'activity' | 'moderation';
   className?: string;
@@ -213,15 +264,6 @@ export const FlagIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => 
   <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
     <line x1="4" y1="22" x2="4" y2="15" />
-  </svg>
-);
-
-export const TrashIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
-  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
   </svg>
 );
 
@@ -333,21 +375,6 @@ export const UserPlusIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => 
     <circle cx="8.5" cy="7" r="4" />
     <line x1="20" y1="8" x2="20" y2="14" />
     <line x1="23" y1="11" x2="17" y2="11" />
-  </svg>
-);
-
-export const EyeIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
-  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-
-export const EyeOffIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
-  <svg aria-hidden="true" className={`${className} shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6.5 0-10-7-10-7a20.6 20.6 0 0 1 5.06-5.94" />
-    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 8 10 8a20.5 20.5 0 0 1-2.16 3.19" />
-    <line x1="2" y1="2" x2="22" y2="22" />
   </svg>
 );
 

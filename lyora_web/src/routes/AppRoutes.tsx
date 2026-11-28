@@ -29,6 +29,9 @@ const AdminUsersView = lazy(
 const AdminUserDetailView = lazy(
   () => import('@/ui/admin/users/AdminUserDetailView'),
 );
+const AdminPostsView = lazy(
+  () => import('@/ui/admin/posts/AdminPostsView'),
+);
 const LoginView = lazy(
   () => import('@/ui/auth/login/LoginView'),
 );
@@ -177,6 +180,14 @@ export const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <AdminUserDetailView />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'posts',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <AdminPostsView />
               </Suspense>
             ),
           },
