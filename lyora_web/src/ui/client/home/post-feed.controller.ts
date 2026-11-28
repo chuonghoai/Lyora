@@ -181,6 +181,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   const [expandedCommentsMap, setExpandedCommentsMap] = useState<Record<string, boolean>>({});
   const [temporarilyHiddenIds, setTemporarilyHiddenIds] = useState<Record<string, boolean>>({});
   const [detailPostId, setDetailPostId] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [reactionsPopover, setReactionsPopover] = useState<ReactionsPopoverState | null>(null);
   const [lightbox, setLightbox] = useState<MediaLightboxState | null>(null);
 
@@ -233,11 +234,13 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
-    if (!lightbox && !reactionsPopover && !detailPostId) return;
+    if (!lightbox && !editingPost && !reactionsPopover && !detailPostId) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         if (lightbox) {
           setLightbox(null);
+        } else if (editingPost) {
+          setEditingPost(null);
         } else if (reactionsPopover) {
           setReactionsPopover(null);
         } else if (!options.hasBlockingExternalModal && detailPostId) {
@@ -257,7 +260,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightbox, reactionsPopover, detailPostId, options.hasBlockingExternalModal]);
+  }, [lightbox, editingPost, reactionsPopover, detailPostId, options.hasBlockingExternalModal]);
 
   const handleRefreshFeed = useCallback(async () => {
     setTemporarilyHiddenIds({});
@@ -960,6 +963,14 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   };
 
   // Lightbox handlers
+  const handleOpenEditPost = (post: Post) => {
+    setEditingPost(post);
+  };
+
+  const handleCloseEditPost = () => {
+    setEditingPost(null);
+  };
+
   const handleOpenLightbox = (items: PostMediaItem[], index: number) => {
     setLightbox({ items, index });
   };
@@ -1024,6 +1035,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     temporarilyHiddenIds,
     detailPostId,
     detailPost,
+    editingPost,
     reactionsPopover,
     reactionsModalPost,
     reactionsData: reactionsQuery.data ?? null,
@@ -1081,6 +1093,8 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     handleToggleExpandComments,
     handleFocusCommentInput,
     handleSubmitComment,
+    handleOpenEditPost,
+    handleCloseEditPost,
     handleOpenLightbox,
     handleCloseLightbox,
     handlePrevLightbox,

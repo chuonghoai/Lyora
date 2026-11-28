@@ -24,6 +24,7 @@ import type {
   PostSuggestionsResult,
   ReactionType,
   SuggestPostContentPayload,
+  UpdatePostPayload,
 } from '../types/post.types';
 
 export interface IPostRepository {
@@ -39,6 +40,10 @@ export interface IPostRepository {
   getFriends(): Promise<ApiResponse<PostAuthor[]>>;
   uploadMedia(files: File[]): Promise<ApiResponse<PostMediaItem[]>>;
   createPost(payload: CreatePostPayload): Promise<ApiResponse<Post>>;
+  updatePost(
+    postId: string,
+    payload: Omit<UpdatePostPayload, 'postId'>,
+  ): Promise<ApiResponse<Post>>;
   suggestContent(
     payload: SuggestPostContentPayload,
   ): Promise<ApiResponse<PostSuggestionsResult>>;
@@ -143,6 +148,16 @@ export class PostRepository implements IPostRepository {
   async createPost(payload: CreatePostPayload): Promise<ApiResponse<Post>> {
     return apiClient.post<ApiResponse<Post>, ApiResponse<Post>>(
       CORE_CONSTANTS.API_ENDPOINTS.POSTS,
+      payload,
+    );
+  }
+
+  async updatePost(
+    postId: string,
+    payload: Omit<UpdatePostPayload, 'postId'>,
+  ): Promise<ApiResponse<Post>> {
+    return apiClient.patch<ApiResponse<Post>, ApiResponse<Post>>(
+      `${CORE_CONSTANTS.API_ENDPOINTS.POSTS}/${postId}`,
       payload,
     );
   }

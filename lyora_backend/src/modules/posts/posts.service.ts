@@ -25,6 +25,7 @@ import {
   PostSharesQueryDto,
 } from './dto/post-interactions-query.dto';
 import { PostQueryDto } from './dto/post-query.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 import { PostAppeal } from './entities/post-appeal.entity';
 import { PostComment } from './entities/post-comment.entity';
 import { PostReaction } from './entities/post-reaction.entity';
@@ -32,6 +33,7 @@ import { PostShare } from './entities/post-share.entity';
 import { Post } from './entities/post.entity';
 import {
   PostAppealStatus,
+  PostMediaType,
   PostModerationStatus,
   PostReactionType,
   PostVisibility,
@@ -42,6 +44,7 @@ import {
   PostReactionUserResponse,
   PostResponse,
   PostShareUserResponse,
+  PostTaggedUserResponse,
 } from './interfaces/post-response.interface';
 
 export interface PaginatedPosts {
@@ -140,6 +143,63 @@ export class PostsService {
 
     const [response] = await this.toResponses(
       [await this.getPostOrThrow(created.id)],
+      currentUser,
+    );
+    return response;
+  }
+
+  async update(
+    currentUser: AuthenticatedUser,
+    id: string,
+    dto: UpdatePostDto,
+  ): Promise<PostResponse> {
+    const post = await this.getPostOrThrow(id);
+
+    if (post.authorId !== currentUser.id) {
+      throw new ForbiddenException(
+        'Bạn chỉ có thể chỉnh sửa bài viết của chính mình',
+      );
+    }
+
+    const nextContent =
+      dto.content !== undefined ? dto.content.trim() : post.content;
+    const nextMedia = dto.media !== undefined ? dto.media : (post.media ?? []);
+
+    if (nextContent.length === 0 && nextMedia.length === 0) {
+      throw new BadRequestException(
+        'Vui lòng nhập nội dung hoặc đính kèm ít nhất một ảnh, video, bản ghi âm',
+      );
+    }
+
+    if (
+      nextMedia.filter((item) => item.type === PostMediaType.AUDIO).length > 1
+    ) {
+      throw new BadRequestException(
+        'Mỗi bài viết chỉ có thể đính kèm tối đa một bản ghi âm',
+      );
+    }
+
+    const nextVisibility =
+      dto.visibility !== undefined
+        ? currentUser.role === UserRole.ADMIN
+          ? PostVisibility.PUBLIC
+          : dto.visibility
+        : post.visibility;
+
+    const nextTaggedUserIds =
+      dto.taggedUserIds !== undefined
+        ? await this.resolveTaggedUserIds(dto.taggedUserIds, currentUser.id)
+        : (post.taggedUserIds ?? []);
+
+    post.content = nextContent;
+    post.visibility = nextVisibility;
+    post.media = nextMedia;
+    post.taggedUserIds =
+      nextTaggedUserIds.length > 0 ? nextTaggedUserIds : null;
+
+    const saved = await this.postRepository.save(post);
+    const [response] = await this.toResponses(
+      [await this.getPostOrThrow(saved.id)],
       currentUser,
     );
     return response;
@@ -564,8 +624,11 @@ export class PostsService {
     const moderationPostIds = isAdmin
       ? postIds
       : posts.filter((p) => p.authorId === currentUserId).map((p) => p.id);
+    const allTaggedUserIds = [
+      ...new Set(posts.flatMap((post) => post.taggedUserIds ?? [])),
+    ];
 
-    const [reactions, comments, appeals] = await Promise.all([
+    const [reactions, comments, appeals, taggedUsers] = await Promise.all([
       this.postReactionRepository.find({
         where: { postId: In(postIds) },
       }),
@@ -580,7 +643,21 @@ export class PostsService {
             order: { createdAt: 'DESC' },
           })
         : Promise.resolve([]),
+      allTaggedUserIds.length > 0
+        ? this.userRepository.find({
+            select: { id: true, fullName: true },
+            where: { id: In(allTaggedUserIds) },
+          })
+        : Promise.resolve([]),
     ]);
+
+    const taggedUserMap = new Map<string, PostTaggedUserResponse>();
+    for (const user of taggedUsers) {
+      taggedUserMap.set(user.id, {
+        id: user.id,
+        fullName: user.fullName,
+      });
+    }
 
     const latestAppealByPost = new Map<string, PostAppealSummaryResponse>();
     const appealsByPost = new Map<string, PostAppealSummaryResponse[]>();
@@ -673,6 +750,9 @@ export class PostsService {
         visibility: post.visibility,
         media: post.media ?? [],
         taggedUserIds: post.taggedUserIds ?? [],
+        taggedUsers: (post.taggedUserIds ?? [])
+          .map((taggedId) => taggedUserMap.get(taggedId))
+          .filter((item): item is PostTaggedUserResponse => Boolean(item)),
         moderationStatus,
         ...(canViewModeration
           ? {

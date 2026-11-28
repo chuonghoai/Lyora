@@ -3,6 +3,7 @@ import { Button, ConfirmModal, ErrorState } from "@/core";
 import { ArrowLeftIcon } from "../home/ClientIcons";
 import { MediaLightboxModal } from "../home/MediaLightboxModal";
 import { PostDetailModal } from "../home/PostDetailModal";
+import { PostEditModal } from "../home/PostEditModal";
 import { PostReactionsModal } from "../home/PostReactionsModal";
 import { ProfileAboutSection } from "./ProfileAboutSection";
 import { ProfileActivitySection } from "./ProfileActivitySection";
@@ -117,6 +118,13 @@ export const ProfileView: React.FC = () => {
       {/* Modal Chỉnh sửa Hồ sơ cá nhân & Các Modal Tương tác Bài viết */}
       <ProfileEditModal controller={controller} />
       <PostDetailModal controller={controller} />
+      <PostEditModal
+        post={controller.editingPost}
+        friends={controller.friends}
+        profileUser={controller.profileUser}
+        onClose={controller.handleCloseEditPost}
+        onOpenLightbox={controller.handleOpenLightbox}
+      />
       <PostReactionsModal controller={controller} />
       <MediaLightboxModal controller={controller} />
       <PostAppealModal

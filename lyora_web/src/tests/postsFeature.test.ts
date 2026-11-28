@@ -15,6 +15,7 @@ import {
   PostService,
   rejectPostAppealSchema,
   suggestPostContentSchema,
+  updatePostSchema,
   type AdminPostDetail,
   type AdminPostStatistics,
   type IPostRepository,
@@ -129,6 +130,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       createPostAppeal: vi.fn(),
       getFriends: vi.fn().mockResolvedValue({ success: true, data: [] }),
       createPost: vi.fn().mockResolvedValue({ success: true, data: MOCK_POST }),
+      updatePost: vi.fn().mockResolvedValue({ success: true, data: MOCK_POST }),
       suggestContent: vi.fn(),
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
@@ -174,6 +176,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       createPostAppeal: vi.fn().mockRejectedValue(notFoundError),
       getFriends: vi.fn().mockRejectedValue(notFoundError),
       createPost: vi.fn().mockRejectedValue(notFoundError),
+      updatePost: vi.fn().mockRejectedValue(notFoundError),
       suggestContent: vi.fn().mockRejectedValue(notFoundError),
       uploadMedia: vi.fn(),
       reactPost: vi.fn().mockRejectedValue(notFoundError),
@@ -245,6 +248,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       createPostAppeal: vi.fn(),
       getFriends: vi.fn().mockRejectedValue(serverError),
       createPost: vi.fn(),
+      updatePost: vi.fn(),
       suggestContent: vi.fn(),
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
@@ -686,5 +690,77 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     expect(rejectPostAppealSchema.safeParse({ evidence: 'ngắn' }).success).toBe(
       false,
     );
+  });
+
+  it('should validate and update post payload with content, visibility, media and taggedUserIds', async () => {
+    const updatedPost: Post = {
+      ...MOCK_POST,
+      content: 'Nội dung bài viết sau chỉnh sửa',
+      visibility: 'FRIENDS',
+      media: [
+        {
+          id: 'cloud-1',
+          type: 'IMAGE',
+          url: 'https://res.cloudinary.com/demo/image/upload/v1/edited.jpg',
+        },
+      ],
+      taggedUserIds: ['22222222-2222-4222-8222-222222222222'],
+      taggedUsers: [
+        {
+          id: '22222222-2222-4222-8222-222222222222',
+          fullName: 'Trần Thị Bình',
+        },
+      ],
+    };
+
+    const repoMock = {
+      updatePost: vi.fn().mockResolvedValue({
+        success: true,
+        statusCode: 200,
+        message: 'Cập nhật bài viết thành công',
+        data: updatedPost,
+        timestamp: new Date().toISOString(),
+      }),
+    } as unknown as IPostRepository;
+
+    const service = new PostService(repoMock);
+
+    expect(
+      updatePostSchema.safeParse({
+        content: '   ',
+        visibility: 'PUBLIC',
+        media: [],
+      }).success,
+    ).toBe(false);
+
+    await expect(
+      service.updatePost({
+        postId: 'post-1',
+        content: '   ',
+        visibility: 'PUBLIC',
+        media: [],
+        taggedUserIds: [],
+      }),
+    ).rejects.toThrow(
+      'Vui lòng nhập nội dung bài viết hoặc đính kèm ít nhất 1 ảnh, video, bản ghi âm',
+    );
+
+    const saved = await service.updatePost({
+      postId: 'post-1',
+      content: '  Nội dung bài viết sau chỉnh sửa  ',
+      visibility: 'FRIENDS',
+      media: updatedPost.media,
+      taggedUserIds: ['22222222-2222-4222-8222-222222222222'],
+    });
+
+    expect(repoMock.updatePost).toHaveBeenCalledWith('post-1', {
+      content: 'Nội dung bài viết sau chỉnh sửa',
+      visibility: 'FRIENDS',
+      media: updatedPost.media,
+      taggedUserIds: ['22222222-2222-4222-8222-222222222222'],
+    });
+    expect(saved.content).toBe('Nội dung bài viết sau chỉnh sửa');
+    expect(saved.visibility).toBe('FRIENDS');
+    expect(saved.taggedUsers?.[0]?.fullName).toBe('Trần Thị Bình');
   });
 });

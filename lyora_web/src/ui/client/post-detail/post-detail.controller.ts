@@ -61,6 +61,7 @@ export function useClientPostDetailController() {
   const [reactionsPopover, setReactionsPopover] =
     useState<ReactionsPopoverState | null>(null);
   const [appealTargetPost, setAppealTargetPost] = useState<Post | null>(null);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
 
   const reactionsQuery = usePostReactionsQuery(
     reactionsPopover?.postId ?? null,
@@ -86,13 +87,15 @@ export function useClientPostDetailController() {
         if (!createAppealMutation.isPending) setAppealTargetPost(null);
       } else if (lightbox) {
         setLightbox(null);
+      } else if (editingPost) {
+        setEditingPost(null);
       } else if (reactionsPopover) {
         setReactionsPopover(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [appealTargetPost, createAppealMutation.isPending, lightbox, reactionsPopover]);
+  }, [appealTargetPost, createAppealMutation.isPending, editingPost, lightbox, reactionsPopover]);
 
   const post = postQuery.data ?? null;
   const isPostNotFound = Boolean(
@@ -399,6 +402,15 @@ export function useClientPostDetailController() {
     void reactionsQuery.refetch();
   };
 
+  const handleOpenEditPost = () => {
+    if (!post) return;
+    setEditingPost(post);
+  };
+
+  const handleCloseEditPost = () => {
+    setEditingPost(null);
+  };
+
   const handleOpenLightbox = (items: PostMediaItem[], index: number) => {
     setLightbox({ items, index });
   };
@@ -451,6 +463,7 @@ export function useClientPostDetailController() {
     isReactionsLoading: reactionsQuery.isLoading || reactionsQuery.isFetching,
     isReactionsError: reactionsQuery.isError,
     lightbox,
+    editingPost,
     appealTargetPost,
     isSubmittingAppeal: createAppealMutation.isPending,
     handleGoBack,
@@ -479,6 +492,8 @@ export function useClientPostDetailController() {
     handleChangeReactionsFilter,
     handleChangeReactionsPage,
     handleRetryReactions,
+    handleOpenEditPost,
+    handleCloseEditPost,
     handleOpenLightbox,
     handleCloseLightbox,
     handlePrevLightbox,

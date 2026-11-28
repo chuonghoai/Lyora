@@ -19,6 +19,7 @@ import { PostShare } from './entities/post-share.entity';
 import { Post } from './entities/post.entity';
 import {
   PostAppealStatus,
+  PostMediaType,
   PostModerationStatus,
   PostReactionType,
   PostVisibility,
@@ -402,9 +403,13 @@ describe('PostsService (Real DB Data & Empty State)', () => {
       updatedAt: new Date('2026-11-28T03:30:00.000Z'),
     } as unknown as Post;
 
-    const createSpy = jest.fn((payload: Partial<Post>) => payload as Post);
+    const createSpy = jest.fn(
+      (payload?: Partial<Post>) => (payload ?? {}) as Post,
+    );
     const saveSpy = jest.fn().mockResolvedValue(createdEntity);
-    postRepo.create = createSpy;
+    postRepo.create = createSpy as unknown as NonNullable<
+      typeof postRepo.create
+    >;
     postRepo.save = saveSpy;
     (postRepo.findOne as jest.Mock).mockResolvedValue(createdEntity);
 
@@ -726,5 +731,139 @@ describe('PostsService (Real DB Data & Empty State)', () => {
     expect(ownerRes.appeals?.[1]?.adminEvidence).toBe(
       'Minh chứng vòng 1 từ Quản trị viên',
     );
+  });
+
+  it('update cho phép chính chủ cập nhật đầy đủ nội dung, phạm vi, media, taggedUsers và giữ nguyên moderationStatus', async () => {
+    const postId = '34343434-3434-4343-8343-343434343434';
+    const taggedFriendId = '56565656-5656-4565-8565-565656565656';
+
+    const existingPost = {
+      id: postId,
+      authorId: currentUser.id,
+      author: {
+        id: currentUser.id,
+        fullName: 'Hà Trường Giang',
+        email: currentUser.email,
+        avatarUrl: null,
+      },
+      content: 'Nội dung cũ',
+      visibility: PostVisibility.PUBLIC,
+      moderationStatus: PostModerationStatus.HIDDEN,
+      moderationReason: 'Chờ kiểm tra',
+      media: [
+        {
+          id: 'old-img-1',
+          type: PostMediaType.IMAGE,
+          url: 'https://res.cloudinary.com/demo/image/upload/v1/old.jpg',
+        },
+      ],
+      taggedUserIds: null,
+      reactionsCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      createdAt: new Date('2026-11-28T08:00:00.000Z'),
+      updatedAt: new Date('2026-11-28T08:00:00.000Z'),
+    } as unknown as Post;
+
+    const updatedPostEntity = {
+      ...existingPost,
+      content: 'Nội dung đã chỉnh sửa cùng @Trần Thị Bình',
+      visibility: PostVisibility.FRIENDS,
+      media: [
+        ...existingPost.media,
+        {
+          id: 'new-audio-1',
+          type: PostMediaType.AUDIO,
+          url: 'https://res.cloudinary.com/demo/video/upload/v1/voice.webm',
+          duration: 12,
+        },
+      ],
+      taggedUserIds: [taggedFriendId],
+      updatedAt: new Date('2026-11-28T09:15:00.000Z'),
+    } as unknown as Post;
+
+    postRepo.save = jest.fn().mockResolvedValue(updatedPostEntity);
+    (postRepo.findOne as jest.Mock)
+      .mockResolvedValueOnce(existingPost)
+      .mockResolvedValueOnce(updatedPostEntity);
+    (userRepo.find as jest.Mock)
+      .mockResolvedValueOnce([{ id: taggedFriendId }])
+      .mockResolvedValueOnce([
+        { id: taggedFriendId, fullName: 'Trần Thị Bình' },
+      ]);
+
+    const res = await service.update(currentUser, postId, {
+      content: '  Nội dung đã chỉnh sửa cùng @Trần Thị Bình  ',
+      visibility: PostVisibility.FRIENDS,
+      media: updatedPostEntity.media,
+      taggedUserIds: [taggedFriendId],
+    });
+
+    expect(postRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'Nội dung đã chỉnh sửa cùng @Trần Thị Bình',
+        visibility: PostVisibility.FRIENDS,
+        moderationStatus: PostModerationStatus.HIDDEN,
+        taggedUserIds: [taggedFriendId],
+      }),
+    );
+    expect(res.content).toBe('Nội dung đã chỉnh sửa cùng @Trần Thị Bình');
+    expect(res.visibility).toBe(PostVisibility.FRIENDS);
+    expect(res.moderationStatus).toBe(PostModerationStatus.HIDDEN);
+    expect(res.media).toHaveLength(2);
+    expect(res.taggedUsers).toEqual([
+      { id: taggedFriendId, fullName: 'Trần Thị Bình' },
+    ]);
+  });
+
+  it('update chặn người khác sửa bài (403) và từ chối bài rỗng hoặc có nhiều hơn 1 bản ghi âm (400)', async () => {
+    const postId = '78787878-7878-4787-8787-787878787878';
+
+    (postRepo.findOne as jest.Mock).mockResolvedValueOnce({
+      id: postId,
+      authorId: '99999999-9999-4999-8999-999999999999',
+      content: 'Bài viết của người khác',
+      visibility: PostVisibility.PUBLIC,
+      media: [],
+    });
+    await expect(
+      service.update(currentUser, postId, { content: 'Sửa trộm' }),
+    ).rejects.toThrow(ForbiddenException);
+
+    (postRepo.findOne as jest.Mock).mockResolvedValueOnce({
+      id: postId,
+      authorId: currentUser.id,
+      content: 'Nội dung cũ',
+      visibility: PostVisibility.PUBLIC,
+      media: [],
+    });
+    await expect(
+      service.update(currentUser, postId, { content: '   ', media: [] }),
+    ).rejects.toThrow(BadRequestException);
+
+    (postRepo.findOne as jest.Mock).mockResolvedValueOnce({
+      id: postId,
+      authorId: currentUser.id,
+      content: 'Có 2 bản ghi âm',
+      visibility: PostVisibility.PUBLIC,
+      media: [],
+    });
+    await expect(
+      service.update(currentUser, postId, {
+        content: 'Bài âm thanh',
+        media: [
+          {
+            id: 'a1',
+            type: PostMediaType.AUDIO,
+            url: 'https://res.cloudinary.com/demo/video/upload/v1/a1.webm',
+          },
+          {
+            id: 'a2',
+            type: PostMediaType.AUDIO,
+            url: 'https://res.cloudinary.com/demo/video/upload/v1/a2.webm',
+          },
+        ],
+      }),
+    ).rejects.toThrow(BadRequestException);
   });
 });

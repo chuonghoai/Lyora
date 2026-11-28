@@ -20,6 +20,7 @@ import {
   BookmarkIcon,
   CloseIcon,
   CommentIcon,
+  EditIcon,
   GlobeIcon,
   ImageIcon,
   LockIcon,
@@ -919,6 +920,21 @@ export const PostCard: React.FC<PostCardProps> = ({
                 role="menu"
                 className="absolute right-0 mt-1 w-52 rounded-xl border border-border bg-card p-1.5 shadow-md z-20"
               >
+                {isOwnPost && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      controller.handleOpenEditPost(post);
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                  >
+                    <EditIcon className="w-4 h-4 text-primary" />
+                    <span>Chỉnh sửa bài viết</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   role="menuitem"

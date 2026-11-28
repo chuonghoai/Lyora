@@ -15,6 +15,7 @@ import { useHomeController } from './home.controller';
 import { PostComposer } from './PostComposer';
 import { PostCard } from './PostCard';
 import { PostDetailModal } from './PostDetailModal';
+import { PostEditModal } from './PostEditModal';
 import { PostReactionsModal } from './PostReactionsModal';
 import { AllFriendsModal } from './AllFriendsModal';
 import { MediaLightboxModal } from './MediaLightboxModal';
@@ -527,6 +528,13 @@ export default function HomeView(): React.ReactElement {
       </aside>
 
       <PostDetailModal controller={controller} />
+      <PostEditModal
+        post={controller.editingPost}
+        friends={controller.friends}
+        profileUser={controller.profileUser}
+        onClose={controller.handleCloseEditPost}
+        onOpenLightbox={controller.handleOpenLightbox}
+      />
       <PostReactionsModal controller={controller} />
       <AllFriendsModal controller={controller} />
       <MediaLightboxModal controller={controller} />

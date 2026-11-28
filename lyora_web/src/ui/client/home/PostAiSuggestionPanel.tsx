@@ -1,15 +1,22 @@
 import React from 'react';
 import { Button } from '@/core';
 import { POST_SUGGESTION_TONES } from '@/features/posts';
-import type { PostFeedController } from './post-feed.controller';
+import type { usePostAiAssistant } from './post-ai-assistant.controller';
 import { CloseIcon, SparklesIcon, UndoIcon } from './ClientIcons';
 
+export type PostAiSuggestionController = Omit<
+  ReturnType<typeof usePostAiAssistant>,
+  'clearAiUndo' | 'resetAiAssistant'
+>;
+
 export interface PostAiSuggestionPanelProps {
-  controller: PostFeedController;
+  controller: PostAiSuggestionController;
+  topicInputId?: string;
 }
 
 export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({
   controller,
+  topicInputId = 'lyora-ai-topic-input',
 }) => {
   if (!controller.isAiPanelOpen) {
     return null;
@@ -56,7 +63,7 @@ export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <label
-            htmlFor="lyora-ai-topic-input"
+            htmlFor={topicInputId}
             className="block text-xs font-medium text-foreground"
           >
             Ý chính / mô tả chi tiết cho bài viết
@@ -66,7 +73,7 @@ export const PostAiSuggestionPanel: React.FC<PostAiSuggestionPanelProps> = ({
           </span>
         </div>
         <textarea
-          id="lyora-ai-topic-input"
+          id={topicInputId}
           rows={4}
           maxLength={2000}
           value={controller.aiTopic}
