@@ -1,4 +1,4 @@
-import type { PaginationMeta, UserProfile, UserRole } from '@/core';
+import type { MediaViolationInfo, PaginationMeta, UserProfile, UserRole } from '@/core';
 
 export interface RecentUserSummary {
   id: string;
@@ -83,6 +83,8 @@ export interface AdminUserDetail {
   website: string | null;
   avatarUrl: string | null;
   coverUrl: string | null;
+  avatarViolation?: MediaViolationInfo | null;
+  coverViolation?: MediaViolationInfo | null;
   isActive: boolean;
   isOnline: boolean;
   lockReason: string | null;
@@ -90,6 +92,10 @@ export interface AdminUserDetail {
   createdAt: string;
   friendsCount: number;
   friendsPreview: ProfileFriendSummary[];
+}
+
+export interface FlagProfileMediaViolationPayload {
+  reason: string;
 }
 
 export interface LockUserPayload {
@@ -171,6 +177,7 @@ export interface ProfileFriendSummary {
   id: string;
   fullName: string;
   avatarUrl: string | null;
+  avatarViolation?: MediaViolationInfo | null;
   headline?: string | null;
   location?: string | null;
   mutualFriendsCount: number;
@@ -192,6 +199,8 @@ export interface PublicUserProfile {
   website?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
+  avatarViolation?: MediaViolationInfo | null;
+  coverViolation?: MediaViolationInfo | null;
   isActive: boolean;
   isOnline?: boolean;
   createdAt: string;

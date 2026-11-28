@@ -28,6 +28,7 @@ import { UpdateProfileDto } from '../auth/dto/update-profile.dto';
 import { AdminOnlineStatusQueryDto } from './dto/admin-online-status-query.dto';
 import { AdminUsersQueryDto } from './dto/admin-users-query.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { FlagProfileMediaViolationDto } from './dto/flag-profile-media-violation.dto';
 import { LockUserDto } from './dto/lock-user.dto';
 import { UserStatisticsQueryDto } from './dto/user-statistics-query.dto';
 import {
@@ -154,6 +155,52 @@ export class UsersController {
   @ResponseMessage('Đã mở khóa tài khoản người dùng thành công')
   async unlockUser(@Param('id', VietnameseParseUUIDPipe) id: string) {
     return this.usersService.unlockUser(id);
+  }
+
+  @Patch(':id/avatar-violation')
+  @Roles(UserRole.ADMIN)
+  @ResponseMessage(
+    'Đã đánh dấu vi phạm ảnh đại diện và gửi thông báo cho người dùng',
+  )
+  async flagAvatarViolation(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+    @Body() dto: FlagProfileMediaViolationDto,
+  ) {
+    return this.usersService.flagAvatarViolation(currentUser, id, dto);
+  }
+
+  @Patch(':id/avatar-violation/clear')
+  @Roles(UserRole.ADMIN)
+  @ResponseMessage('Đã gỡ đánh dấu vi phạm ảnh đại diện')
+  async clearAvatarViolation(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+  ) {
+    return this.usersService.clearAvatarViolation(currentUser, id);
+  }
+
+  @Patch(':id/cover-violation')
+  @Roles(UserRole.ADMIN)
+  @ResponseMessage(
+    'Đã đánh dấu vi phạm ảnh bìa và gửi thông báo cho người dùng',
+  )
+  async flagCoverViolation(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+    @Body() dto: FlagProfileMediaViolationDto,
+  ) {
+    return this.usersService.flagCoverViolation(currentUser, id, dto);
+  }
+
+  @Patch(':id/cover-violation/clear')
+  @Roles(UserRole.ADMIN)
+  @ResponseMessage('Đã gỡ đánh dấu vi phạm ảnh bìa')
+  async clearCoverViolation(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id', VietnameseParseUUIDPipe) id: string,
+  ) {
+    return this.usersService.clearCoverViolation(currentUser, id);
   }
 
   @Get(':id/profile')

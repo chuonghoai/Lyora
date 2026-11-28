@@ -106,6 +106,10 @@ describe('Query Key Factories & Data Layer Hooks', () => {
         createUser: vi.fn(),
         lockUser: vi.fn(),
         unlockUser: vi.fn(),
+        flagAvatarViolation: vi.fn(),
+        clearAvatarViolation: vi.fn(),
+        flagCoverViolation: vi.fn(),
+        clearCoverViolation: vi.fn(),
       };
 
       const userService = new UserService(mockUserRepo);

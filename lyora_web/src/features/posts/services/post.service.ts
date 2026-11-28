@@ -1,22 +1,34 @@
 import type { PaginationMeta } from '@/core';
 import {
+  flagPostViolationSchema,
   hidePostModerationSchema,
+  rejectPostAppealSchema,
   removeModerationReasonSchema,
   suggestPostContentSchema,
+  updatePostSchema,
 } from '../models/post.model';
 import { postRepository, type IPostRepository } from '../repositories/post.repository';
 import type {
+  AdminPostAppealHistoryQueryParams,
+  AdminPostAppealItem,
+  AdminPostAppealsQueryParams,
   AdminPostDetail,
   AdminPostsQueryParams,
   AdminPostStatistics,
+  CreatePostAppealPayload,
   CreatePostPayload,
+  PaginatedAdminPostAppealHistoryResult,
+  PaginatedAdminPostAppealsResult,
   PaginatedAdminPostsResult,
+  PaginatedPostCommentsResult,
   PaginatedPostReactionsResult,
   PaginatedPostSharesResult,
   PaginatedPostsResult,
   Post,
+  PostAppealSummary,
   PostAuthor,
   PostComment,
+  PostCommentsQueryParams,
   PostMediaItem,
   PostReactionsQueryParams,
   PostSharesQueryParams,
@@ -25,13 +37,21 @@ import type {
   ReactionBreakdown,
   ReactionType,
   SuggestPostContentPayload,
+  UpdatePostPayload,
 } from '../types/post.types';
 
 export interface IPostService {
   getPosts(params: PostsQueryParams): Promise<PaginatedPostsResult>;
+  getPostById(postId: string): Promise<Post>;
+  getPostComments(
+    postId: string,
+    params: PostCommentsQueryParams,
+  ): Promise<PaginatedPostCommentsResult>;
+  createPostAppeal(payload: CreatePostAppealPayload): Promise<PostAppealSummary>;
   getFriends(): Promise<PostAuthor[]>;
   uploadMedia(files: File[]): Promise<PostMediaItem[]>;
   createPost(payload: CreatePostPayload): Promise<Post>;
+  updatePost(payload: UpdatePostPayload): Promise<Post>;
   suggestContent(payload: SuggestPostContentPayload): Promise<PostSuggestionsResult>;
   reactPost(postId: string, reactionType: ReactionType): Promise<Post>;
   getPostReactions(
@@ -56,12 +76,26 @@ export interface IPostService {
   getAdminPostDetail(postId: string): Promise<AdminPostDetail>;
   hidePostAsAdmin(postId: string, reason: string): Promise<AdminPostDetail>;
   restorePostAsAdmin(postId: string): Promise<AdminPostDetail>;
+  flagPostViolationAsAdmin(postId: string, reason: string): Promise<AdminPostDetail>;
+  unflagPostViolationAsAdmin(postId: string): Promise<AdminPostDetail>;
   removePostAsAdmin(postId: string, reason?: string): Promise<void>;
   removeCommentAsAdmin(
     postId: string,
     commentId: string,
     reason?: string,
   ): Promise<void>;
+  getAdminPostAppeals(
+    params?: AdminPostAppealsQueryParams,
+  ): Promise<PaginatedAdminPostAppealsResult>;
+  getAdminPostAppealsHistory(
+    postId: string,
+    params?: AdminPostAppealHistoryQueryParams,
+  ): Promise<PaginatedAdminPostAppealHistoryResult>;
+  restorePostAppealAsAdmin(appealId: string): Promise<AdminPostAppealItem>;
+  rejectPostAppealAsAdmin(
+    appealId: string,
+    evidence: string,
+  ): Promise<AdminPostAppealItem>;
 }
 
 function createEmptyBreakdown(): ReactionBreakdown {
@@ -101,6 +135,42 @@ export class PostService implements IPostService {
     };
   }
 
+  async getPostById(postId: string): Promise<Post> {
+    const response = await this.repository.getPostById(postId);
+    return response.data;
+  }
+
+  async getPostComments(
+    postId: string,
+    params: PostCommentsQueryParams = {},
+  ): Promise<PaginatedPostCommentsResult> {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const response = await this.repository.getPostComments(postId, {
+      page,
+      limit,
+    });
+    const items = response.data ?? [];
+    return {
+      items,
+      meta: response.meta ?? {
+        page,
+        limit,
+        totalItems: items.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  async createPostAppeal(
+    payload: CreatePostAppealPayload,
+  ): Promise<PostAppealSummary> {
+    const response = await this.repository.createPostAppeal(payload);
+    return response.data;
+  }
+
   async getFriends(): Promise<PostAuthor[]> {
     const response = await this.repository.getFriends();
     return response.data ?? [];
@@ -114,6 +184,27 @@ export class PostService implements IPostService {
 
   async createPost(payload: CreatePostPayload): Promise<Post> {
     const response = await this.repository.createPost(payload);
+    return response.data;
+  }
+
+  async updatePost(payload: UpdatePostPayload): Promise<Post> {
+    const parsed = updatePostSchema.safeParse({
+      content: payload.content,
+      visibility: payload.visibility,
+      media: payload.media,
+    });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Nội dung bài viết chưa hợp lệ',
+      );
+    }
+
+    const response = await this.repository.updatePost(payload.postId, {
+      content: parsed.data.content,
+      visibility: parsed.data.visibility,
+      media: parsed.data.media,
+      taggedUserIds: payload.taggedUserIds ?? [],
+    });
     return response.data;
   }
 
@@ -304,6 +395,29 @@ export class PostService implements IPostService {
     return response.data;
   }
 
+  async flagPostViolationAsAdmin(
+    postId: string,
+    reason: string,
+  ): Promise<AdminPostDetail> {
+    const parsed = flagPostViolationSchema.safeParse({ reason });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ??
+          'Lý do đánh dấu vi phạm chưa hợp lệ',
+      );
+    }
+    const response = await this.repository.flagAdminPostViolation(
+      postId,
+      parsed.data.reason,
+    );
+    return response.data;
+  }
+
+  async unflagPostViolationAsAdmin(postId: string): Promise<AdminPostDetail> {
+    const response = await this.repository.unflagAdminPostViolation(postId);
+    return response.data;
+  }
+
   async removePostAsAdmin(postId: string, reason?: string): Promise<void> {
     const parsed = removeModerationReasonSchema.safeParse({ reason });
     if (!parsed.success) {
@@ -328,6 +442,83 @@ export class PostService implements IPostService {
     }
     const cleanReason = parsed.data.reason?.trim() || undefined;
     await this.repository.removeAdminComment(postId, commentId, cleanReason);
+  }
+
+  async getAdminPostAppeals(
+    params: AdminPostAppealsQueryParams = {},
+  ): Promise<PaginatedAdminPostAppealsResult> {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const cleanParams: AdminPostAppealsQueryParams = {
+      page,
+      limit,
+      ...(params.status && params.status !== 'ALL'
+        ? { status: params.status }
+        : {}),
+      ...(params.search?.trim() ? { search: params.search.trim() } : {}),
+    };
+
+    const response = await this.repository.getAdminPostAppeals(cleanParams);
+    const items = response.data ?? [];
+    return {
+      items,
+      meta: response.meta ?? {
+        page,
+        limit,
+        totalItems: items.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  async getAdminPostAppealsHistory(
+    postId: string,
+    params: AdminPostAppealHistoryQueryParams = {},
+  ): Promise<PaginatedAdminPostAppealHistoryResult> {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const response = await this.repository.getAdminPostAppealsHistory(postId, {
+      page,
+      limit,
+    });
+    const items = response.data ?? [];
+    return {
+      items,
+      meta: response.meta ?? {
+        page,
+        limit,
+        totalItems: items.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  async restorePostAppealAsAdmin(
+    appealId: string,
+  ): Promise<AdminPostAppealItem> {
+    const response = await this.repository.restoreAdminPostAppeal(appealId);
+    return response.data;
+  }
+
+  async rejectPostAppealAsAdmin(
+    appealId: string,
+    evidence: string,
+  ): Promise<AdminPostAppealItem> {
+    const parsed = rejectPostAppealSchema.safeParse({ evidence });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Minh chứng chưa hợp lệ',
+      );
+    }
+    const response = await this.repository.rejectAdminPostAppeal(
+      appealId,
+      parsed.data.evidence,
+    );
+    return response.data;
   }
 }
 

@@ -1,8 +1,10 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../services/user.service';
 import type {
+  AdminUserDetail,
   AdminUsersQueryParams,
   CreateAdminUserPayload,
+  FlagProfileMediaViolationPayload,
   LockUserPayload,
 } from '../types/user.types';
 import { userKeys } from './user.keys';
@@ -86,6 +88,75 @@ export function useCreateAdminUserMutation() {
     mutationFn: (payload: CreateAdminUserPayload) => userService.createUser(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
+
+function invalidateMediaViolationCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  updatedDetail: AdminUserDetail,
+) {
+  queryClient.setQueryData(
+    userKeys.adminDetail(updatedDetail.id),
+    updatedDetail,
+  );
+  void queryClient.invalidateQueries({ queryKey: userKeys.all });
+  void queryClient.invalidateQueries({ queryKey: ['posts', 'list'] });
+  void queryClient.invalidateQueries({ queryKey: ['posts', 'detail'] });
+}
+
+export function useFlagUserAvatarViolationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: FlagProfileMediaViolationPayload;
+    }) => userService.flagAvatarViolation(userId, payload),
+    onSuccess: (updatedDetail) => {
+      invalidateMediaViolationCaches(queryClient, updatedDetail);
+    },
+  });
+}
+
+export function useClearUserAvatarViolationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => userService.clearAvatarViolation(userId),
+    onSuccess: (updatedDetail) => {
+      invalidateMediaViolationCaches(queryClient, updatedDetail);
+    },
+  });
+}
+
+export function useFlagUserCoverViolationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: FlagProfileMediaViolationPayload;
+    }) => userService.flagCoverViolation(userId, payload),
+    onSuccess: (updatedDetail) => {
+      invalidateMediaViolationCaches(queryClient, updatedDetail);
+    },
+  });
+}
+
+export function useClearUserCoverViolationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => userService.clearCoverViolation(userId),
+    onSuccess: (updatedDetail) => {
+      invalidateMediaViolationCaches(queryClient, updatedDetail);
     },
   });
 }

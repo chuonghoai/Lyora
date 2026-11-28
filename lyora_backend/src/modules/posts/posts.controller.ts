@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFiles,
@@ -19,12 +20,15 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { CreatePostDto } from './dto/create-post.dto';
+import { CreatePostAppealDto } from './dto/post-appeal.dto';
 import {
+  PostCommentsQueryDto,
   PostReactionsQueryDto,
   PostSharesQueryDto,
 } from './dto/post-interactions-query.dto';
 import { PostQueryDto } from './dto/post-query.dto';
 import { SuggestPostContentDto } from './dto/suggest-post-content.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
 import { PostAiSuggestionService } from './services/post-ai-suggestion.service';
 import {
@@ -137,6 +141,27 @@ export class PostsController {
     return this.postsService.getPostShares(currentUser, id, query);
   }
 
+  @Get(':id/comments')
+  @ResponseMessage('Lấy danh sách bình luận bài viết thành công')
+  async getComments(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query() query: PostCommentsQueryDto,
+  ) {
+    return this.postsService.getPostComments(currentUser, id, query);
+  }
+
+  @Post(':id/appeals')
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Gửi khiếu nại bài viết thành công')
+  async createAppeal(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: CreatePostAppealDto,
+  ) {
+    return this.postsService.createAppeal(currentUser, id, dto);
+  }
+
   @Get(':id')
   @ResponseMessage('Lấy chi tiết bài viết thành công')
   async findOne(
@@ -144,6 +169,16 @@ export class PostsController {
     @Param('id') id: string,
   ) {
     return this.postsService.findOne(currentUser, id);
+  }
+
+  @Patch(':id')
+  @ResponseMessage('Cập nhật bài viết thành công')
+  async update(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdatePostDto,
+  ) {
+    return this.postsService.update(currentUser, id, dto);
   }
 
   @Delete(':id')

@@ -15,6 +15,7 @@ import {
   type PublicUserProfile,
 } from "@/features/user";
 import { useCreateDirectConversationMutation } from "@/features/conversations";
+import { useCreatePostAppealMutation, type Post } from "@/features/posts";
 import {
   useAcceptFriendRequestMutation,
   useAcceptedFriendsQuery,
@@ -86,6 +87,7 @@ export function useProfileController() {
   const acceptRequestMutation = useAcceptFriendRequestMutation();
   const unfriendMutation = useUnfriendMutation();
   const createDirectMutation = useCreateDirectConversationMutation();
+  const createPostAppealMutation = useCreatePostAppealMutation();
 
   const tabParam = searchParams.get("tab");
   const activeTab: ProfileTabKey =
@@ -106,6 +108,7 @@ export function useProfileController() {
   const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
   const [unfriendTarget, setUnfriendTarget] =
     useState<UnfriendTargetState | null>(null);
+  const [appealTargetPost, setAppealTargetPost] = useState<Post | null>(null);
 
   const pendingAvatarFileRef = useRef<File | null>(null);
   const pendingCoverFileRef = useRef<File | null>(null);
@@ -166,6 +169,7 @@ export function useProfileController() {
     setIsEditModalOpen(false);
     setIsFriendMenuOpen(false);
     setUnfriendTarget(null);
+    setAppealTargetPost(null);
     releasePendingMediaPreviews();
   }, [userId]);
 
@@ -258,7 +262,8 @@ export function useProfileController() {
     enabled: Boolean(resolvedTargetAuthorId),
     friends: friendsForFeed,
     profileUser: profile ?? currentUser,
-    hasBlockingExternalModal: isEditModalOpen || Boolean(unfriendTarget),
+    hasBlockingExternalModal:
+      isEditModalOpen || Boolean(unfriendTarget) || Boolean(appealTargetPost),
     onOpenUserProfile: handleOpenUserProfile,
   });
 
@@ -750,6 +755,39 @@ export function useProfileController() {
     }
   };
 
+  const handleOpenAppealModal = (post: Post) => {
+    setAppealTargetPost(post);
+  };
+
+  const handleCloseAppealModal = () => {
+    if (createPostAppealMutation.isPending) return;
+    setAppealTargetPost(null);
+  };
+
+  const handleSubmitPostAppeal = async (payload: {
+    reasonCategory: string;
+    reasonDetail: string;
+  }) => {
+    if (!appealTargetPost) return;
+    try {
+      await createPostAppealMutation.mutateAsync({
+        postId: appealTargetPost.id,
+        reasonCategory: payload.reasonCategory,
+        reasonDetail: payload.reasonDetail,
+      });
+      setAppealTargetPost(null);
+      toast.success(
+        "Đã gửi khiếu nại bài viết tới Ban Quản Trị để xem xét.",
+      );
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : "Không thể gửi khiếu nại bài viết lúc này.",
+      );
+    }
+  };
+
   return {
     ...postFeed,
     currentUser,
@@ -785,6 +823,8 @@ export function useProfileController() {
     friendMenuRef,
     unfriendTarget,
     isUnfriending: unfriendMutation.isPending,
+    appealTargetPost,
+    isSubmittingAppeal: createPostAppealMutation.isPending,
     handleSelectTab,
     handleSelectProfileVisibilityFilter,
     handleSelectActivityTab,
@@ -816,6 +856,9 @@ export function useProfileController() {
     handleRetryFriends,
     handleRetryActivity,
     handleRefetchProfile,
+    handleOpenAppealModal,
+    handleCloseAppealModal,
+    handleSubmitPostAppeal,
   };
 }
 

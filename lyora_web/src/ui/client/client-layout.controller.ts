@@ -25,7 +25,7 @@ import {
 } from "@/features/notifications";
 import { friendsKeys } from "@/features/friends/hooks/friends.keys";
 import { notificationsKeys } from "@/features/notifications/hooks/notifications.keys";
-import type { PostsFeedFilter } from "@/features/posts";
+import { postKeys, type PostsFeedFilter } from "@/features/posts";
 import {
   getClientProfilePath,
   isClientProfilePathname,
@@ -41,6 +41,7 @@ export interface ClientNotificationItem {
   description: string;
   timeLabel: string;
   isRead: boolean;
+  targetPath?: string | null;
   targetTab?: PostsFeedFilter;
   targetRoute?: "profile" | "friends";
   actorName?: string;
@@ -151,6 +152,11 @@ export function useClientLayoutController() {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
+    if (!isAuthenticated) {
+      document.documentElement.style.fontSize = "";
+      document.documentElement.classList.remove("motion-reduce");
+      return;
+    }
     document.documentElement.style.fontSize =
       fontScale === "large" ? "17.5px" : "";
     document.documentElement.classList.toggle("motion-reduce", reduceMotion);
@@ -158,7 +164,7 @@ export function useClientLayoutController() {
       fontScale,
       reduceMotion,
     });
-  }, [fontScale, reduceMotion]);
+  }, [fontScale, isAuthenticated, reduceMotion]);
 
   const triggerRefreshSession = refreshSessionMutation.mutate;
   useEffect(() => {
@@ -195,9 +201,75 @@ export function useClientLayoutController() {
     };
     const unsubscribeNotification = webSocketService.subscribe(
       "notification.created",
+      (event) => {
+        void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
+        const notificationType =
+          event &&
+          typeof event === "object" &&
+          "payload" in event &&
+          event.payload &&
+          typeof event.payload === "object" &&
+          "type" in event.payload &&
+          typeof event.payload.type === "string"
+            ? event.payload.type
+            : null;
+        const notificationTitle =
+          event &&
+          typeof event === "object" &&
+          "payload" in event &&
+          event.payload &&
+          typeof event.payload === "object" &&
+          "title" in event.payload &&
+          typeof event.payload.title === "string"
+            ? event.payload.title
+            : null;
+
+        if (
+          !notificationType ||
+          notificationType === "FRIEND_REQUEST" ||
+          notificationType === "FRIEND_REQUEST_ACCEPTED"
+        ) {
+          refreshFriendLists();
+        }
+        if (
+          notificationType === "POST_HIDDEN" ||
+          notificationType === "POST_RESTORED" ||
+          notificationType === "POST_REMOVED" ||
+          notificationType === "COMMENT_REMOVED" ||
+          notificationType === "POST_APPEAL_REJECTED" ||
+          notificationType === "POST_VIOLATION_FLAGGED"
+        ) {
+          void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+          void queryClient.invalidateQueries({ queryKey: postKeys.details() });
+        }
+        if (notificationType === "POST_VIOLATION_FLAGGED") {
+          toast.error(
+            notificationTitle ?? "Một bài viết của bạn vừa bị đánh dấu vi phạm.",
+          );
+        }
+        if (
+          notificationType === "AVATAR_VIOLATION_FLAGGED" ||
+          notificationType === "COVER_VIOLATION_FLAGGED"
+        ) {
+          void queryClient.invalidateQueries({
+            queryKey: ["users", "profile-page"],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: ["users", "profile"],
+          });
+          void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+          void queryClient.invalidateQueries({ queryKey: postKeys.details() });
+          triggerRefreshSession();
+          toast.error(
+            notificationTitle ?? "Hồ sơ của bạn vừa nhận được cảnh báo vi phạm mới.",
+          );
+        }
+      },
+    );
+    const unsubscribeNotificationUpdated = webSocketService.subscribe(
+      "notification.updated",
       () => {
         void queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
-        refreshFriendLists();
       },
     );
     const unsubscribeFriendship = webSocketService.subscribe(
@@ -238,6 +310,7 @@ export function useClientLayoutController() {
     );
     return () => {
       unsubscribeNotification();
+      unsubscribeNotificationUpdated();
       unsubscribeFriendship();
       webSocketService.disconnect();
     };
@@ -462,10 +535,13 @@ export function useClientLayoutController() {
       description: notification.description,
       timeLabel: formatNotificationTime(notification.createdAt),
       isRead: notification.isRead,
+      targetPath: notification.targetPath,
       targetRoute:
         notification.targetPath === ROUTES.CLIENT.FRIENDS
           ? "friends"
-          : undefined,
+          : notification.targetPath === ROUTES.CLIENT.PROFILE
+            ? "profile"
+            : undefined,
       actorName: requester?.fullName,
       actorAvatarUrl: requester?.avatarUrl,
       friendRequestUserId: isFriendRequest ? requester?.id : undefined,
@@ -478,6 +554,35 @@ export function useClientLayoutController() {
     );
     if (!notification || notification.isRead) return;
     markNotificationReadMutation.mutate(notificationId);
+  };
+
+  const handleSelectNotification = (item: ClientNotificationItem) => {
+    handleMarkNotificationRead(item.id);
+    handleCloseNotifications();
+
+    const rawPath = item.targetPath?.trim();
+    if (rawPath?.startsWith("/post/")) {
+      navigate(rawPath);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (rawPath?.startsWith("/posts/")) {
+      const normalized = rawPath.replace(/^\/posts\//, "/post/").split("?")[0];
+      navigate(normalized);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (rawPath === ROUTES.CLIENT.FRIENDS || item.targetRoute === "friends") {
+      handleNavigateFriends();
+      return;
+    }
+    if (rawPath === ROUTES.CLIENT.PROFILE || item.targetRoute === "profile") {
+      handleOpenProfile();
+      return;
+    }
+    if (item.targetTab) {
+      handleSelectTab(item.targetTab);
+    }
   };
 
   const handleMarkAllNotificationsRead = async () => {
@@ -584,6 +689,7 @@ export function useClientLayoutController() {
     handleToggleNotifications,
     handleCloseNotifications,
     handleRetryNotifications,
+    handleSelectNotification,
     handleMarkNotificationRead,
     handleMarkAllNotificationsRead,
     handleAcceptFriendRequestFromNotification,

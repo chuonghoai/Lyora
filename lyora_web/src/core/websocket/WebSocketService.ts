@@ -4,7 +4,7 @@ import type {
   WebSocketEventHandler,
   WebSocketStatus,
 } from './websocket.types';
-import { TokenStorage } from '@/core/storage';
+import { TokenStorage } from '@/core/storage/tokenStorage';
 import { logger } from '@/core/utils/logger';
 
 export class WebSocketService {
@@ -45,7 +45,9 @@ export class WebSocketService {
     this.socket?.disconnect();
     this.setStatus('CONNECTING');
     this.socket = io(`${this.config.url}/realtime`, {
-      auth: { token },
+      auth: (cb) => {
+        cb({ token: TokenStorage.getAccessToken() ?? '' });
+      },
       transports: ['websocket'],
       reconnectionAttempts: this.config.maxReconnectAttempts,
     });

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, Navigate, Outlet } from "react-router-dom";
 import {
   AppImage,
@@ -9,6 +9,11 @@ import {
 } from "@/core";
 import webIconSymbol from "@/core/assets/web_icon_symbol.svg";
 import { ROUTES } from "@/routes/paths";
+import {
+  AvatarViolationButton,
+  ViolationDetailModal,
+  type ViolationModalTarget,
+} from "@/ui/shared/ViolationIndicators";
 import { useClientLayoutController } from "./client-layout.controller";
 import {
   AccessibilityIcon,
@@ -32,6 +37,8 @@ import {
 
 export const ClientLayout: React.FC = () => {
   const controller = useClientLayoutController();
+  const [violationModalTarget, setViolationModalTarget] =
+    useState<ViolationModalTarget | null>(null);
 
   if (controller.user?.role === "ADMIN") {
     return <Navigate to={ROUTES.ADMIN.DASHBOARD} replace />;
@@ -399,17 +406,7 @@ export const ClientLayout: React.FC = () => {
                         >
                           <button
                             type="button"
-                            onClick={() => {
-                              controller.handleMarkNotificationRead(item.id);
-                              controller.handleCloseNotifications();
-                              if (item.targetRoute === "profile") {
-                                controller.handleOpenProfile();
-                              } else if (item.targetRoute === "friends") {
-                                controller.handleNavigateFriends();
-                              } else if (item.targetTab) {
-                                controller.handleSelectTab(item.targetTab);
-                              }
-                            }}
+                            onClick={() => controller.handleSelectNotification(item)}
                             className="flex min-w-0 flex-1 items-start gap-3 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg"
                           >
                             {item.actorName ? (
@@ -511,36 +508,67 @@ export const ClientLayout: React.FC = () => {
 
             {/* Account Dropdown */}
             <div ref={controller.accountMenuRef} className="relative">
-              <button
-                type="button"
-                onClick={controller.handleToggleAccountMenu}
-                aria-expanded={controller.isAccountMenuOpen}
-                aria-haspopup="menu"
-                aria-label="Tài khoản cá nhân"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-background pl-1 pr-2.5 py-1 hover:border-secondary-strong transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                <span className="relative h-8 w-8 rounded-full shrink-0">
-                  {controller.user?.avatarUrl ? (
-                    <AppImage
-                      src={controller.user.avatarUrl}
-                      alt={displayName}
-                      rounded
-                      className="h-8 w-8 border border-border"
+              <div className="relative inline-flex items-center">
+                <button
+                  type="button"
+                  onClick={controller.handleToggleAccountMenu}
+                  aria-expanded={controller.isAccountMenuOpen}
+                  aria-haspopup="menu"
+                  aria-label="Tài khoản cá nhân"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background pl-1 pr-2.5 py-1 hover:border-secondary-strong transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <span className="relative h-8 w-8 rounded-full shrink-0">
+                    {controller.user?.avatarUrl ? (
+                      <AppImage
+                        src={controller.user.avatarUrl}
+                        alt={displayName}
+                        rounded
+                        className={`h-8 w-8 ${
+                          controller.user.avatarViolation
+                            ? "border border-error ring-2 ring-error"
+                            : "border border-border"
+                        }`}
+                      />
+                    ) : (
+                      <span
+                        className={`grid h-8 w-8 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active ${
+                          controller.user?.avatarViolation
+                            ? "border border-error ring-2 ring-error"
+                            : ""
+                        }`}
+                      >
+                        {initials}
+                      </span>
+                    )}
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-card"
                     />
-                  ) : (
-                    <span className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-xs font-bold text-primary-active">
-                      {initials}
-                    </span>
-                  )}
-                  <span
-                    aria-hidden="true"
-                    className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-card"
+                  </span>
+                  <span className="hidden lg:block text-left max-w-[130px] truncate text-xs font-semibold text-foreground">
+                    {displayName}
+                  </span>
+                </button>
+
+                {controller.user?.avatarViolation && (
+                  <AvatarViolationButton
+                    size="sm"
+                    className="-top-1 -left-1 !right-auto"
+                    onClick={() =>
+                      setViolationModalTarget({
+                        kind: "AVATAR",
+                        subjectName: displayName,
+                        reason: controller.user!.avatarViolation!.reason,
+                        flaggedAt: controller.user!.avatarViolation!.flaggedAt,
+                        evidenceUrl:
+                          controller.user!.avatarViolation!.evidenceUrl ??
+                          controller.user!.avatarUrl ??
+                          null,
+                      })
+                    }
                   />
-                </span>
-                <span className="hidden lg:block text-left max-w-[130px] truncate text-xs font-semibold text-foreground">
-                  {displayName}
-                </span>
-              </button>
+                )}
+              </div>
 
               {controller.isAccountMenuOpen && (
                 <div
@@ -969,6 +997,18 @@ export const ClientLayout: React.FC = () => {
           </button>
         </div>
       </nav>
+      <ViolationDetailModal
+        target={violationModalTarget}
+        onClose={() => setViolationModalTarget(null)}
+        primaryAction={{
+          label: "Mở trang hồ sơ",
+          variant: "primary",
+          onClick: () => {
+            setViolationModalTarget(null);
+            controller.handleOpenProfile();
+          },
+        }}
+      />
     </div>
   );
 };

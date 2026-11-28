@@ -6,12 +6,20 @@ import {
   type Post,
   type PostComment,
 } from '@/features/posts';
+import {
+  AVATAR_VIOLATION_REASON_PRESETS,
+  COVER_VIOLATION_REASON_PRESETS,
+  type AdminUserDetail,
+} from '@/features/user';
 import { CloseIcon } from '../components/AdminIcons';
 
 export type AdminUserModerationTarget =
   | { mode: 'HIDE_POST'; post: Post }
   | { mode: 'REMOVE_POST'; post: Post }
-  | { mode: 'REMOVE_COMMENT'; postId: string; comment: PostComment };
+  | { mode: 'REMOVE_COMMENT'; postId: string; comment: PostComment }
+  | { mode: 'FLAG_POST'; post: Post }
+  | { mode: 'FLAG_AVATAR'; user: AdminUserDetail }
+  | { mode: 'FLAG_COVER'; user: AdminUserDetail };
 
 export interface AdminUserPostModerationModalProps {
   target: AdminUserModerationTarget | null;
@@ -52,30 +60,75 @@ export const AdminUserPostModerationModal: React.FC<
   if (!target || typeof document === 'undefined') return null;
 
   const isHideMode = target.mode === 'HIDE_POST';
+  const isFlagPostMode = target.mode === 'FLAG_POST';
+  const isFlagAvatarMode = target.mode === 'FLAG_AVATAR';
+  const isFlagCoverMode = target.mode === 'FLAG_COVER';
   const isCommentMode = target.mode === 'REMOVE_COMMENT';
-  const item = isCommentMode ? target.comment : target.post;
-  const authorName = item.author.fullName?.trim() || fallbackAuthorName;
-  const authorEmail = item.author.email;
+  const isReasonRequired =
+    isHideMode || isFlagPostMode || isFlagAvatarMode || isFlagCoverMode;
 
-  const title = isHideMode
-    ? 'Ẩn bài viết vi phạm'
-    : isCommentMode
-      ? 'Xác nhận gỡ bỏ bình luận'
-      : 'Xác nhận gỡ bỏ bài viết';
+  const isMediaFlagMode = isFlagAvatarMode || isFlagCoverMode;
+  const targetUser = isMediaFlagMode ? target.user : null;
+  const targetItem =
+    !isMediaFlagMode && !isCommentMode ? target.post : isCommentMode ? target.comment : null;
 
-  const description = isHideMode
-    ? 'Bài viết sẽ bị ẩn khỏi bảng tin cộng đồng ngay lập tức và hệ thống tự động gửi thông báo kèm lý do cho tác giả. Bạn vẫn có thể khôi phục bài viết sau này.'
-    : isCommentMode
-      ? 'Bình luận sẽ bị gỡ bỏ khỏi bài viết trên toàn hệ thống và tác giả bình luận sẽ nhận được thông báo từ Ban Quản Trị.'
-      : 'Bài viết sẽ bị gỡ bỏ khỏi danh sách hiển thị trên toàn hệ thống và tác giả sẽ nhận được thông báo từ Ban Quản Trị.';
+  const authorName = isMediaFlagMode
+    ? target.user.fullName?.trim() || fallbackAuthorName
+    : targetItem?.author.fullName?.trim() || fallbackAuthorName;
+  const authorEmail = isMediaFlagMode
+    ? target.user.email
+    : targetItem?.author.email;
 
-  const reasonLabel = isHideMode
-    ? 'Lý do kiểm duyệt (bắt buộc)'
+  const title = isFlagAvatarMode
+    ? 'Đánh dấu vi phạm ảnh đại diện'
+    : isFlagCoverMode
+      ? 'Đánh dấu vi phạm ảnh bìa'
+      : isFlagPostMode
+        ? 'Đánh dấu vi phạm bài viết'
+        : isHideMode
+          ? 'Ẩn bài viết vi phạm'
+          : isCommentMode
+            ? 'Xác nhận gỡ bỏ bình luận'
+            : 'Xác nhận gỡ bỏ bài viết';
+
+  const description = isFlagAvatarMode
+    ? 'Ảnh đại diện của thành viên sẽ được gắn viền cảnh báo kèm biểu tượng dấu chấm than để xem lý do & bằng chứng, đồng thời hệ thống gửi thông báo realtime cho người dùng.'
+    : isFlagCoverMode
+      ? 'Ảnh bìa của thành viên sẽ được gắn viền cảnh báo kèm biểu tượng dấu chấm than để xem lý do & bằng chứng, đồng thời hệ thống gửi thông báo realtime cho người dùng.'
+      : isFlagPostMode
+        ? 'Bài viết sẽ hiển thị nhãn "Vi phạm" tương tác bấm được trên trang chủ, hồ sơ và trang chi tiết, đồng thời gửi thông báo realtime cho tác giả.'
+        : isHideMode
+          ? 'Bài viết sẽ bị ẩn khỏi bảng tin cộng đồng ngay lập tức và hệ thống tự động gửi thông báo kèm lý do cho tác giả. Bạn vẫn có thể khôi phục bài viết sau này.'
+          : isCommentMode
+            ? 'Bình luận sẽ bị gỡ bỏ khỏi bài viết trên toàn hệ thống và tác giả bình luận sẽ nhận được thông báo từ Ban Quản Trị.'
+            : 'Bài viết sẽ bị gỡ bỏ khỏi danh sách hiển thị trên toàn hệ thống và tác giả sẽ nhận được thông báo từ Ban Quản Trị.';
+
+  const reasonLabel = isReasonRequired
+    ? 'Lý do vi phạm (bắt buộc)'
     : 'Lý do gỡ bỏ gửi tới tác giả (tùy chọn)';
 
-  const reasonPlaceholder = isHideMode
+  const reasonPlaceholder = isReasonRequired
     ? 'Nhập lý do cụ thể từ 5 đến 500 ký tự...'
     : 'Nhập lý do gỡ bỏ nếu cần thông báo chi tiết cho tác giả...';
+
+  const reasonPresets = isFlagAvatarMode
+    ? AVATAR_VIOLATION_REASON_PRESETS
+    : isFlagCoverMode
+      ? COVER_VIOLATION_REASON_PRESETS
+      : MODERATION_REASON_PRESETS;
+
+  const submitLabel =
+    isFlagAvatarMode || isFlagCoverMode || isFlagPostMode
+      ? 'Xác nhận đánh dấu vi phạm'
+      : isHideMode
+        ? 'Xác nhận ẩn bài'
+        : 'Xác nhận gỡ bỏ';
+
+  const mediaPreviewUrl = isFlagAvatarMode
+    ? targetUser?.avatarUrl
+    : isFlagCoverMode
+      ? targetUser?.coverUrl
+      : null;
 
   const excerptFallback = isCommentMode
     ? '(Bình luận chỉ đính kèm phương tiện)'
@@ -93,7 +146,7 @@ export const AdminUserPostModerationModal: React.FC<
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-md flex flex-col max-h-[min(88dvh,720px)] overflow-hidden"
+        className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-md flex flex-col max-h-[min(90dvh,760px)] overflow-hidden"
       >
         <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-4 shrink-0">
           <div className="space-y-0.5 min-w-0">
@@ -104,7 +157,7 @@ export const AdminUserPostModerationModal: React.FC<
               {title}
             </h1>
             <p className="text-xs text-muted truncate">
-              Tác giả:{' '}
+              {isMediaFlagMode ? 'Thành viên:' : 'Tác giả:'}{' '}
               <strong className="font-medium text-foreground">{authorName}</strong>
               {authorEmail ? ` (${authorEmail})` : ''}
             </p>
@@ -122,15 +175,36 @@ export const AdminUserPostModerationModal: React.FC<
         </div>
 
         <form onSubmit={onConfirm} className="flex-1 overflow-y-auto p-6 space-y-4">
-          <div className="rounded-xl border border-border bg-background/60 p-3.5 space-y-1">
-            <div className="flex items-center justify-between gap-2 text-[11px] text-muted tabular-nums">
-              <span className="font-mono">#{item.id.slice(0, 8)}</span>
-              <span>{formatDateTime(item.createdAt)}</span>
+          {isMediaFlagMode && mediaPreviewUrl ? (
+            <div className="space-y-1.5">
+              <span className="block text-xs font-medium text-foreground">
+                {isFlagAvatarMode
+                  ? 'Ảnh đại diện đang kiểm duyệt (bằng chứng)'
+                  : 'Ảnh bìa đang kiểm duyệt (bằng chứng)'}
+              </span>
+              <div className="rounded-xl border border-border bg-background p-2.5 flex items-center justify-center overflow-hidden">
+                <img
+                  src={mediaPreviewUrl}
+                  alt={
+                    isFlagAvatarMode
+                      ? `Ảnh đại diện của ${authorName}`
+                      : `Ảnh bìa của ${authorName}`
+                  }
+                  className="block max-w-full max-h-52 w-auto h-auto object-contain rounded-lg"
+                />
+              </div>
             </div>
-            <p className="text-xs text-foreground line-clamp-2 break-words">
-              {item.content.trim() || excerptFallback}
-            </p>
-          </div>
+          ) : targetItem ? (
+            <div className="rounded-xl border border-border bg-background/60 p-3.5 space-y-1">
+              <div className="flex items-center justify-between gap-2 text-[11px] text-muted tabular-nums">
+                <span className="font-mono">#{targetItem.id.slice(0, 8)}</span>
+                <span>{formatDateTime(targetItem.createdAt)}</span>
+              </div>
+              <p className="text-xs text-foreground line-clamp-2 break-words">
+                {targetItem.content.trim() || excerptFallback}
+              </p>
+            </div>
+          ) : null}
 
           <p className="text-xs text-muted leading-relaxed">{description}</p>
 
@@ -139,7 +213,7 @@ export const AdminUserPostModerationModal: React.FC<
               Chọn nhanh lý do phổ biến
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {MODERATION_REASON_PRESETS.map((preset) => {
+              {reasonPresets.map((preset) => {
                 const isSelected = reason === preset;
                 return (
                   <button
@@ -176,7 +250,7 @@ export const AdminUserPostModerationModal: React.FC<
             <textarea
               id="admin-user-moderation-reason-input"
               rows={4}
-              autoFocus={isHideMode}
+              autoFocus={isReasonRequired}
               maxLength={500}
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
@@ -195,7 +269,7 @@ export const AdminUserPostModerationModal: React.FC<
             <Button
               type="button"
               variant="outline"
-              autoFocus={!isHideMode}
+              autoFocus={!isReasonRequired}
               disabled={isSubmitting}
               onClick={onClose}
             >
@@ -206,7 +280,7 @@ export const AdminUserPostModerationModal: React.FC<
               variant={isHideMode ? 'primary' : 'danger'}
               isLoading={isSubmitting}
             >
-              {isHideMode ? 'Xác nhận ẩn bài' : 'Xác nhận gỡ bỏ'}
+              {submitLabel}
             </Button>
           </div>
         </form>

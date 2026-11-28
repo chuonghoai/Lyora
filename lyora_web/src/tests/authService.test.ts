@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthService } from '@/features/auth/services/auth.service';
 import type { IAuthRepository } from '@/features/auth/repositories/auth.repository';
-import { TokenStorage } from '@/core';
+import {
+  localStorageService,
+  sessionStorageService,
+  TokenStorage,
+  webSocketService,
+} from '@/core';
 
 describe('AuthService (Data Layer)', () => {
   let mockRepository: IAuthRepository;
@@ -185,5 +190,69 @@ describe('AuthService (Data Layer)', () => {
     expect(s2?.accessToken).toBe('new_access_jwt');
     expect(TokenStorage.getRefreshToken()).toBe('new_refresh_jwt');
     expect(TokenStorage.getUser()?.avatarUrl).toBe('https://example.com/avatar.png');
+  });
+
+  it('should clear cached local/session storage, disconnect socket, and reset refresh cooldown on logout()', async () => {
+    await authService.login({
+      email: 'test@lyora.com',
+      password: 'password123',
+    });
+
+    vi.mocked(mockRepository.refreshToken)
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          accessToken: 'refreshed_1',
+          refreshToken: 'refresh_1',
+          user: {
+            id: 'u-1',
+            email: 'test@lyora.com',
+            fullName: 'Test User',
+            role: 'CLIENT',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          accessToken: 'refreshed_2',
+          refreshToken: 'refresh_2',
+          user: {
+            id: 'u-2',
+            email: 'second@lyora.com',
+            fullName: 'Second User',
+            role: 'CLIENT',
+          },
+        },
+      });
+
+    await authService.refreshSession();
+
+    localStorageService.setItem('lyora_search_history', ['abc']);
+    localStorageService.setItem('post-composer-draft', { content: 'Bản nháp cũ' });
+    localStorageService.setItem('lyora_sent_friend_requests:u-1', [{ targetUserId: 'u-3' }]);
+    localStorageService.setItem('lyora_ui_preferences', { fontScale: 'large', reduceMotion: true });
+    sessionStorageService.setItem('temp_state', 'old');
+    const disconnectSpy = vi.spyOn(webSocketService, 'disconnect').mockImplementation(() => {});
+
+    await authService.logout();
+
+    expect(localStorageService.getItem('lyora_search_history')).toBeNull();
+    expect(localStorageService.getItem('post-composer-draft')).toBeNull();
+    expect(localStorageService.getItem('lyora_sent_friend_requests:u-1')).toBeNull();
+    expect(localStorageService.getItem('lyora_ui_preferences')).toBeNull();
+    expect(sessionStorageService.getItem('temp_state')).toBeNull();
+    expect(disconnectSpy).toHaveBeenCalled();
+
+    // Sau khi đăng xuất và đăng nhập lại ngay trong vòng <5s, cooldown refresh cũ không chặn phiên mới
+    TokenStorage.saveAuthSession('acc_next', 'ref_next', {
+      id: 'u-2',
+      email: 'second@lyora.com',
+      fullName: 'Second User',
+      role: 'CLIENT',
+    });
+    const nextSession = await authService.refreshSession();
+    expect(mockRepository.refreshToken).toHaveBeenCalledTimes(2);
+    expect(nextSession?.accessToken).toBe('refreshed_2');
   });
 });

@@ -15,11 +15,20 @@ export const AdminLayout: React.FC = () => {
         isSearchOpen={ctrl.isSearchOpen}
         searchResults={ctrl.searchResults}
         searchContainerRef={ctrl.searchContainerRef}
+        notifications={ctrl.notifications}
+        unreadNotificationsCount={ctrl.unreadNotificationsCount}
+        isNotificationsOpen={ctrl.isNotificationsOpen}
+        isLoadingNotifications={ctrl.isLoadingNotifications}
+        isMarkingAllNotificationsRead={ctrl.isMarkingAllNotificationsRead}
+        notificationsRef={ctrl.notificationsRef}
         onSearchOpen={ctrl.handleOpenSearch}
         onSearchChange={ctrl.handleHeaderSearchChange}
         onSearchSubmit={ctrl.handleHeaderSearchSubmit}
         onSelectSearchItem={ctrl.handleSelectSearchItem}
         onClearSearch={ctrl.handleClearHeaderSearch}
+        onToggleNotifications={ctrl.handleToggleNotifications}
+        onSelectNotification={(n) => void ctrl.handleSelectNotification(n)}
+        onMarkAllNotificationsRead={() => void ctrl.handleMarkAllNotificationsRead()}
         onToggleSidebarCollapse={ctrl.handleToggleSidebarCollapse}
         onOpenMobileSidebar={ctrl.handleOpenMobileSidebar}
       />

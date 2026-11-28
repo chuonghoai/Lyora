@@ -63,13 +63,19 @@ export class RealtimeGateway implements OnGatewayConnection {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: this.configService.get<string>('jwt.accessSecret'),
       });
-      if (!payload.sub || payload.role !== UserRole.CLIENT) {
+      if (
+        !payload.sub ||
+        (payload.role !== UserRole.CLIENT && payload.role !== UserRole.ADMIN)
+      ) {
         throw new UnauthorizedException();
       }
-      const clientData = client.data as { userId?: string };
+      const clientData = client.data as { userId?: string; role?: UserRole };
       clientData.userId = payload.sub;
+      clientData.role = payload.role;
       await client.join(this.userRoom(payload.sub));
-      this.registerFriendActionHandlers(client, payload.sub);
+      if (payload.role === UserRole.CLIENT) {
+        this.registerFriendActionHandlers(client, payload.sub);
+      }
     } catch {
       this.logger.warn(`Từ chối kết nối realtime không hợp lệ: ${client.id}`);
       client.disconnect(true);
@@ -77,6 +83,7 @@ export class RealtimeGateway implements OnGatewayConnection {
   }
 
   emitToUser<T>(userId: string, event: string, payload: T): void {
+    if (!this.server) return;
     this.server.to(this.userRoom(userId)).emit(event, {
       type: event,
       payload,

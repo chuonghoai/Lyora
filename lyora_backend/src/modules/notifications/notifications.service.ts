@@ -11,7 +11,12 @@ export interface CreateModerationNoticeParams {
     | NotificationType.POST_HIDDEN
     | NotificationType.POST_RESTORED
     | NotificationType.POST_REMOVED
-    | NotificationType.COMMENT_REMOVED;
+    | NotificationType.COMMENT_REMOVED
+    | NotificationType.POST_APPEAL_SUBMITTED
+    | NotificationType.POST_APPEAL_REJECTED
+    | NotificationType.POST_VIOLATION_FLAGGED
+    | NotificationType.AVATAR_VIOLATION_FLAGGED
+    | NotificationType.COVER_VIOLATION_FLAGGED;
   title: string;
   description: string;
   targetPath?: string | null;
@@ -30,23 +35,14 @@ export class NotificationsService {
     actorName: string,
     actorId: string,
   ) {
-    const notification = await this.notificationRepository.save(
-      this.notificationRepository.create({
-        recipientId,
-        actorId,
-        type: NotificationType.FRIEND_REQUEST,
-        title: `${actorName} đã gửi cho bạn lời mời kết bạn`,
-        description: 'Mở mục Bạn bè để chấp nhận hoặc từ chối lời mời.',
-        targetPath: '/friends',
-        isRead: false,
-      }),
-    );
-    this.realtimeGateway.emitToUser(
+    return this.createAndEmit({
       recipientId,
-      'notification.created',
-      notification,
-    );
-    return notification;
+      actorId,
+      type: NotificationType.FRIEND_REQUEST,
+      title: `${actorName} đã gửi cho bạn lời mời kết bạn`,
+      description: 'Mở mục Bạn bè để chấp nhận hoặc từ chối lời mời.',
+      targetPath: '/friends',
+    });
   }
 
   async createFriendRequestAccepted(
@@ -54,37 +50,52 @@ export class NotificationsService {
     actorName: string,
     actorId: string,
   ) {
-    const notification = await this.notificationRepository.save(
-      this.notificationRepository.create({
-        recipientId,
-        actorId,
-        type: NotificationType.FRIEND_REQUEST_ACCEPTED,
-        title: `${actorName} đã chấp nhận lời mời kết bạn`,
-        description: 'Hai bạn hiện đã là bạn bè trên Lyora.',
-        targetPath: '/friends',
-        isRead: false,
-      }),
-    );
-    this.realtimeGateway.emitToUser(
+    return this.createAndEmit({
       recipientId,
-      'notification.created',
-      notification,
-    );
-    return notification;
+      actorId,
+      type: NotificationType.FRIEND_REQUEST_ACCEPTED,
+      title: `${actorName} đã chấp nhận lời mời kết bạn`,
+      description: 'Hai bạn hiện đã là bạn bè trên Lyora.',
+      targetPath: '/friends',
+    });
   }
 
   async createModerationNotice(params: CreateModerationNoticeParams) {
-    return this.notificationRepository.save(
+    return this.createAndEmit({
+      recipientId: params.recipientId,
+      actorId: params.actorId,
+      type: params.type,
+      title: params.title.slice(0, 255),
+      description: params.description.slice(0, 500),
+      targetPath: params.targetPath ?? '/me',
+    });
+  }
+
+  private async createAndEmit(params: {
+    recipientId: string;
+    actorId: string;
+    type: NotificationType;
+    title: string;
+    description: string;
+    targetPath: string | null;
+  }): Promise<Notification> {
+    const notification = await this.notificationRepository.save(
       this.notificationRepository.create({
         recipientId: params.recipientId,
         actorId: params.actorId,
         type: params.type,
-        title: params.title.slice(0, 255),
-        description: params.description.slice(0, 500),
-        targetPath: params.targetPath ?? '/me',
+        title: params.title,
+        description: params.description,
+        targetPath: params.targetPath,
         isRead: false,
       }),
     );
+    this.realtimeGateway.emitToUser(
+      notification.recipientId,
+      'notification.created',
+      notification,
+    );
+    return notification;
   }
 
   async findMine(recipientId: string): Promise<Notification[]> {
@@ -100,10 +111,15 @@ export class NotificationsService {
       where: { id: notificationId, recipientId },
     });
     if (!notification) throw new NotFoundException('Không tìm thấy thông báo');
-    if (!notification.isRead)
+    if (!notification.isRead) {
       await this.notificationRepository.update(notification.id, {
         isRead: true,
       });
+      this.realtimeGateway.emitToUser(recipientId, 'notification.updated', {
+        notificationId: notification.id,
+        isRead: true,
+      });
+    }
   }
 
   async markAllRead(recipientId: string): Promise<void> {
@@ -111,5 +127,8 @@ export class NotificationsService {
       { recipientId, isRead: false },
       { isRead: true },
     );
+    this.realtimeGateway.emitToUser(recipientId, 'notification.updated', {
+      allRead: true,
+    });
   }
 }

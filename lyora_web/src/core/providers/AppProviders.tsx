@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { clearClientSessionArtifacts, TokenStorage } from '@/core/storage';
 import { ToastContainer } from '@/core/toast';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -22,6 +23,16 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({
         },
       }),
   );
+
+  useEffect(() => {
+    return TokenStorage.onAuthChange((event) => {
+      if (event === 'logout') {
+        void queryClient.cancelQueries();
+        queryClient.clear();
+        clearClientSessionArtifacts();
+      }
+    });
+  }, [queryClient]);
 
   return (
     <ErrorBoundary>

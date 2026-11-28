@@ -5,13 +5,17 @@ import {
   type ApiError,
 } from '@/core';
 import {
+  buildFinalPostAppealPayload,
   createCommentSchema,
+  createPostAppealFormSchema,
   createPostSchema,
   getTopReactions,
   hidePostModerationSchema,
   postKeys,
   PostService,
+  rejectPostAppealSchema,
   suggestPostContentSchema,
+  updatePostSchema,
   type AdminPostDetail,
   type AdminPostStatistics,
   type IPostRepository,
@@ -121,8 +125,12 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
           hasPrevPage: false,
         },
       }),
+      getPostById: vi.fn(),
+      getPostComments: vi.fn(),
+      createPostAppeal: vi.fn(),
       getFriends: vi.fn().mockResolvedValue({ success: true, data: [] }),
       createPost: vi.fn().mockResolvedValue({ success: true, data: MOCK_POST }),
+      updatePost: vi.fn().mockResolvedValue({ success: true, data: MOCK_POST }),
       suggestContent: vi.fn(),
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
@@ -138,8 +146,14 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       getAdminPostDetail: vi.fn(),
       hideAdminPost: vi.fn(),
       restoreAdminPost: vi.fn(),
+      flagAdminPostViolation: vi.fn(),
+      unflagAdminPostViolation: vi.fn(),
       removeAdminPost: vi.fn(),
       removeAdminComment: vi.fn(),
+      getAdminPostAppeals: vi.fn(),
+      getAdminPostAppealsHistory: vi.fn(),
+      restoreAdminPostAppeal: vi.fn(),
+      rejectAdminPostAppeal: vi.fn(),
     };
 
     const service = new PostService(mockRepo);
@@ -159,8 +173,12 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
 
     const mockRepo: IPostRepository = {
       getPosts: vi.fn().mockRejectedValue(notFoundError),
+      getPostById: vi.fn().mockRejectedValue(notFoundError),
+      getPostComments: vi.fn().mockRejectedValue(notFoundError),
+      createPostAppeal: vi.fn().mockRejectedValue(notFoundError),
       getFriends: vi.fn().mockRejectedValue(notFoundError),
       createPost: vi.fn().mockRejectedValue(notFoundError),
+      updatePost: vi.fn().mockRejectedValue(notFoundError),
       suggestContent: vi.fn().mockRejectedValue(notFoundError),
       uploadMedia: vi.fn(),
       reactPost: vi.fn().mockRejectedValue(notFoundError),
@@ -176,8 +194,14 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       getAdminPostDetail: vi.fn().mockRejectedValue(notFoundError),
       hideAdminPost: vi.fn().mockRejectedValue(notFoundError),
       restoreAdminPost: vi.fn().mockRejectedValue(notFoundError),
+      flagAdminPostViolation: vi.fn().mockRejectedValue(notFoundError),
+      unflagAdminPostViolation: vi.fn().mockRejectedValue(notFoundError),
       removeAdminPost: vi.fn().mockRejectedValue(notFoundError),
       removeAdminComment: vi.fn().mockRejectedValue(notFoundError),
+      getAdminPostAppeals: vi.fn().mockRejectedValue(notFoundError),
+      getAdminPostAppealsHistory: vi.fn().mockRejectedValue(notFoundError),
+      restoreAdminPostAppeal: vi.fn().mockRejectedValue(notFoundError),
+      rejectAdminPostAppeal: vi.fn().mockRejectedValue(notFoundError),
     };
 
     const service = new PostService(mockRepo);
@@ -223,8 +247,12 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
     };
     const mockRepo: IPostRepository = {
       getPosts: vi.fn().mockRejectedValue(serverError),
+      getPostById: vi.fn(),
+      getPostComments: vi.fn(),
+      createPostAppeal: vi.fn(),
       getFriends: vi.fn().mockRejectedValue(serverError),
       createPost: vi.fn(),
+      updatePost: vi.fn(),
       suggestContent: vi.fn(),
       uploadMedia: vi.fn(),
       reactPost: vi.fn(),
@@ -240,8 +268,14 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       getAdminPostDetail: vi.fn(),
       hideAdminPost: vi.fn(),
       restoreAdminPost: vi.fn(),
+      flagAdminPostViolation: vi.fn(),
+      unflagAdminPostViolation: vi.fn(),
       removeAdminPost: vi.fn(),
       removeAdminComment: vi.fn(),
+      getAdminPostAppeals: vi.fn(),
+      getAdminPostAppealsHistory: vi.fn(),
+      restoreAdminPostAppeal: vi.fn(),
+      rejectAdminPostAppeal: vi.fn(),
     };
 
     const service = new PostService(mockRepo);
@@ -473,6 +507,7 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       totalPosts: 12,
       activePosts: 10,
       hiddenPosts: 2,
+      pendingAppealsCount: 1,
       postsToday: 3,
       postsThisMonth: 9,
       withMediaCount: 5,
@@ -544,6 +579,39 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       removeAdminComment: vi
         .fn()
         .mockResolvedValue({ success: true, data: null }),
+      getAdminPostAppealsHistory: vi.fn().mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'appeal-2',
+            postId: 'post-admin-1',
+            roundNumber: 2,
+            appellant: {
+              id: 'user-1',
+              fullName: 'Nguyễn Minh Anh',
+              email: 'minhanh@lyora.vn',
+              avatarUrl: null,
+              role: 'CLIENT',
+            },
+            reasonCategory: 'Nhầm lẫn',
+            reasonDetail: 'Khiếu nại lần 2 bổ sung chi tiết',
+            status: 'PENDING',
+            adminEvidence: null,
+            resolvedAt: null,
+            resolvedBy: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+        meta: {
+          page: 1,
+          limit: 10,
+          totalItems: 2,
+          totalPages: 2,
+          hasNextPage: true,
+          hasPrevPage: false,
+        },
+      }),
     } as unknown as IPostRepository;
 
     const service = new PostService(adminRepo);
@@ -591,5 +659,114 @@ describe('Posts Feature, Schemas & Role Access Guard', () => {
       'cmt-1',
       'Spam',
     );
+
+    expect(postKeys.comments('post-1')).toEqual(['posts', 'comments', 'post-1']);
+    expect(postKeys.adminAppeals()).toEqual(['posts', 'admin', 'appeals']);
+    expect(postKeys.adminPostAppealHistory('post-admin-1')).toEqual([
+      'posts',
+      'admin',
+      'appeals',
+      'history',
+      'post-admin-1',
+    ]);
+
+    const historyRes = await service.getAdminPostAppealsHistory('post-admin-1', {
+      page: 1,
+      limit: 10,
+    });
+    expect(adminRepo.getAdminPostAppealsHistory).toHaveBeenCalledWith(
+      'post-admin-1',
+      { page: 1, limit: 10 },
+    );
+    expect(historyRes.items[0]?.roundNumber).toBe(2);
+    expect(historyRes.meta.hasNextPage).toBe(true);
+    expect(
+      createPostAppealFormSchema.safeParse({ reasonKey: 'OTHER', detail: 'ngắn' })
+        .success,
+    ).toBe(false);
+    expect(
+      createPostAppealFormSchema.safeParse({
+        reasonKey: 'OTHER',
+        detail: 'Nội dung này chỉ mang tính chia sẻ cá nhân không vi phạm',
+      }).success,
+    ).toBe(true);
+    expect(
+      buildFinalPostAppealPayload('NOT_VIOLATION').reasonCategory,
+    ).toBe('Bài viết tuân thủ tiêu chuẩn cộng đồng');
+    expect(rejectPostAppealSchema.safeParse({ evidence: 'ngắn' }).success).toBe(
+      false,
+    );
+  });
+
+  it('should validate and update post payload with content, visibility, media and taggedUserIds', async () => {
+    const updatedPost: Post = {
+      ...MOCK_POST,
+      content: 'Nội dung bài viết sau chỉnh sửa',
+      visibility: 'FRIENDS',
+      media: [
+        {
+          id: 'cloud-1',
+          type: 'IMAGE',
+          url: 'https://res.cloudinary.com/demo/image/upload/v1/edited.jpg',
+        },
+      ],
+      taggedUserIds: ['22222222-2222-4222-8222-222222222222'],
+      taggedUsers: [
+        {
+          id: '22222222-2222-4222-8222-222222222222',
+          fullName: 'Trần Thị Bình',
+        },
+      ],
+    };
+
+    const repoMock = {
+      updatePost: vi.fn().mockResolvedValue({
+        success: true,
+        statusCode: 200,
+        message: 'Cập nhật bài viết thành công',
+        data: updatedPost,
+        timestamp: new Date().toISOString(),
+      }),
+    } as unknown as IPostRepository;
+
+    const service = new PostService(repoMock);
+
+    expect(
+      updatePostSchema.safeParse({
+        content: '   ',
+        visibility: 'PUBLIC',
+        media: [],
+      }).success,
+    ).toBe(false);
+
+    await expect(
+      service.updatePost({
+        postId: 'post-1',
+        content: '   ',
+        visibility: 'PUBLIC',
+        media: [],
+        taggedUserIds: [],
+      }),
+    ).rejects.toThrow(
+      'Vui lòng nhập nội dung bài viết hoặc đính kèm ít nhất 1 ảnh, video, bản ghi âm',
+    );
+
+    const saved = await service.updatePost({
+      postId: 'post-1',
+      content: '  Nội dung bài viết sau chỉnh sửa  ',
+      visibility: 'FRIENDS',
+      media: updatedPost.media,
+      taggedUserIds: ['22222222-2222-4222-8222-222222222222'],
+    });
+
+    expect(repoMock.updatePost).toHaveBeenCalledWith('post-1', {
+      content: 'Nội dung bài viết sau chỉnh sửa',
+      visibility: 'FRIENDS',
+      media: updatedPost.media,
+      taggedUserIds: ['22222222-2222-4222-8222-222222222222'],
+    });
+    expect(saved.content).toBe('Nội dung bài viết sau chỉnh sửa');
+    expect(saved.visibility).toBe('FRIENDS');
+    expect(saved.taggedUsers?.[0]?.fullName).toBe('Trần Thị Bình');
   });
 });

@@ -1,8 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, ConfirmModal, ErrorState } from "@/core";
+import {
+  ViolationDetailModal,
+  type ViolationModalTarget,
+} from "@/ui/shared/ViolationIndicators";
 import { ArrowLeftIcon } from "../home/ClientIcons";
 import { MediaLightboxModal } from "../home/MediaLightboxModal";
 import { PostDetailModal } from "../home/PostDetailModal";
+import { PostEditModal } from "../home/PostEditModal";
 import { PostReactionsModal } from "../home/PostReactionsModal";
 import { ProfileAboutSection } from "./ProfileAboutSection";
 import { ProfileActivitySection } from "./ProfileActivitySection";
@@ -10,6 +15,7 @@ import { ProfileEditModal } from "./ProfileEditModal";
 import { ProfileFriendsSection } from "./ProfileFriendsSection";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
+import { PostAppealModal } from "./PostAppealModal";
 import { useProfileController } from "./profile.controller";
 
 const ProfileSkeleton: React.FC = () => (
@@ -36,6 +42,8 @@ const ProfileSkeleton: React.FC = () => (
 
 export const ProfileView: React.FC = () => {
   const controller = useProfileController();
+  const [violationModalTarget, setViolationModalTarget] =
+    useState<ViolationModalTarget | null>(null);
 
   if (controller.isLoading) {
     return <ProfileSkeleton />;
@@ -97,7 +105,10 @@ export const ProfileView: React.FC = () => {
       </div>
 
       {/* Header Hồ sơ: Ảnh bìa, Avatar, Hành động & Tabs */}
-      <ProfileHeader controller={controller} />
+      <ProfileHeader
+        controller={controller}
+        onInspectViolation={setViolationModalTarget}
+      />
 
       {/* Nội dung theo Tab */}
       {controller.activeTab === "overview" && (
@@ -116,8 +127,21 @@ export const ProfileView: React.FC = () => {
       {/* Modal Chỉnh sửa Hồ sơ cá nhân & Các Modal Tương tác Bài viết */}
       <ProfileEditModal controller={controller} />
       <PostDetailModal controller={controller} />
+      <PostEditModal
+        post={controller.editingPost}
+        friends={controller.friends}
+        profileUser={controller.profileUser}
+        onClose={controller.handleCloseEditPost}
+        onOpenLightbox={controller.handleOpenLightbox}
+      />
       <PostReactionsModal controller={controller} />
       <MediaLightboxModal controller={controller} />
+      <PostAppealModal
+        post={controller.appealTargetPost}
+        isSubmitting={controller.isSubmittingAppeal}
+        onClose={controller.handleCloseAppealModal}
+        onSubmitAppeal={controller.handleSubmitPostAppeal}
+      />
 
       <ConfirmModal
         isOpen={Boolean(controller.unfriendTarget)}
@@ -137,6 +161,26 @@ export const ProfileView: React.FC = () => {
         isLoading={controller.isUnfriending}
         onConfirm={() => void controller.handleConfirmUnfriend()}
         onCancel={controller.handleCancelUnfriend}
+      />
+
+      <ViolationDetailModal
+        target={violationModalTarget}
+        onClose={() => setViolationModalTarget(null)}
+        primaryAction={
+          controller.isOwnProfile && violationModalTarget
+            ? {
+                label:
+                  violationModalTarget.kind === "AVATAR"
+                    ? "Thay đổi ảnh đại diện"
+                    : "Thay đổi ảnh bìa",
+                variant: "primary",
+                onClick: () => {
+                  setViolationModalTarget(null);
+                  controller.handleOpenEditModal();
+                },
+              }
+            : undefined
+        }
       />
     </div>
   );

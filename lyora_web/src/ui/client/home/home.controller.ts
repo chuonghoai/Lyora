@@ -7,6 +7,8 @@ import {
 } from '@/core';
 import { useCreateDirectConversationMutation } from '@/features/conversations';
 import {
+  useCreatePostAppealMutation,
+  type Post,
   type PostsFeedFilter,
   type PostVisibility,
 } from '@/features/posts';
@@ -52,6 +54,7 @@ export function useHomeController() {
 
   const friendsQuery = useAcceptedFriendsQuery();
   const createDirectConversationMutation = useCreateDirectConversationMutation();
+  const createPostAppealMutation = useCreatePostAppealMutation();
   const userProfileQuery = useUserProfileQuery({
     enabled: Boolean(currentUser),
     retry: false,
@@ -71,6 +74,7 @@ export function useHomeController() {
 
   const [isAllFriendsModalOpen, setIsAllFriendsModalOpen] = useState(false);
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
+  const [appealTargetPost, setAppealTargetPost] = useState<Post | null>(null);
 
   const friends = useMemo<FriendContactItem[]>(() => {
     const rawFriends = friendsQuery.data ?? [];
@@ -121,7 +125,7 @@ export function useHomeController() {
     visibility: visibilityFilter === 'ALL' ? undefined : visibilityFilter,
     friends,
     profileUser,
-    hasBlockingExternalModal: isAllFriendsModalOpen,
+    hasBlockingExternalModal: isAllFriendsModalOpen || Boolean(appealTargetPost),
     onOpenUserProfile: handleOpenUserProfile,
     onOpenChatWithFriend: (friendId) => {
       void handleOpenChatWithFriend(friendId);
@@ -245,6 +249,37 @@ export function useHomeController() {
     void friendsQuery.refetch();
   };
 
+  const handleOpenAppealModal = (post: Post) => {
+    setAppealTargetPost(post);
+  };
+
+  const handleCloseAppealModal = () => {
+    if (createPostAppealMutation.isPending) return;
+    setAppealTargetPost(null);
+  };
+
+  const handleSubmitPostAppeal = async (payload: {
+    reasonCategory: string;
+    reasonDetail: string;
+  }) => {
+    if (!appealTargetPost) return;
+    try {
+      await createPostAppealMutation.mutateAsync({
+        postId: appealTargetPost.id,
+        reasonCategory: payload.reasonCategory,
+        reasonDetail: payload.reasonDetail,
+      });
+      setAppealTargetPost(null);
+      toast.success('Đã gửi khiếu nại bài viết tới Ban Quản Trị để xem xét.');
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : 'Không thể gửi khiếu nại bài viết lúc này.',
+      );
+    }
+  };
+
   return {
     appTitle,
     ...postFeed,
@@ -256,6 +291,8 @@ export function useHomeController() {
     isFriendsLoading: friendsQuery.isLoading,
     isFriendsError: friendsQuery.isError,
     isCreatingDirectChat: createDirectConversationMutation.isPending,
+    appealTargetPost,
+    isSubmittingAppeal: createPostAppealMutation.isPending,
     filteredFriends,
     friendSearchQuery,
     isAllFriendsModalOpen,
@@ -275,6 +312,9 @@ export function useHomeController() {
     handleOpenFriendsPage,
     handleOpenUserProfile,
     handleOpenChatWithFriend,
+    handleOpenAppealModal,
+    handleCloseAppealModal,
+    handleSubmitPostAppeal,
   };
 }
 

@@ -6,7 +6,14 @@ import {
   formatDateTime,
   formatRelativeTime,
   useClickOutside,
+  type MediaViolationInfo,
 } from '@/core';
+import {
+  AvatarViolationButton,
+  PostViolationBadge,
+  ViolationDetailModal,
+  type ViolationModalTarget,
+} from '@/ui/shared/ViolationIndicators';
 import {
   getReactionMeta,
   getTopReactions,
@@ -20,6 +27,7 @@ import {
   BookmarkIcon,
   CloseIcon,
   CommentIcon,
+  EditIcon,
   GlobeIcon,
   ImageIcon,
   LockIcon,
@@ -62,6 +70,7 @@ export const PostVisibilityBadge: React.FC<{ visibility: PostVisibility }> = ({ 
 export interface PostCardProps {
   post: Post;
   controller: PostFeedController;
+  onOpenAppealModal?: (post: Post) => void;
 }
 
 const CONTENT_COLLAPSE_THRESHOLD = 280;
@@ -70,7 +79,8 @@ export const PostAvatarChip: React.FC<{
   name: string;
   avatarUrl?: string | null;
   sizeClass?: string;
-}> = ({ name, avatarUrl, sizeClass = 'h-10 w-10 text-sm' }) => {
+  avatarViolation?: MediaViolationInfo | null;
+}> = ({ name, avatarUrl, sizeClass = 'h-10 w-10 text-sm', avatarViolation }) => {
   const initials =
     name
       .trim()
@@ -79,20 +89,24 @@ export const PostAvatarChip: React.FC<{
       .map((part) => part.charAt(0).toUpperCase())
       .join('') || 'L';
 
+  const borderClass = avatarViolation
+    ? 'border border-error ring-2 ring-error ring-offset-1 ring-offset-card'
+    : 'border border-border';
+
   if (avatarUrl) {
     return (
       <AppImage
         src={avatarUrl}
         alt={name}
         rounded
-        className={`${sizeClass} shrink-0 border border-border`}
+        className={`${sizeClass} shrink-0 ${borderClass}`}
       />
     );
   }
 
   return (
     <span
-      className={`grid shrink-0 place-items-center rounded-full bg-secondary font-bold text-primary-active border border-border ${sizeClass}`}
+      className={`grid shrink-0 place-items-center rounded-full bg-secondary font-bold text-primary-active ${borderClass} ${sizeClass}`}
     >
       {initials}
     </span>
@@ -725,25 +739,46 @@ export const PostCommentForm: React.FC<{
 export const PostCommentsList: React.FC<{
   comments: Post['comments'];
   controller: PostFeedController;
-}> = ({ comments, controller }) => {
+  onInspectViolation?: (target: ViolationModalTarget) => void;
+}> = ({ comments, controller, onInspectViolation }) => {
   if (comments.length === 0) return null;
 
   return (
     <ul className="space-y-2.5">
       {comments.map((comment) => (
         <li key={comment.id} className="flex items-start gap-2.5">
-          <button
-            type="button"
-            onClick={() => controller.handleOpenUserProfile(comment.author.id)}
-            aria-label={`Xem hồ sơ của ${comment.author.fullName}`}
-            className="mt-0.5 shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <PostAvatarChip
-              name={comment.author.fullName}
-              avatarUrl={comment.author.avatarUrl}
-              sizeClass="h-8 w-8 text-xs"
-            />
-          </button>
+          <div className="relative mt-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => controller.handleOpenUserProfile(comment.author.id)}
+              aria-label={`Xem hồ sơ của ${comment.author.fullName}`}
+              className="block rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <PostAvatarChip
+                name={comment.author.fullName}
+                avatarUrl={comment.author.avatarUrl}
+                avatarViolation={comment.author.avatarViolation}
+                sizeClass="h-8 w-8 text-xs"
+              />
+            </button>
+            {comment.author.avatarViolation && onInspectViolation && (
+              <AvatarViolationButton
+                size="sm"
+                onClick={() =>
+                  onInspectViolation({
+                    kind: 'AVATAR',
+                    subjectName: comment.author.fullName,
+                    reason: comment.author.avatarViolation!.reason,
+                    flaggedAt: comment.author.avatarViolation!.flaggedAt,
+                    evidenceUrl:
+                      comment.author.avatarViolation!.evidenceUrl ??
+                      comment.author.avatarUrl ??
+                      null,
+                  })
+                }
+              />
+            )}
+          </div>
           <div className="min-w-0 flex-1">
             <div className="inline-block max-w-full rounded-2xl bg-card border border-border px-3.5 py-2">
               <button
@@ -796,9 +831,15 @@ export const PostCommentsList: React.FC<{
   );
 };
 
-export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
+export const PostCard: React.FC<PostCardProps> = ({
+  post,
+  controller,
+  onOpenAppealModal,
+}) => {
   const [isContentExpanded, setIsContentExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [violationModalTarget, setViolationModalTarget] =
+    useState<ViolationModalTarget | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
   useClickOutside(menuRef, () => setIsMenuOpen(false));
@@ -854,14 +895,37 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
       {/* Header Tác giả */}
       <header className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
         <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={() => controller.handleOpenUserProfile(post.author.id)}
-            aria-label={`Xem hồ sơ của ${post.author.fullName}`}
-            className="shrink-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <PostAvatarChip name={post.author.fullName} avatarUrl={post.author.avatarUrl} />
-          </button>
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => controller.handleOpenUserProfile(post.author.id)}
+              aria-label={`Xem hồ sơ của ${post.author.fullName}`}
+              className="block rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <PostAvatarChip
+                name={post.author.fullName}
+                avatarUrl={post.author.avatarUrl}
+                avatarViolation={post.author.avatarViolation}
+              />
+            </button>
+            {post.author.avatarViolation && (
+              <AvatarViolationButton
+                size="sm"
+                onClick={() =>
+                  setViolationModalTarget({
+                    kind: 'AVATAR',
+                    subjectName: post.author.fullName,
+                    reason: post.author.avatarViolation!.reason,
+                    flaggedAt: post.author.avatarViolation!.flaggedAt,
+                    evidenceUrl:
+                      post.author.avatarViolation!.evidenceUrl ??
+                      post.author.avatarUrl ??
+                      null,
+                  })
+                }
+              />
+            )}
+          </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -877,12 +941,26 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
                   Bạn
                 </span>
               )}
+              {post.violationFlag && (
+                <PostViolationBadge
+                  onClick={() =>
+                    setViolationModalTarget({
+                      kind: 'POST',
+                      postId: post.id,
+                      subjectName: post.author.fullName,
+                      reason: post.violationFlag!.reason,
+                      flaggedAt: post.violationFlag!.flaggedAt,
+                      postExcerpt: post.content,
+                    })
+                  }
+                />
+              )}
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
               <button
                 type="button"
-                onClick={() => controller.handleOpenPostDetail(post.id)}
+                onClick={() => controller.handleOpenPostDetailPage(post.id)}
                 className="hover:underline cursor-pointer"
               >
                 <time dateTime={post.createdAt} title={formatDateTime(post.createdAt)}>
@@ -914,6 +992,21 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
                 role="menu"
                 className="absolute right-0 mt-1 w-52 rounded-xl border border-border bg-card p-1.5 shadow-md z-20"
               >
+                {isOwnPost && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      controller.handleOpenEditPost(post);
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                  >
+                    <EditIcon className="w-4 h-4 text-primary" />
+                    <span>Chỉnh sửa bài viết</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   role="menuitem"
@@ -925,6 +1018,19 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
                 >
                   <CommentIcon className="w-4 h-4 text-primary" />
                   <span>Xem chi tiết bài viết</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    controller.handleOpenPostDetailPage(post.id);
+                  }}
+                  className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground hover:bg-background transition-colors cursor-pointer"
+                >
+                  <ShareIcon className="w-4 h-4 text-muted" />
+                  <span>Mở trang riêng bài viết</span>
                 </button>
 
                 <button
@@ -980,6 +1086,142 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
           </button>
         </div>
       </header>
+
+      {/* Thông báo bài viết bị ẩn & Khiếu nại (chỉ hiển thị cho chính tác giả) */}
+      {isOwnPost && post.moderationStatus === 'HIDDEN' && (() => {
+        const appealsList =
+          post.appeals && post.appeals.length > 0
+            ? post.appeals
+            : post.appeal
+              ? [post.appeal]
+              : [];
+        const latestAppeal = appealsList[0] ?? null;
+        const canSubmitAppeal =
+          Boolean(onOpenAppealModal) &&
+          (!latestAppeal || latestAppeal.status !== 'PENDING');
+        const compactAppeals = appealsList.slice(0, 2);
+
+        return (
+          <div
+            role="region"
+            aria-label="Thông báo kiểm duyệt bài viết bị ẩn"
+            className="mx-4 mt-3 sm:mx-5 rounded-xl border border-warning/40 bg-warning/10 p-3.5 space-y-2.5 text-xs"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-card px-2 py-0.5 text-[11px] font-semibold text-warning">
+                    <LockIcon className="w-3 h-3" />
+                    <span>Bài viết đang bị ẩn</span>
+                  </span>
+                  {post.moderatedAt && (
+                    <span className="text-[11px] text-muted tabular-nums">
+                      Cập nhật {formatDateTime(post.moderatedAt)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-foreground leading-relaxed">
+                  <strong>Lý do bị ẩn:</strong>{' '}
+                  {post.moderationReason?.trim() || 'Vi phạm tiêu chuẩn cộng đồng'}
+                </p>
+              </div>
+
+              {canSubmitAppeal && onOpenAppealModal && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenAppealModal(post)}
+                  className="h-8 px-3 py-1 text-xs border-warning/50 bg-card text-warning hover:bg-warning/10 shrink-0"
+                >
+                  Khiếu nại
+                </Button>
+              )}
+            </div>
+
+            {compactAppeals.length > 0 && (
+              <div className="space-y-2">
+                {compactAppeals.map((appeal, idx) => {
+                  const roundNumber = appealsList.length - idx;
+                  return (
+                    <div
+                      key={appeal.id}
+                      className="rounded-lg border border-border bg-card px-3 py-2 space-y-2"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-semibold text-muted tabular-nums">
+                            Lần #{roundNumber}
+                          </span>
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                              appeal.status === 'PENDING'
+                                ? 'border-secondary-strong bg-secondary text-primary-active'
+                                : appeal.status === 'RESTORED'
+                                  ? 'border-success/30 bg-success/10 text-success'
+                                  : 'border-error/30 bg-error/10 text-error'
+                            }`}
+                          >
+                            {appeal.status === 'PENDING'
+                              ? 'Đang chờ Quản trị viên xem xét khiếu nại'
+                              : appeal.status === 'RESTORED'
+                                ? 'Khiếu nại được chấp nhận'
+                                : 'Đã gửi minh chứng phản hồi'}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-muted tabular-nums">
+                          {formatDateTime(appeal.createdAt)}
+                        </span>
+                      </div>
+
+                      <p className="text-foreground line-clamp-1 break-words">
+                        <strong>Khiếu nại:</strong> {appeal.reasonCategory} —{' '}
+                        {appeal.reasonDetail}
+                      </p>
+
+                      {appeal.adminEvidence?.trim() && (
+                        <div className="rounded-md border border-error/30 bg-error/10 px-2.5 py-1.5 space-y-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[11px] font-bold text-error">
+                              Minh chứng từ Quản trị viên
+                            </span>
+                            {appeal.resolvedAt && (
+                              <span className="text-[11px] text-muted tabular-nums">
+                                {formatDateTime(appeal.resolvedAt)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-foreground line-clamp-1 break-words">
+                            {appeal.adminEvidence.trim()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {appealsList.length > 0 && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    controller.handleOpenPostDetailPage(post.id, {
+                      expandAppeals: true,
+                    });
+                  }}
+                  className="text-[11px] font-semibold text-primary hover:text-primary-hover hover:underline cursor-pointer"
+                >
+                  {appealsList.length > 1
+                    ? `Xem lịch sử khiếu nại (${appealsList.length})`
+                    : 'Xem lịch sử khiếu nại'}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Nội dung chữ (nhấn vào bài viết để mở Modal chi tiết nổi bật) */}
       {post.content && (
@@ -1047,7 +1289,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
           </button>
         )}
 
-        <PostCommentsList comments={visibleComments} controller={controller} />
+        <PostCommentsList
+          comments={visibleComments}
+          controller={controller}
+          onInspectViolation={setViolationModalTarget}
+        />
 
         <PostCommentForm
           postId={post.id}
@@ -1055,6 +1301,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, controller }) => {
           controller={controller}
         />
       </section>
+
+      <ViolationDetailModal
+        target={violationModalTarget}
+        onClose={() => setViolationModalTarget(null)}
+      />
     </article>
   );
 };

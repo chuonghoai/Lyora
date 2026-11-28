@@ -1,8 +1,13 @@
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { Test } from '@nestjs/testing';
 import { UserRole } from '../../common/enums/role.enum';
+import { AuthModule } from '../auth/auth.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 import { RealtimeGateway } from './realtime.gateway';
+import { RealtimeModule } from './realtime.module';
 
 describe('RealtimeGateway', () => {
   let gateway: RealtimeGateway;
@@ -40,7 +45,30 @@ describe('RealtimeGateway', () => {
     await gateway.handleConnection(client as never);
 
     expect(client.join).toHaveBeenCalledWith('user:user-1');
-    expect(client.data).toEqual({ userId: 'user-1' });
+    expect(client.data).toEqual({ userId: 'user-1', role: UserRole.CLIENT });
+    expect(client.disconnect).not.toHaveBeenCalled();
+  });
+
+  it('cho phép ADMIN kết nối phòng user riêng để nhận thông báo realtime và không gắn handler bạn bè', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: 'admin-1',
+      email: 'admin@example.com',
+      role: UserRole.ADMIN,
+    });
+    const client = {
+      id: 'socket-admin-1',
+      handshake: { auth: { token: 'admin-token' } },
+      data: {},
+      join: jest.fn(),
+      on: jest.fn(),
+      disconnect: jest.fn(),
+    };
+
+    await gateway.handleConnection(client as never);
+
+    expect(client.join).toHaveBeenCalledWith('user:admin-1');
+    expect(client.data).toEqual({ userId: 'admin-1', role: UserRole.ADMIN });
+    expect(client.on).not.toHaveBeenCalled();
     expect(client.disconnect).not.toHaveBeenCalled();
   });
 
@@ -115,5 +143,31 @@ describe('RealtimeGateway', () => {
         payload: { action: 'ACCEPTED' },
       }),
     );
+  });
+
+  it('bỏ qua an toàn khi server socket chưa sẵn sàng', () => {
+    expect(() =>
+      gateway.emitToUser('user-1', 'notification.created', { id: 'noti-1' }),
+    ).not.toThrow();
+  });
+
+  it('biên dịch RealtimeModule thành công và không tạo circular dependency với Users/Auth/Notifications', async () => {
+    for (const Mod of [
+      RealtimeModule,
+      NotificationsModule,
+      UsersModule,
+      AuthModule,
+    ]) {
+      const imports = (Reflect.getMetadata('imports', Mod) as unknown[]) ?? [];
+      expect(imports.every((item) => item !== undefined)).toBe(true);
+    }
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ isGlobal: true }), RealtimeModule],
+    }).compile();
+
+    const resolvedGateway = moduleRef.get(RealtimeGateway);
+    expect(resolvedGateway).toBeInstanceOf(RealtimeGateway);
+    await moduleRef.close();
   });
 });

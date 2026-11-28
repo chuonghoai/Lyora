@@ -9,6 +9,7 @@ import type { AdminUsersController } from '@/ui/admin/users/admin-users.controll
 import type { AdminUserDetailController } from '@/ui/admin/users/admin-user-detail.controller';
 import type { AdminPostsController } from '@/ui/admin/posts/admin-posts.controller';
 import type { ClientLayoutController } from '@/ui/client/client-layout.controller';
+import type { ClientPostDetailController } from '@/ui/client/post-detail/post-detail.controller';
 import type { AdminLayoutController } from '@/ui/admin/admin-layout.controller';
 import type { MessagesController } from '@/ui/client/messages/messages.controller';
 
@@ -307,7 +308,12 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleRequestUnfriend'
       | 'handleConfirmUnfriend'
       | 'handleRetryFriends'
-      | 'handleRetryActivity';
+      | 'handleRetryActivity'
+      | 'appealTargetPost'
+      | 'isSubmittingAppeal'
+      | 'handleOpenAppealModal'
+      | 'handleCloseAppealModal'
+      | 'handleSubmitPostAppeal';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<ProfileController, ExpectedKeys>;
@@ -346,6 +352,12 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'location'
       | 'appTitle'
       | 'user'
+      | 'notifications'
+      | 'unreadNotificationsCount'
+      | 'isNotificationsOpen'
+      | 'handleToggleNotifications'
+      | 'handleSelectNotification'
+      | 'handleMarkAllNotificationsRead'
       | 'handleLogout';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
@@ -407,7 +419,26 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'isLockingUser'
       | 'isUnlockConfirmOpen'
       | 'isUnlockingUser'
-      | 'expandedCommentsMap'
+      | 'detailPostId'
+      | 'detailAppealsExpanded'
+      | 'detailPost'
+      | 'isDetailPostLoading'
+      | 'isDetailPostError'
+      | 'isDetailPostNotFound'
+      | 'detailComments'
+      | 'totalDetailRootComments'
+      | 'isDetailCommentsLoading'
+      | 'isDetailCommentsError'
+      | 'hasNextDetailCommentsPage'
+      | 'isFetchingNextDetailComments'
+      | 'isFetchNextDetailCommentsError'
+      | 'restoringPostId'
+      | 'restoreAppealTarget'
+      | 'isRestoringAppeal'
+      | 'evidenceAppealTarget'
+      | 'evidenceText'
+      | 'evidenceError'
+      | 'isRejectingAppeal'
       | 'reactionsModal'
       | 'reactionsModalPost'
       | 'reactionsData'
@@ -438,7 +469,20 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleModerationReasonChange'
       | 'handleSelectModerationReasonPreset'
       | 'handleConfirmModeration'
-      | 'handleTogglePostComments'
+      | 'handleRestorePost'
+      | 'handleOpenPostDetail'
+      | 'handleClosePostDetail'
+      | 'handleToggleDetailAppealsExpanded'
+      | 'handleRetryDetail'
+      | 'handleRetryDetailComments'
+      | 'handleLoadMoreDetailComments'
+      | 'handleRequestRestoreAppeal'
+      | 'handleCancelRestoreAppeal'
+      | 'handleConfirmRestoreAppeal'
+      | 'handleOpenEvidenceModal'
+      | 'handleCloseEvidenceModal'
+      | 'handleEvidenceTextChange'
+      | 'handleConfirmRejectAppeal'
       | 'handleOpenReactionsModal'
       | 'handleCloseReactionsModal'
       | 'handleChangeReactionsFilter'
@@ -456,6 +500,7 @@ describe('View-Controller Contract & Integration Types', () => {
 
   it('AdminPostsController contract has all required unified properties and handlers', () => {
     type ExpectedKeys =
+      | 'activeMainTab'
       | 'stats'
       | 'isStatsLoading'
       | 'isStatsError'
@@ -465,6 +510,19 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'isPostsFetching'
       | 'isPostsError'
       | 'isManualRefreshing'
+      | 'appeals'
+      | 'appealsPaginationMeta'
+      | 'isAppealsLoading'
+      | 'isAppealsFetching'
+      | 'isAppealsError'
+      | 'appealStatusFilter'
+      | 'appealSearchQuery'
+      | 'restoreAppealTarget'
+      | 'isRestoringAppeal'
+      | 'evidenceModalTarget'
+      | 'evidenceText'
+      | 'evidenceError'
+      | 'isRejectingAppeal'
       | 'searchQuery'
       | 'debouncedSearch'
       | 'statusFilter'
@@ -502,6 +560,7 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'isGeneratingAi'
       | 'aiError'
       | 'canUndoAiApply'
+      | 'handleSelectMainTab'
       | 'handleSearchChange'
       | 'handleClearSearch'
       | 'handleSelectStatusFilter'
@@ -510,6 +569,18 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleSelectMediaFilter'
       | 'handleResetFilters'
       | 'handleChangePage'
+      | 'handleAppealStatusFilterChange'
+      | 'handleAppealSearchChange'
+      | 'handleClearAppealSearch'
+      | 'handleAppealPageChange'
+      | 'handleRetryAppeals'
+      | 'handleRequestRestoreAppeal'
+      | 'handleCancelRestoreAppeal'
+      | 'handleConfirmRestoreAppeal'
+      | 'handleOpenEvidenceModal'
+      | 'handleCloseEvidenceModal'
+      | 'handleEvidenceTextChange'
+      | 'handleConfirmRejectAppeal'
       | 'handleRefreshAll'
       | 'handleRetryLoad'
       | 'handleOpenDetail'
@@ -549,6 +620,50 @@ describe('View-Controller Contract & Integration Types', () => {
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<AdminPostsController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('ClientPostDetailController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'postId'
+      | 'currentUser'
+      | 'post'
+      | 'isOwnPost'
+      | 'appealsList'
+      | 'isAppealsExpanded'
+      | 'isLoading'
+      | 'isError'
+      | 'isPostNotFound'
+      | 'comments'
+      | 'totalRootComments'
+      | 'isCommentsLoading'
+      | 'isCommentsError'
+      | 'hasNextCommentsPage'
+      | 'isFetchingNextComments'
+      | 'commentDraft'
+      | 'commentMedia'
+      | 'commentError'
+      | 'isSubmittingComment'
+      | 'appealTargetPost'
+      | 'isSubmittingAppeal'
+      | 'handleGoBack'
+      | 'handleNavigateToFeed'
+      | 'handleNavigateToMyProfile'
+      | 'handleOpenUserProfile'
+      | 'handleLoadMoreComments'
+      | 'handleToggleAppealsExpanded'
+      | 'handleCopyPostLink'
+      | 'handleReactPost'
+      | 'handleToggleBookmark'
+      | 'handleSharePost'
+      | 'handleSubmitComment'
+      | 'handleOpenAppealModal'
+      | 'handleCloseAppealModal'
+      | 'handleSubmitPostAppeal';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<ClientPostDetailController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });

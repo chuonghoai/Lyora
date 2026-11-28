@@ -4,19 +4,23 @@ import {
   useQuery,
   useQueryClient,
   type InfiniteData,
+  type Query,
   type UseMutationOptions,
 } from '@tanstack/react-query';
 import { postService } from '../services/post.service';
 import type {
   CreateCommentPayload,
+  CreatePostAppealPayload,
   CreatePostPayload,
   PaginatedPostsResult,
   Post,
+  PostAppealSummary,
   PostComment,
   PostReactionsQueryParams,
   PostSharesQueryParams,
   PostsQueryParams,
   ReactPostPayload,
+  UpdatePostPayload,
 } from '../types/post.types';
 import { postKeys } from './post.keys';
 
@@ -90,6 +94,68 @@ export function usePostSharesQuery(
   });
 }
 
+export interface UsePostDetailQueryOptions {
+  refetchInterval?:
+    | number
+    | false
+    | ((query: Query<Post, unknown, Post, ReturnType<typeof postKeys.detail>>) => number | false | undefined);
+  refetchOnWindowFocus?: boolean;
+}
+
+export function usePostDetailQuery(
+  postId: string | null,
+  options?: UsePostDetailQueryOptions,
+) {
+  return useQuery({
+    queryKey: postKeys.detail(postId ?? ''),
+    queryFn: () => postService.getPostById(postId!),
+    enabled: Boolean(postId),
+    retry: false,
+    staleTime: 30 * 1000,
+    ...(options?.refetchInterval !== undefined
+      ? { refetchInterval: options.refetchInterval }
+      : {}),
+    ...(options?.refetchOnWindowFocus !== undefined
+      ? { refetchOnWindowFocus: options.refetchOnWindowFocus }
+      : {}),
+  });
+}
+
+export function useInfinitePostCommentsQuery(
+  postId: string | null,
+  limit = 10,
+) {
+  return useInfiniteQuery({
+    queryKey: postKeys.comments(postId ?? ''),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      postService.getPostComments(postId!, {
+        page: pageParam,
+        limit,
+      }),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.hasNextPage ? lastPage.meta.page + 1 : undefined,
+    enabled: Boolean(postId),
+    retry: false,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useCreatePostAppealMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<PostAppealSummary, unknown, CreatePostAppealPayload>({
+    mutationFn: (payload: CreatePostAppealPayload) =>
+      postService.createPostAppeal(payload),
+    onSuccess: (_appeal, { postId }) => {
+      void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminStats() });
+    },
+  });
+}
+
 export function useUploadPostMediaMutation() {
   return useMutation({
     mutationFn: (files: File[]) => postService.uploadMedia(files),
@@ -114,10 +180,23 @@ export function useCreatePostMutation(options?: UseCreatePostMutationOptions) {
   });
 }
 
+export function useUpdatePostMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdatePostPayload) => postService.updatePost(payload),
+    onSuccess: (updatedPost) => {
+      updatePostInCachedPages(queryClient, updatedPost);
+      void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+    },
+  });
+}
+
 function updatePostInCachedPages(
   queryClient: ReturnType<typeof useQueryClient>,
   updatedPost: Post,
 ) {
+  queryClient.setQueryData<Post>(postKeys.detail(updatedPost.id), updatedPost);
   queryClient.setQueriesData<InfiniteData<PaginatedPostsResult>>(
     { queryKey: postKeys.lists() },
     (oldData) => {
@@ -208,6 +287,8 @@ export function useCreateCommentMutation() {
           };
         },
       );
+      void queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
+      void queryClient.invalidateQueries({ queryKey: postKeys.comments(postId) });
     },
   });
 }

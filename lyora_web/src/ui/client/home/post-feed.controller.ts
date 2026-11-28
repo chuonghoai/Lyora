@@ -26,7 +26,7 @@ import {
   type PostVisibility,
   type ReactionType,
 } from '@/features/posts';
-import { getClientProfilePath, ROUTES } from '@/routes/paths';
+import { getClientPostDetailPath, getClientProfilePath, ROUTES } from '@/routes/paths';
 import { usePostAiAssistant } from './post-ai-assistant.controller';
 
 export interface MediaLightboxState {
@@ -181,6 +181,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   const [expandedCommentsMap, setExpandedCommentsMap] = useState<Record<string, boolean>>({});
   const [temporarilyHiddenIds, setTemporarilyHiddenIds] = useState<Record<string, boolean>>({});
   const [detailPostId, setDetailPostId] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [reactionsPopover, setReactionsPopover] = useState<ReactionsPopoverState | null>(null);
   const [lightbox, setLightbox] = useState<MediaLightboxState | null>(null);
 
@@ -233,11 +234,13 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
-    if (!lightbox && !reactionsPopover && !detailPostId) return;
+    if (!lightbox && !editingPost && !reactionsPopover && !detailPostId) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         if (lightbox) {
           setLightbox(null);
+        } else if (editingPost) {
+          setEditingPost(null);
         } else if (reactionsPopover) {
           setReactionsPopover(null);
         } else if (!options.hasBlockingExternalModal && detailPostId) {
@@ -257,7 +260,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightbox, reactionsPopover, detailPostId, options.hasBlockingExternalModal]);
+  }, [lightbox, editingPost, reactionsPopover, detailPostId, options.hasBlockingExternalModal]);
 
   const handleRefreshFeed = useCallback(async () => {
     setTemporarilyHiddenIds({});
@@ -730,7 +733,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   const handleSharePost = async (postId: string) => {
     try {
       await sharePostMutation.mutateAsync(postId);
-      const shareUrl = `${window.location.origin}/?post=${encodeURIComponent(postId)}`;
+      const shareUrl = `${window.location.origin}${getClientPostDetailPath(postId)}`;
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl).catch(() => undefined);
       }
@@ -777,7 +780,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   };
 
   const handleCopyPostLink = async (postId: string) => {
-    const shareUrl = `${window.location.origin}/?post=${encodeURIComponent(postId)}`;
+    const shareUrl = `${window.location.origin}${getClientPostDetailPath(postId)}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl);
@@ -790,6 +793,16 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
 
   const handleOpenPostDetail = (postId: string) => {
     setDetailPostId(postId);
+  };
+
+  const handleOpenPostDetailPage = (
+    postId: string,
+    openOptions?: { expandAppeals?: boolean },
+  ) => {
+    navigate(getClientPostDetailPath(postId), {
+      state: openOptions?.expandAppeals ? { expandAppeals: true } : undefined,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleClosePostDetail = () => {
@@ -950,6 +963,14 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
   };
 
   // Lightbox handlers
+  const handleOpenEditPost = (post: Post) => {
+    setEditingPost(post);
+  };
+
+  const handleCloseEditPost = () => {
+    setEditingPost(null);
+  };
+
   const handleOpenLightbox = (items: PostMediaItem[], index: number) => {
     setLightbox({ items, index });
   };
@@ -1014,6 +1035,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     temporarilyHiddenIds,
     detailPostId,
     detailPost,
+    editingPost,
     reactionsPopover,
     reactionsModalPost,
     reactionsData: reactionsQuery.data ?? null,
@@ -1061,6 +1083,7 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     handleUndoHidePost,
     handleCopyPostLink,
     handleOpenPostDetail,
+    handleOpenPostDetailPage,
     handleClosePostDetail,
     handleOpenUserProfile,
     handleOpenChatWithFriend,
@@ -1070,6 +1093,8 @@ export function usePostFeedController(options: UsePostFeedControllerOptions) {
     handleToggleExpandComments,
     handleFocusCommentInput,
     handleSubmitComment,
+    handleOpenEditPost,
+    handleCloseEditPost,
     handleOpenLightbox,
     handleCloseLightbox,
     handlePrevLightbox,

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { TokenStorage } from '@/core/storage';
+import { clearClientSessionArtifacts, TokenStorage } from '@/core/storage';
 import type { UserProfile } from '../types';
 
 interface AuthState {
@@ -23,6 +23,7 @@ export const useAuthStore = create<AuthState>((set) => {
   if (typeof window !== 'undefined') {
     TokenStorage.onAuthChange((event) => {
       if (event === 'logout') {
+        clearClientSessionArtifacts();
         set({
           token: null,
           refreshToken: null,
@@ -72,6 +73,7 @@ export const useAuthStore = create<AuthState>((set) => {
     },
 
     logout: () => {
+      clearClientSessionArtifacts();
       TokenStorage.clearAuth();
       set({
         token: null,

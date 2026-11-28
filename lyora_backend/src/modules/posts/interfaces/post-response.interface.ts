@@ -1,11 +1,23 @@
 import { PostMediaItem } from './post-media.interface';
-import { PostReactionType, PostVisibility } from '../enums/post.enums';
+import type { ProfileMediaViolationDto } from '../../users/dto/flag-profile-media-violation.dto';
+import {
+  PostAppealStatus,
+  PostModerationStatus,
+  PostReactionType,
+  PostVisibility,
+} from '../enums/post.enums';
+
+export interface PostViolationFlagResponse {
+  reason: string;
+  flaggedAt: string | null;
+}
 
 export interface PostAuthorResponse {
   id: string;
   fullName: string;
   email?: string;
   avatarUrl: string | null;
+  avatarViolation?: ProfileMediaViolationDto | null;
 }
 
 export interface PostCommentResponse {
@@ -20,14 +32,32 @@ export interface PostCommentResponse {
 export interface PostReactionUserResponse {
   id: string;
   user: PostAuthorResponse;
-  reactionType: PostReactionType;
+  reactionType: ReactionTypeAlias;
   createdAt: string;
 }
+
+type ReactionTypeAlias = PostReactionType;
 
 export interface PostShareUserResponse {
   id: string;
   user: PostAuthorResponse;
   createdAt: string;
+}
+
+export interface PostAppealSummaryResponse {
+  id: string;
+  status: PostAppealStatus;
+  reasonCategory: string;
+  reasonDetail: string;
+  adminEvidence: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolvedBy: { id: string; fullName: string } | null;
+}
+
+export interface PostTaggedUserResponse {
+  id: string;
+  fullName: string;
 }
 
 export interface PostResponse {
@@ -37,6 +67,13 @@ export interface PostResponse {
   visibility: PostVisibility;
   media: PostMediaItem[];
   taggedUserIds: string[];
+  taggedUsers?: PostTaggedUserResponse[];
+  moderationStatus: PostModerationStatus;
+  moderationReason?: string | null;
+  moderatedAt?: string | null;
+  violationFlag?: PostViolationFlagResponse | null;
+  appeal?: PostAppealSummaryResponse | null;
+  appeals?: PostAppealSummaryResponse[];
   reactionCount: number;
   reactionBreakdown: Record<PostReactionType, number>;
   userReaction: PostReactionType | null;
