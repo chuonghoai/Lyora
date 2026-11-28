@@ -1,4 +1,4 @@
-import { apiClient, CORE_CONSTANTS, type ApiResponse } from '@/core';
+import { apiClient, CORE_CONSTANTS, type ApiResponse, webSocketService } from '@/core';
 import type { FriendDiscoveryItem, FriendSearchResult } from '../types/friend.types';
 
 export interface IFriendsRepository {
@@ -32,27 +32,23 @@ export class FriendsRepository implements IFriendsRepository {
   }
 
   async sendRequest(userId: string): Promise<ApiResponse<void>> {
-    return apiClient.post<ApiResponse<void>, ApiResponse<void>>(
-      `${CORE_CONSTANTS.API_ENDPOINTS.FRIENDS}/${encodeURIComponent(userId)}/requests`,
-    );
+    await webSocketService.request('friend.request.send', { userId });
+    return { success: true, data: undefined };
   }
 
   async acceptRequest(userId: string): Promise<ApiResponse<void>> {
-    return apiClient.patch<ApiResponse<void>, ApiResponse<void>>(
-      `${CORE_CONSTANTS.API_ENDPOINTS.FRIENDS}/${encodeURIComponent(userId)}/requests/accept`,
-    );
+    await webSocketService.request('friend.request.accept', { userId });
+    return { success: true, data: undefined };
   }
 
   async removeRequest(userId: string): Promise<ApiResponse<void>> {
-    return apiClient.delete<ApiResponse<void>, ApiResponse<void>>(
-      `${CORE_CONSTANTS.API_ENDPOINTS.FRIENDS}/${encodeURIComponent(userId)}/requests`,
-    );
+    await webSocketService.request('friend.request.remove', { userId });
+    return { success: true, data: undefined };
   }
 
   async unfriend(userId: string): Promise<ApiResponse<void>> {
-    return apiClient.delete<ApiResponse<void>, ApiResponse<void>>(
-      `${CORE_CONSTANTS.API_ENDPOINTS.FRIENDS}/${encodeURIComponent(userId)}`,
-    );
+    await webSocketService.request('friend.remove', { userId });
+    return { success: true, data: undefined };
   }
 }
 

@@ -72,6 +72,27 @@ export class WebSocketService {
     return true;
   }
 
+  async request<T = unknown>(event: string, payload: T): Promise<void> {
+    const socket = await this.waitForConnection();
+    return new Promise((resolve, reject) => {
+      socket.timeout(8_000).emit(
+        event,
+        payload,
+        (timeoutError: Error | null, response?: { success?: boolean; message?: string }) => {
+          if (timeoutError) {
+            reject(new Error('Không nhận được phản hồi realtime. Vui lòng thử lại.'));
+            return;
+          }
+          if (!response?.success) {
+            reject(new Error(response?.message ?? 'Không thể hoàn tất thao tác bạn bè.'));
+            return;
+          }
+          resolve();
+        },
+      );
+    });
+  }
+
   subscribe<T = unknown>(event: string, handler: WebSocketEventHandler<T>): () => void {
     const handlers = this.eventListeners.get(event) ?? new Set<WebSocketEventHandler>();
     handlers.add(handler as WebSocketEventHandler);
@@ -93,6 +114,34 @@ export class WebSocketService {
     if (configuredUrl) return configuredUrl.replace(/\/$/, '');
     if (typeof window === 'undefined') return 'http://localhost:3000';
     return `${window.location.protocol}//${window.location.hostname}:3000`;
+  }
+
+  private waitForConnection(): Promise<Socket> {
+    if (this.socket?.connected) return Promise.resolve(this.socket);
+    this.connect();
+    const socket = this.socket;
+    if (!socket) {
+      return Promise.reject(new Error('Kết nối realtime chưa sẵn sàng.'));
+    }
+    return new Promise((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        socket.off('connect', onConnect);
+        socket.off('connect_error', onConnectError);
+        reject(new Error('Kết nối realtime quá thời gian chờ.'));
+      }, 8_000);
+      const onConnect = () => {
+        window.clearTimeout(timeout);
+        socket.off('connect_error', onConnectError);
+        resolve(socket);
+      };
+      const onConnectError = () => {
+        window.clearTimeout(timeout);
+        socket.off('connect', onConnect);
+        reject(new Error('Không thể kết nối realtime.'));
+      };
+      socket.once('connect', onConnect);
+      socket.once('connect_error', onConnectError);
+    });
   }
 
   private registerSocketEvent(event: string, handlers: Set<WebSocketEventHandler>): void {
