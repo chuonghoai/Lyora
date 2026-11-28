@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFiles,
@@ -27,6 +28,7 @@ import {
 } from './dto/post-interactions-query.dto';
 import { PostQueryDto } from './dto/post-query.dto';
 import { SuggestPostContentDto } from './dto/suggest-post-content.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
 import { PostAiSuggestionService } from './services/post-ai-suggestion.service';
 import {
@@ -167,6 +169,16 @@ export class PostsController {
     @Param('id') id: string,
   ) {
     return this.postsService.findOne(currentUser, id);
+  }
+
+  @Patch(':id')
+  @ResponseMessage('Cập nhật bài viết thành công')
+  async update(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdatePostDto,
+  ) {
+    return this.postsService.update(currentUser, id, dto);
   }
 
   @Delete(':id')

@@ -20,6 +20,7 @@ import {
   CloseIcon,
   CommentIcon,
   CopyIcon,
+  EditIcon,
   ImageIcon,
   LockIcon,
   ReactionIcon,
@@ -29,6 +30,7 @@ import {
   VideoIcon,
 } from '../home/ClientIcons';
 import { MediaLightboxModal } from '../home/MediaLightboxModal';
+import { PostEditModal } from '../home/PostEditModal';
 import {
   PostAvatarChip,
   PostMediaGallery,
@@ -296,15 +298,28 @@ export const ClientPostDetailView: React.FC = () => {
           </h1>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void controller.handleCopyPostLink()}
-          className="h-8 px-3 py-1 text-xs gap-1.5"
-        >
-          <CopyIcon className="w-3.5 h-3.5 text-muted" />
-          <span>Sao chép liên kết</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {controller.isOwnPost && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={controller.handleOpenEditPost}
+              className="h-8 px-3 py-1 text-xs gap-1.5"
+            >
+              <EditIcon className="w-3.5 h-3.5" />
+              <span>Chỉnh sửa bài viết</span>
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void controller.handleCopyPostLink()}
+            className="h-8 px-3 py-1 text-xs gap-1.5"
+          >
+            <CopyIcon className="w-3.5 h-3.5 text-muted" />
+            <span>Sao chép liên kết</span>
+          </Button>
+        </div>
       </div>
 
       {/* Main Post Detail Card */}
@@ -812,6 +827,13 @@ export const ClientPostDetailView: React.FC = () => {
       </article>
 
       <PostReactionsModal controller={controller} />
+      <PostEditModal
+        post={controller.editingPost}
+        friends={controller.friends}
+        profileUser={controller.profileUser}
+        onClose={controller.handleCloseEditPost}
+        onOpenLightbox={controller.handleOpenLightbox}
+      />
       <MediaLightboxModal controller={controller} />
       <PostAppealModal
         post={controller.appealTargetPost}

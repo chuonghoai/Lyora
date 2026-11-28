@@ -48,6 +48,11 @@ export interface PostAppealSummaryResponse {
   resolvedBy: { id: string; fullName: string } | null;
 }
 
+export interface PostTaggedUserResponse {
+  id: string;
+  fullName: string;
+}
+
 export interface PostResponse {
   id: string;
   author: PostAuthorResponse;
@@ -55,6 +60,7 @@ export interface PostResponse {
   visibility: PostVisibility;
   media: PostMediaItem[];
   taggedUserIds: string[];
+  taggedUsers?: PostTaggedUserResponse[];
   moderationStatus: PostModerationStatus;
   moderationReason?: string | null;
   moderatedAt?: string | null;

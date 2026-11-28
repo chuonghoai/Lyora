@@ -4,6 +4,7 @@ import {
   rejectPostAppealSchema,
   removeModerationReasonSchema,
   suggestPostContentSchema,
+  updatePostSchema,
 } from '../models/post.model';
 import { postRepository, type IPostRepository } from '../repositories/post.repository';
 import type {
@@ -35,6 +36,7 @@ import type {
   ReactionBreakdown,
   ReactionType,
   SuggestPostContentPayload,
+  UpdatePostPayload,
 } from '../types/post.types';
 
 export interface IPostService {
@@ -48,6 +50,7 @@ export interface IPostService {
   getFriends(): Promise<PostAuthor[]>;
   uploadMedia(files: File[]): Promise<PostMediaItem[]>;
   createPost(payload: CreatePostPayload): Promise<Post>;
+  updatePost(payload: UpdatePostPayload): Promise<Post>;
   suggestContent(payload: SuggestPostContentPayload): Promise<PostSuggestionsResult>;
   reactPost(postId: string, reactionType: ReactionType): Promise<Post>;
   getPostReactions(
@@ -178,6 +181,27 @@ export class PostService implements IPostService {
 
   async createPost(payload: CreatePostPayload): Promise<Post> {
     const response = await this.repository.createPost(payload);
+    return response.data;
+  }
+
+  async updatePost(payload: UpdatePostPayload): Promise<Post> {
+    const parsed = updatePostSchema.safeParse({
+      content: payload.content,
+      visibility: payload.visibility,
+      media: payload.media,
+    });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ?? 'Nội dung bài viết chưa hợp lệ',
+      );
+    }
+
+    const response = await this.repository.updatePost(payload.postId, {
+      content: parsed.data.content,
+      visibility: parsed.data.visibility,
+      media: parsed.data.media,
+      taggedUserIds: payload.taggedUserIds ?? [],
+    });
     return response.data;
   }
 

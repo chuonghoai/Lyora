@@ -49,12 +49,19 @@ export interface PostAppealSummary {
   resolvedBy: { id: string; fullName: string } | null;
 }
 
+export interface PostTaggedUser {
+  id: string;
+  fullName: string;
+}
+
 export interface Post {
   id: string;
   author: PostAuthor;
   content: string;
   visibility: PostVisibility;
   media: PostMediaItem[];
+  taggedUserIds?: string[];
+  taggedUsers?: PostTaggedUser[];
   moderationStatus?: PostModerationStatus;
   moderationReason?: string | null;
   moderatedAt?: string | null;
@@ -108,6 +115,14 @@ export interface CreatePostPayload {
   content: string;
   visibility: PostVisibility;
   media?: PostMediaItem[];
+  taggedUserIds?: string[];
+}
+
+export interface UpdatePostPayload {
+  postId: string;
+  content: string;
+  visibility: PostVisibility;
+  media: PostMediaItem[];
   taggedUserIds?: string[];
 }
 

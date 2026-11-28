@@ -28,6 +28,9 @@ export const createPostSchema = z
 
 export type CreatePostFormValues = z.infer<typeof createPostSchema>;
 
+export const updatePostSchema = createPostSchema;
+export type UpdatePostFormValues = CreatePostFormValues;
+
 export const createCommentSchema = z
   .object({
     content: z.string().trim().max(1000, 'Bình luận tối đa 1.000 ký tự'),

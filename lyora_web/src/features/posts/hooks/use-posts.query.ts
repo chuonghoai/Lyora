@@ -20,6 +20,7 @@ import type {
   PostSharesQueryParams,
   PostsQueryParams,
   ReactPostPayload,
+  UpdatePostPayload,
 } from '../types/post.types';
 import { postKeys } from './post.keys';
 
@@ -175,6 +176,18 @@ export function useCreatePostMutation(options?: UseCreatePostMutationOptions) {
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
       options?.onSuccess?.(...args);
+    },
+  });
+}
+
+export function useUpdatePostMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdatePostPayload) => postService.updatePost(payload),
+    onSuccess: (updatedPost) => {
+      updatePostInCachedPages(queryClient, updatedPost);
+      void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
     },
   });
 }
