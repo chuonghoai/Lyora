@@ -14,6 +14,7 @@ import {
 } from '../components/AdminIcons';
 import { useAdminPostsController } from './admin-posts.controller';
 import { AdminCreatePostModal } from './AdminCreatePostModal';
+import { AdminMediaLightboxModal } from './AdminMediaLightboxModal';
 import { AdminModerationModal } from './AdminModerationModal';
 import { AdminPostDetailModal } from './AdminPostDetailModal';
 import { AdminPostsTable } from './AdminPostsTable';
@@ -421,6 +422,7 @@ export const AdminPostsView: React.FC = () => {
 
       {/* Native Top-Layer Modals */}
       <AdminPostDetailModal controller={controller} />
+      <AdminMediaLightboxModal controller={controller} />
       <AdminModerationModal controller={controller} />
       <AdminCreatePostModal controller={controller} />
     </div>

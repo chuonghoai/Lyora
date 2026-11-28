@@ -6,6 +6,7 @@ import {
   EyeOffIcon,
   RotateCcwIcon,
   TrashIcon,
+  ZoomInIcon,
 } from '../components/AdminIcons';
 import type { AdminPostsController } from './admin-posts.controller';
 import { AdminDialog } from './AdminDialog';
@@ -31,10 +32,10 @@ export const AdminPostDetailModal: React.FC<AdminPostDetailModalProps> = ({
       onClose={controller.handleCloseDetail}
       labelledBy="admin-post-detail-title"
       closedBy="any"
-      maxWidthClassName="max-w-2xl"
+      maxWidthClassName="max-w-3xl"
       disableDismiss={controller.isRemovingComment}
     >
-      <div className="flex max-h-[min(88dvh,780px)] flex-col overflow-hidden rounded-2xl bg-card">
+      <div className="flex max-h-[min(92dvh,880px)] flex-col overflow-hidden rounded-2xl bg-card">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 shrink-0">
           <div className="min-w-0">
@@ -115,6 +116,9 @@ export const AdminPostDetailModal: React.FC<AdminPostDetailModalProps> = ({
                     <p className="text-xs text-muted truncate">
                       {post.author.email} · {formatDateTime(post.createdAt)} ·{' '}
                       {VISIBILITY_LABELS[post.visibility]}
+                      {post.updatedAt && post.updatedAt !== post.createdAt
+                        ? ` · Cập nhật ${formatDateTime(post.updatedAt)}`
+                        : ''}
                     </p>
                   </div>
                 </div>
@@ -166,63 +170,87 @@ export const AdminPostDetailModal: React.FC<AdminPostDetailModalProps> = ({
                   </p>
                 )}
 
-                {post.media.length > 0 && (
-                  <div
-                    className={`grid gap-2.5 pt-1 ${
-                      post.media.length === 1
-                        ? 'grid-cols-1'
-                        : 'grid-cols-1 sm:grid-cols-2'
-                    }`}
-                  >
-                    {post.media.map((item, idx) => (
-                      <div
-                        key={item.id ?? `${item.url}-${idx}`}
-                        className={`rounded-lg border border-border bg-card overflow-hidden ${
-                          item.type === 'AUDIO' && post.media.length > 1
-                            ? 'sm:col-span-2'
-                            : ''
-                        }`}
-                      >
-                        {item.type === 'IMAGE' ? (
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Mở ảnh kích thước gốc trong tab mới"
-                            className="block bg-background/60"
-                          >
-                            <AppImage
-                              src={item.url}
-                              alt={item.alt || `Ảnh đính kèm ${idx + 1}`}
-                              className={`w-full h-auto rounded-none object-contain ${
-                                post.media.length === 1
-                                  ? 'max-h-[520px]'
-                                  : 'max-h-[360px]'
-                              }`}
-                            />
-                          </a>
-                        ) : item.type === 'VIDEO' ? (
-                          <video
-                            src={item.url}
-                            controls
-                            className={`w-full h-auto object-contain bg-foreground ${
-                              post.media.length === 1
-                                ? 'max-h-[520px]'
-                                : 'max-h-[360px]'
+                {post.media.length > 0 && (() => {
+                  const visualMedia = post.media.filter(
+                    (m) => m.type === 'IMAGE' || m.type === 'VIDEO',
+                  );
+
+                  return (
+                    <div
+                      className={`grid gap-2.5 pt-1 ${
+                        post.media.length === 1
+                          ? 'grid-cols-1'
+                          : 'grid-cols-1 sm:grid-cols-2'
+                      }`}
+                    >
+                      {post.media.map((item, idx) => {
+                        const visualIndex = visualMedia.indexOf(item);
+
+                        return (
+                          <div
+                            key={item.id ?? `${item.url}-${idx}`}
+                            className={`rounded-lg border border-border bg-card overflow-hidden ${
+                              item.type === 'AUDIO' && post.media.length > 1
+                                ? 'sm:col-span-2'
+                                : ''
                             }`}
-                          />
-                        ) : (
-                          <div className="p-3 space-y-1">
-                            <p className="text-xs font-medium text-muted">
-                              Bản ghi âm đính kèm
-                            </p>
-                            <audio src={item.url} controls className="w-full" />
+                          >
+                            {item.type === 'IMAGE' ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  controller.handleOpenLightbox(
+                                    visualMedia,
+                                    visualIndex >= 0 ? visualIndex : 0,
+                                  )
+                                }
+                                title="Nhấn để phóng to ảnh ngay trong trang"
+                                className="group relative block w-full bg-background/60 cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+                              >
+                                <AppImage
+                                  src={item.url}
+                                  alt={item.alt || `Ảnh đính kèm ${idx + 1}`}
+                                  objectFit="contain"
+                                  className={`w-full h-auto rounded-none ${
+                                    post.media.length === 1
+                                      ? 'max-h-[70dvh]'
+                                      : 'max-h-[400px]'
+                                  }`}
+                                />
+                                <span className="pointer-events-none absolute right-2.5 bottom-2.5 inline-flex items-center gap-1 rounded-full border border-border bg-card/90 px-2.5 py-1 text-[11px] font-medium text-foreground shadow-xs opacity-90 group-hover:opacity-100 transition-opacity">
+                                  <ZoomInIcon className="w-3.5 h-3.5 text-primary" />
+                                  <span>Phóng to</span>
+                                </span>
+                              </button>
+                            ) : item.type === 'VIDEO' ? (
+                              <video
+                                src={item.url}
+                                controls
+                                playsInline
+                                className={`w-full h-auto object-contain bg-foreground ${
+                                  post.media.length === 1
+                                    ? 'max-h-[70dvh]'
+                                    : 'max-h-[400px]'
+                                }`}
+                              />
+                            ) : (
+                              <div className="p-3 space-y-1">
+                                <p className="text-xs font-medium text-muted">
+                                  Bản ghi âm đính kèm
+                                </p>
+                                <audio
+                                  src={item.url}
+                                  controls
+                                  className="w-full"
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Reaction Summary */}
@@ -290,19 +318,28 @@ export const AdminPostDetailModal: React.FC<AdminPostDetailModalProps> = ({
                               {cmt.media && (
                                 <div className="mt-2 max-w-sm rounded-lg border border-border bg-background/60 overflow-hidden">
                                   {cmt.media.type === 'IMAGE' ? (
-                                    <a
-                                      href={cmt.media.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      title="Mở ảnh kích thước gốc trong tab mới"
-                                      className="block"
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        controller.handleOpenLightbox(
+                                          cmt.media ? [cmt.media] : [],
+                                          0,
+                                        )
+                                      }
+                                      title="Nhấn để phóng to ảnh bình luận"
+                                      className="group relative block w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
                                     >
                                       <AppImage
                                         src={cmt.media.url}
                                         alt="Ảnh bình luận"
-                                        className="max-h-60 w-full h-auto rounded-none object-contain"
+                                        objectFit="contain"
+                                        className="max-h-60 w-full h-auto rounded-none"
                                       />
-                                    </a>
+                                      <span className="pointer-events-none absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-full border border-border bg-card/90 px-2 py-0.5 text-[10px] font-medium text-foreground shadow-xs opacity-90 group-hover:opacity-100">
+                                        <ZoomInIcon className="w-3 h-3 text-primary" />
+                                        <span>Phóng to</span>
+                                      </span>
+                                    </button>
                                   ) : (
                                     <video
                                       src={cmt.media.url}

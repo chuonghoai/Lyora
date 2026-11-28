@@ -41,6 +41,11 @@ export interface RemoveCommentDialogState {
   comment: AdminPostComment;
 }
 
+export interface AdminMediaLightboxState {
+  items: PostMediaItem[];
+  index: number;
+}
+
 export function useAdminPostsController() {
   const queryClient = useQueryClient();
 
@@ -99,6 +104,7 @@ export function useAdminPostsController() {
 
   const [detailPostId, setDetailPostId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<AdminMediaLightboxState | null>(null);
   const detailQuery = useAdminPostDetailQuery(detailPostId);
 
   const hidePostMutation = useHideAdminPostMutation();
@@ -249,7 +255,41 @@ export function useAdminPostsController() {
     setRemoveCommentTarget(null);
     setRemoveCommentReason('');
     setRemoveCommentError(null);
+    setLightbox(null);
     setIsDetailModalOpen(false);
+  }, []);
+
+  const handleOpenLightbox = useCallback(
+    (items: PostMediaItem[], index: number) => {
+      if (items.length === 0) return;
+      const safeIndex = Math.max(0, Math.min(index, items.length - 1));
+      setLightbox({ items, index: safeIndex });
+    },
+    [],
+  );
+
+  const handleCloseLightbox = useCallback(() => {
+    setLightbox(null);
+  }, []);
+
+  const handlePrevLightbox = useCallback(() => {
+    setLightbox((prev) => {
+      if (!prev || prev.items.length <= 1) return prev;
+      return {
+        ...prev,
+        index: (prev.index - 1 + prev.items.length) % prev.items.length,
+      };
+    });
+  }, []);
+
+  const handleNextLightbox = useCallback(() => {
+    setLightbox((prev) => {
+      if (!prev || prev.items.length <= 1) return prev;
+      return {
+        ...prev,
+        index: (prev.index + 1) % prev.items.length,
+      };
+    });
   }, []);
 
   const handleRetryDetail = () => {
@@ -753,12 +793,13 @@ export function useAdminPostsController() {
     mediaFilter,
     hasActiveFilters,
 
-    // Detail Modal
+    // Detail Modal & Media Lightbox
     isDetailModalOpen,
     detailPostId,
     detailPost: detailQuery.data ?? null,
     isDetailLoading: detailQuery.isLoading,
     isDetailError: detailQuery.isError,
+    lightbox,
 
     // Moderation Modal & Row States
     moderationMode,
@@ -807,6 +848,10 @@ export function useAdminPostsController() {
     handleOpenDetail,
     handleCloseDetail,
     handleRetryDetail,
+    handleOpenLightbox,
+    handleCloseLightbox,
+    handlePrevLightbox,
+    handleNextLightbox,
     handleOpenHideModal,
     handleOpenRemoveModal,
     handleCloseModerationModal,
