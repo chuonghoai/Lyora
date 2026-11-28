@@ -15,6 +15,8 @@ import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.in
 import { RedisService } from '../../redis/redis.service';
 import { Friendship } from '../friends/entities/friendship.entity';
 import { FriendshipStatus } from '../friends/enums/friendship-status.enum';
+import { NotificationType } from '../notifications/entities/notification.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   AdminUserDetailResponseDto,
   AdminUsersSummaryCountsDto,
@@ -22,6 +24,11 @@ import {
 import { AdminOnlineStatusResponseDto } from './dto/admin-online-status-query.dto';
 import { AdminUsersQueryDto } from './dto/admin-users-query.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import {
+  buildAvatarViolation,
+  buildCoverViolation,
+  FlagProfileMediaViolationDto,
+} from './dto/flag-profile-media-violation.dto';
 import { LockUserDto } from './dto/lock-user.dto';
 import {
   ProfileFriendPreviewDto,
@@ -57,6 +64,8 @@ export class UsersService {
     private readonly friendshipRepository?: Repository<Friendship>,
     @Optional()
     private readonly redisService?: RedisService,
+    @Optional()
+    private readonly notificationsService?: NotificationsService,
   ) {}
 
   async setOnlineStatus(userId: string, isOnline: boolean): Promise<void> {
@@ -151,6 +160,27 @@ export class UsersService {
       }
     }
 
+    // Tự động gỡ cờ vi phạm khi người dùng thay đổi hoặc gỡ ảnh đã bị đánh dấu
+    if (
+      payload.avatarUrl !== undefined &&
+      user.avatarUrl !== user.avatarViolationEvidenceUrl
+    ) {
+      user.avatarViolationReason = null;
+      user.avatarViolationFlaggedAt = null;
+      user.avatarViolationFlaggedById = null;
+      user.avatarViolationEvidenceUrl = null;
+    }
+
+    if (
+      payload.coverUrl !== undefined &&
+      user.coverUrl !== user.coverViolationEvidenceUrl
+    ) {
+      user.coverViolationReason = null;
+      user.coverViolationFlaggedAt = null;
+      user.coverViolationFlaggedById = null;
+      user.coverViolationEvidenceUrl = null;
+    }
+
     await this.userRepository.save(user);
     return this.findById(userId);
   }
@@ -204,6 +234,8 @@ export class UsersService {
       website: targetUser.website ?? null,
       avatarUrl: targetUser.avatarUrl ?? null,
       coverUrl: targetUser.coverUrl ?? null,
+      avatarViolation: buildAvatarViolation(targetUser),
+      coverViolation: buildCoverViolation(targetUser),
       isActive: targetUser.isActive,
       isOnline: Boolean(targetUser.isOnline),
       createdAt: targetUser.createdAt,
@@ -288,6 +320,9 @@ export class UsersService {
         'id',
         'fullName',
         'avatarUrl',
+        'avatarViolationReason',
+        'avatarViolationFlaggedAt',
+        'avatarViolationEvidenceUrl',
         'workplace',
         'bio',
         'location',
@@ -314,6 +349,7 @@ export class UsersService {
       id: u.id,
       fullName: u.fullName,
       avatarUrl: u.avatarUrl ?? null,
+      avatarViolation: buildAvatarViolation(u),
       headline: u.workplace || u.bio || null,
       location: u.location ?? null,
       mutualFriendsCount: mutualCountByPartnerId.get(u.id) ?? 0,
@@ -468,6 +504,8 @@ export class UsersService {
       website: targetUser.website ?? null,
       avatarUrl: targetUser.avatarUrl ?? null,
       coverUrl: targetUser.coverUrl ?? null,
+      avatarViolation: buildAvatarViolation(targetUser),
+      coverViolation: buildCoverViolation(targetUser),
       isActive: targetUser.isActive,
       isOnline: Boolean(targetUser.isOnline),
       lockReason: targetUser.lockReason ?? null,
@@ -510,6 +548,100 @@ export class UsersService {
     target.lockReason = null;
     target.lockedAt = null;
     return this.userRepository.save(target);
+  }
+
+  async flagAvatarViolation(
+    adminUser: AuthenticatedUser,
+    targetId: string,
+    dto: FlagProfileMediaViolationDto,
+  ): Promise<AdminUserDetailResponseDto> {
+    const target = await this.findById(targetId);
+    if (!target.avatarUrl?.trim()) {
+      throw new BadRequestException(
+        'Người dùng hiện chưa có ảnh đại diện để đánh dấu vi phạm',
+      );
+    }
+
+    const reason = dto.reason.trim();
+    target.avatarViolationReason = reason;
+    target.avatarViolationFlaggedAt = new Date();
+    target.avatarViolationFlaggedById = adminUser.id;
+    target.avatarViolationEvidenceUrl = target.avatarUrl;
+
+    await this.userRepository.save(target);
+
+    if (target.id !== adminUser.id) {
+      await this.notificationsService?.createModerationNotice({
+        recipientId: target.id,
+        actorId: adminUser.id,
+        type: NotificationType.AVATAR_VIOLATION_FLAGGED,
+        title: 'Ảnh đại diện của bạn bị đánh dấu vi phạm',
+        description: `Ảnh đại diện hiện tại của bạn đã bị Quản trị viên đánh dấu vi phạm tiêu chuẩn cộng đồng. Lý do: ${reason}`,
+        targetPath: '/me',
+      });
+    }
+
+    return this.getAdminUserProfile(adminUser, target.id);
+  }
+
+  async clearAvatarViolation(
+    adminUser: AuthenticatedUser,
+    targetId: string,
+  ): Promise<AdminUserDetailResponseDto> {
+    const target = await this.findById(targetId);
+    target.avatarViolationReason = null;
+    target.avatarViolationFlaggedAt = null;
+    target.avatarViolationFlaggedById = null;
+    target.avatarViolationEvidenceUrl = null;
+    await this.userRepository.save(target);
+    return this.getAdminUserProfile(adminUser, target.id);
+  }
+
+  async flagCoverViolation(
+    adminUser: AuthenticatedUser,
+    targetId: string,
+    dto: FlagProfileMediaViolationDto,
+  ): Promise<AdminUserDetailResponseDto> {
+    const target = await this.findById(targetId);
+    if (!target.coverUrl?.trim()) {
+      throw new BadRequestException(
+        'Người dùng hiện chưa có ảnh bìa để đánh dấu vi phạm',
+      );
+    }
+
+    const reason = dto.reason.trim();
+    target.coverViolationReason = reason;
+    target.coverViolationFlaggedAt = new Date();
+    target.coverViolationFlaggedById = adminUser.id;
+    target.coverViolationEvidenceUrl = target.coverUrl;
+
+    await this.userRepository.save(target);
+
+    if (target.id !== adminUser.id) {
+      await this.notificationsService?.createModerationNotice({
+        recipientId: target.id,
+        actorId: adminUser.id,
+        type: NotificationType.COVER_VIOLATION_FLAGGED,
+        title: 'Ảnh bìa của bạn bị đánh dấu vi phạm',
+        description: `Ảnh bìa hiện tại của bạn đã bị Quản trị viên đánh dấu vi phạm tiêu chuẩn cộng đồng. Lý do: ${reason}`,
+        targetPath: '/me',
+      });
+    }
+
+    return this.getAdminUserProfile(adminUser, target.id);
+  }
+
+  async clearCoverViolation(
+    adminUser: AuthenticatedUser,
+    targetId: string,
+  ): Promise<AdminUserDetailResponseDto> {
+    const target = await this.findById(targetId);
+    target.coverViolationReason = null;
+    target.coverViolationFlaggedAt = null;
+    target.coverViolationFlaggedById = null;
+    target.coverViolationEvidenceUrl = null;
+    await this.userRepository.save(target);
+    return this.getAdminUserProfile(adminUser, target.id);
   }
 
   async findAllPaginated(query: AdminUsersQueryDto): Promise<{

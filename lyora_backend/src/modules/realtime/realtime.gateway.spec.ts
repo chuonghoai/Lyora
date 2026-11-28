@@ -1,8 +1,13 @@
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { Test } from '@nestjs/testing';
 import { UserRole } from '../../common/enums/role.enum';
+import { AuthModule } from '../auth/auth.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 import { RealtimeGateway } from './realtime.gateway';
+import { RealtimeModule } from './realtime.module';
 
 describe('RealtimeGateway', () => {
   let gateway: RealtimeGateway;
@@ -144,5 +149,25 @@ describe('RealtimeGateway', () => {
     expect(() =>
       gateway.emitToUser('user-1', 'notification.created', { id: 'noti-1' }),
     ).not.toThrow();
+  });
+
+  it('biên dịch RealtimeModule thành công và không tạo circular dependency với Users/Auth/Notifications', async () => {
+    for (const Mod of [
+      RealtimeModule,
+      NotificationsModule,
+      UsersModule,
+      AuthModule,
+    ]) {
+      const imports = (Reflect.getMetadata('imports', Mod) as unknown[]) ?? [];
+      expect(imports.every((item) => item !== undefined)).toBe(true);
+    }
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ isGlobal: true }), RealtimeModule],
+    }).compile();
+
+    const resolvedGateway = moduleRef.get(RealtimeGateway);
+    expect(resolvedGateway).toBeInstanceOf(RealtimeGateway);
+    await moduleRef.close();
   });
 });

@@ -1,4 +1,5 @@
 import { UserRole } from '../../../common/enums/role.enum';
+import type { ProfileMediaViolationDto } from './flag-profile-media-violation.dto';
 import { ProfileFriendPreviewDto } from './public-profile-response.dto';
 
 export interface AdminUserDetailResponseDto {
@@ -15,6 +16,8 @@ export interface AdminUserDetailResponseDto {
   website: string | null;
   avatarUrl: string | null;
   coverUrl: string | null;
+  avatarViolation?: ProfileMediaViolationDto | null;
+  coverViolation?: ProfileMediaViolationDto | null;
   isActive: boolean;
   isOnline: boolean;
   lockReason: string | null;

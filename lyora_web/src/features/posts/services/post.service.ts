@@ -1,5 +1,6 @@
 import type { PaginationMeta } from '@/core';
 import {
+  flagPostViolationSchema,
   hidePostModerationSchema,
   rejectPostAppealSchema,
   removeModerationReasonSchema,
@@ -75,6 +76,8 @@ export interface IPostService {
   getAdminPostDetail(postId: string): Promise<AdminPostDetail>;
   hidePostAsAdmin(postId: string, reason: string): Promise<AdminPostDetail>;
   restorePostAsAdmin(postId: string): Promise<AdminPostDetail>;
+  flagPostViolationAsAdmin(postId: string, reason: string): Promise<AdminPostDetail>;
+  unflagPostViolationAsAdmin(postId: string): Promise<AdminPostDetail>;
   removePostAsAdmin(postId: string, reason?: string): Promise<void>;
   removeCommentAsAdmin(
     postId: string,
@@ -389,6 +392,29 @@ export class PostService implements IPostService {
 
   async restorePostAsAdmin(postId: string): Promise<AdminPostDetail> {
     const response = await this.repository.restoreAdminPost(postId);
+    return response.data;
+  }
+
+  async flagPostViolationAsAdmin(
+    postId: string,
+    reason: string,
+  ): Promise<AdminPostDetail> {
+    const parsed = flagPostViolationSchema.safeParse({ reason });
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message ??
+          'Lý do đánh dấu vi phạm chưa hợp lệ',
+      );
+    }
+    const response = await this.repository.flagAdminPostViolation(
+      postId,
+      parsed.data.reason,
+    );
+    return response.data;
+  }
+
+  async unflagPostViolationAsAdmin(postId: string): Promise<AdminPostDetail> {
+    const response = await this.repository.unflagAdminPostViolation(postId);
     return response.data;
   }
 

@@ -118,3 +118,29 @@ export const createAdminUserFormSchema = z
   });
 
 export type CreateAdminUserFormValues = z.infer<typeof createAdminUserFormSchema>;
+
+export const AVATAR_VIOLATION_REASON_PRESETS: readonly string[] = [
+  'Ảnh đại diện chứa hình ảnh phản cảm, không phù hợp tiêu chuẩn cộng đồng',
+  'Ảnh đại diện mạo danh cá nhân, tổ chức hoặc sử dụng biểu tượng gây hiểu nhầm',
+  'Ảnh đại diện chứa nội dung bạo lực, kích động hoặc ngôn từ thù ghét',
+  'Ảnh đại diện chứa thông tin quảng cáo, spam hoặc liên kết lừa đảo',
+] as const;
+
+export const COVER_VIOLATION_REASON_PRESETS: readonly string[] = [
+  'Ảnh bìa chứa hình ảnh phản cảm hoặc không phù hợp tiêu chuẩn cộng đồng',
+  'Ảnh bìa chứa nội dung quảng cáo, spam hoặc lôi kéo trái quy định',
+  'Ảnh bìa vi phạm quyền riêng tư hoặc chứa thông tin gây hiểu nhầm',
+  'Ảnh bìa mang tính chất kích động, bạo lực hoặc công kích người khác',
+] as const;
+
+export const flagProfileMediaViolationSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(5, 'Vui lòng nhập lý do đánh dấu vi phạm tối thiểu 5 ký tự')
+    .max(500, 'Lý do đánh dấu vi phạm tối đa 500 ký tự'),
+});
+
+export type FlagProfileMediaViolationFormValues = z.infer<
+  typeof flagProfileMediaViolationSchema
+>;

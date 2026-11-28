@@ -1,4 +1,4 @@
-import type { PaginationMeta } from '@/core';
+import type { MediaViolationInfo, PaginationMeta } from '@/core';
 
 export type PostVisibility = 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
 
@@ -16,11 +16,17 @@ export interface PostMediaItem {
   size?: number;
 }
 
+export interface PostViolationFlag {
+  reason: string;
+  flaggedAt: string | null;
+}
+
 export interface PostAuthor {
   id: string;
   fullName: string;
   email?: string;
   avatarUrl?: string | null;
+  avatarViolation?: MediaViolationInfo | null;
 }
 
 export interface PostComment {
@@ -65,6 +71,7 @@ export interface Post {
   moderationStatus?: PostModerationStatus;
   moderationReason?: string | null;
   moderatedAt?: string | null;
+  violationFlag?: PostViolationFlag | null;
   appeal?: PostAppealSummary | null;
   appeals?: PostAppealSummary[];
   reactionCount: number;
@@ -235,6 +242,7 @@ export interface AdminPostAuthor {
   fullName: string;
   email: string;
   avatarUrl: string | null;
+  avatarViolation?: MediaViolationInfo | null;
   role: AdminPostAuthorRole;
 }
 
@@ -263,6 +271,7 @@ export interface AdminPostItem {
   moderationReason: string | null;
   moderatedAt: string | null;
   moderatedBy: AdminPostModeratorSummary | null;
+  violationFlag?: PostViolationFlag | null;
   reactionCount: number;
   commentCount: number;
   shareCount: number;
@@ -291,6 +300,11 @@ export interface PaginatedAdminPostsResult {
 }
 
 export interface HideAdminPostPayload {
+  postId: string;
+  reason: string;
+}
+
+export interface FlagAdminPostViolationPayload {
   postId: string;
   reason: string;
 }

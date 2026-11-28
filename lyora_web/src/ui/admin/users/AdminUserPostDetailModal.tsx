@@ -16,6 +16,7 @@ import {
   ShareIcon,
 } from '../components/AdminIcons';
 import { AdminPostVisibilityChip } from '../components/AdminPostVisibilityChip';
+import { PostViolationBadge } from '@/ui/shared/ViolationIndicators';
 import { AdminCommentBubbleItem } from './AdminPostCommentsSection';
 import { AdminUserPostActionMenu } from './AdminUserPostActionMenu';
 import { AdminUserPostModerationNotice } from './AdminUserPostModerationNotice';
@@ -50,7 +51,9 @@ export interface AdminUserPostDetailModalProps {
   onOpenSharesModal: (postId: string) => void;
   onHidePost: (post: Post) => void;
   onRestorePost: (post: Post) => void;
-  onFlagViolation: () => void;
+  onFlagViolation: (post: Post) => void;
+  onUnflagViolation?: (post: Post) => void;
+  onInspectViolation?: (post: Post) => void;
   onRemovePost: (post: Post) => void;
   onRequestRemoveComment: (postId: string, comment: PostComment) => void;
   onRequestRestoreAppeal: (post: Post, appeal: PostAppealSummary) => void;
@@ -90,6 +93,8 @@ export const AdminUserPostDetailModal: React.FC<
   onHidePost,
   onRestorePost,
   onFlagViolation,
+  onUnflagViolation,
+  onInspectViolation,
   onRemovePost,
   onRequestRemoveComment,
   onRequestRestoreAppeal,
@@ -264,6 +269,11 @@ export const AdminUserPostDetailModal: React.FC<
                           <span>Đã ẩn</span>
                         </span>
                       )}
+                      {post.violationFlag && onInspectViolation && (
+                        <PostViolationBadge
+                          onClick={() => onInspectViolation(post)}
+                        />
+                      )}
                     </div>
                     <p className="text-xs text-muted tabular-nums">
                       Đăng lúc {formatDateTime(post.createdAt)}
@@ -274,11 +284,15 @@ export const AdminUserPostDetailModal: React.FC<
                 <AdminUserPostActionMenu
                   postId={post.id}
                   moderationStatus={post.moderationStatus}
+                  isViolationFlagged={Boolean(post.violationFlag)}
                   disabled={isModeratingPost}
                   isRestoring={isRestoringPost}
                   onHidePost={() => onHidePost(post)}
                   onRestorePost={() => onRestorePost(post)}
-                  onFlagViolation={onFlagViolation}
+                  onFlagViolation={() => onFlagViolation(post)}
+                  onUnflagViolation={
+                    onUnflagViolation ? () => onUnflagViolation(post) : undefined
+                  }
                   onRemovePost={() => onRemovePost(post)}
                 />
               </div>

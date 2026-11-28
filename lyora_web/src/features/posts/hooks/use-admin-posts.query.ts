@@ -11,6 +11,7 @@ import type {
   AdminPostAppealsQueryParams,
   AdminPostDetail,
   AdminPostsQueryParams,
+  FlagAdminPostViolationPayload,
   HideAdminPostPayload,
   RejectPostAppealPayload,
   RemoveAdminCommentPayload,
@@ -89,6 +90,45 @@ export function useRestoreAdminPostMutation() {
       void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
       void queryClient.invalidateQueries({ queryKey: postKeys.adminStats() });
       void queryClient.invalidateQueries({ queryKey: postKeys.adminAppeals() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: postKeys.detail(updatedDetail.id),
+      });
+    },
+  });
+}
+
+export function useFlagAdminPostViolationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<AdminPostDetail, unknown, FlagAdminPostViolationPayload>({
+    mutationFn: ({ postId, reason }: FlagAdminPostViolationPayload) =>
+      postService.flagPostViolationAsAdmin(postId, reason),
+    onSuccess: (updatedDetail) => {
+      queryClient.setQueryData(
+        postKeys.adminDetail(updatedDetail.id),
+        updatedDetail,
+      );
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
+      void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: postKeys.detail(updatedDetail.id),
+      });
+    },
+  });
+}
+
+export function useUnflagAdminPostViolationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<AdminPostDetail, unknown, string>({
+    mutationFn: (postId: string) => postService.unflagPostViolationAsAdmin(postId),
+    onSuccess: (updatedDetail) => {
+      queryClient.setQueryData(
+        postKeys.adminDetail(updatedDetail.id),
+        updatedDetail,
+      );
+      void queryClient.invalidateQueries({ queryKey: postKeys.adminLists() });
       void queryClient.invalidateQueries({ queryKey: postKeys.lists() });
       void queryClient.invalidateQueries({
         queryKey: postKeys.detail(updatedDetail.id),

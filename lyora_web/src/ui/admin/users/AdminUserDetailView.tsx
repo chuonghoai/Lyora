@@ -31,6 +31,12 @@ import {
   UsersIcon,
 } from '../components/AdminIcons';
 import { AdminPostVisibilityChip } from '../components/AdminPostVisibilityChip';
+import {
+  AvatarViolationButton,
+  CoverViolationButton,
+  PostViolationBadge,
+  ViolationDetailModal,
+} from '@/ui/shared/ViolationIndicators';
 import { AdminPostCommentsSection } from './AdminPostCommentsSection';
 import { AdminPostReactionsModal } from './AdminPostReactionsModal';
 import { AdminPostSharesModal } from './AdminPostSharesModal';
@@ -133,7 +139,13 @@ export const AdminUserDetailView: React.FC = () => {
         className="rounded-xl border border-border bg-card overflow-hidden"
       >
         {/* Cover banner + Flag Cover Action */}
-        <div className="relative h-40 sm:h-52 w-full bg-secondary border-b border-border overflow-hidden">
+        <div
+          className={`relative h-40 sm:h-52 w-full bg-secondary border-b overflow-hidden ${
+            user.coverViolation
+              ? 'border-error ring-2 ring-inset ring-error'
+              : 'border-border'
+          }`}
+        >
           {user.coverUrl && (
             <AppImage
               src={user.coverUrl}
@@ -142,14 +154,53 @@ export const AdminUserDetailView: React.FC = () => {
             />
           )}
 
-          <button
-            type="button"
-            onClick={ctrl.handleFlagCoverViolation}
-            className="absolute right-4 bottom-4 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm hover:bg-background hover:text-warning transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <FlagIcon className="w-3.5 h-3.5 text-warning" />
-            <span>Đánh dấu vi phạm ảnh bìa</span>
-          </button>
+          {user.coverViolation && (
+            <CoverViolationButton
+              onClick={() =>
+                ctrl.handleOpenViolationDetail({
+                  kind: 'COVER',
+                  subjectName: displayName,
+                  reason: user.coverViolation!.reason,
+                  flaggedAt: user.coverViolation!.flaggedAt,
+                  evidenceUrl:
+                    user.coverViolation!.evidenceUrl ?? user.coverUrl ?? null,
+                })
+              }
+              className="absolute right-4 top-4 z-20"
+            />
+          )}
+
+          <div className="absolute right-4 bottom-4 flex flex-wrap items-center gap-2 z-20">
+            {user.coverViolation && (
+              <button
+                type="button"
+                disabled={ctrl.isModeratingPost}
+                onClick={() => void ctrl.handleClearCoverViolation()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-sm hover:bg-background transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <span>Gỡ vi phạm ảnh bìa</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              disabled={!user.coverUrl || ctrl.isModeratingPost}
+              onClick={ctrl.handleFlagCoverViolation}
+              title={
+                user.coverUrl
+                  ? 'Đánh dấu vi phạm ảnh bìa'
+                  : 'Người dùng chưa có ảnh bìa'
+              }
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm hover:bg-background hover:text-warning transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <FlagIcon className="w-3.5 h-3.5 text-warning" />
+              <span>
+                {user.coverViolation
+                  ? 'Cập nhật vi phạm ảnh bìa'
+                  : 'Đánh dấu vi phạm ảnh bìa'}
+              </span>
+            </button>
+          </div>
         </div>
 
         <div className="p-5 sm:p-6 space-y-5">
@@ -163,12 +214,39 @@ export const AdminUserDetailView: React.FC = () => {
                       src={user.avatarUrl}
                       alt={displayName}
                       rounded
-                      className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-card shadow-sm"
+                      className={`h-24 w-24 sm:h-28 sm:w-28 shadow-sm ${
+                        user.avatarViolation
+                          ? 'border-4 border-card ring-[3px] ring-error'
+                          : 'border-4 border-card'
+                      }`}
                     />
                   ) : (
-                    <div className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full border-4 border-card bg-secondary text-2xl font-bold text-primary shadow-sm">
+                    <div
+                      className={`flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-secondary text-2xl font-bold text-primary shadow-sm ${
+                        user.avatarViolation
+                          ? 'border-4 border-card ring-[3px] ring-error'
+                          : 'border-4 border-card'
+                      }`}
+                    >
                       {initial}
                     </div>
+                  )}
+                  {user.avatarViolation && (
+                    <AvatarViolationButton
+                      size="lg"
+                      onClick={() =>
+                        ctrl.handleOpenViolationDetail({
+                          kind: 'AVATAR',
+                          subjectName: displayName,
+                          reason: user.avatarViolation!.reason,
+                          flaggedAt: user.avatarViolation!.flaggedAt,
+                          evidenceUrl:
+                            user.avatarViolation!.evidenceUrl ??
+                            user.avatarUrl ??
+                            null,
+                        })
+                      }
+                    />
                   )}
                   <span
                     title={user.isOnline ? 'Đang trực tuyến' : 'Ngoại tuyến'}
@@ -179,14 +257,37 @@ export const AdminUserDetailView: React.FC = () => {
                   />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={ctrl.handleFlagAvatarViolation}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:text-warning hover:border-warning/40 transition-colors cursor-pointer"
-                >
-                  <FlagIcon className="w-3 h-3 text-warning" />
-                  <span>Vi phạm ảnh đại diện</span>
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={!user.avatarUrl || ctrl.isModeratingPost}
+                    onClick={ctrl.handleFlagAvatarViolation}
+                    title={
+                      user.avatarUrl
+                        ? 'Đánh dấu vi phạm ảnh đại diện'
+                        : 'Người dùng chưa có ảnh đại diện'
+                    }
+                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:text-warning hover:border-warning/40 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FlagIcon className="w-3 h-3 text-warning" />
+                    <span>
+                      {user.avatarViolation
+                        ? 'Cập nhật vi phạm avatar'
+                        : 'Vi phạm ảnh đại diện'}
+                    </span>
+                  </button>
+
+                  {user.avatarViolation && (
+                    <button
+                      type="button"
+                      disabled={ctrl.isModeratingPost}
+                      onClick={() => void ctrl.handleClearAvatarViolation()}
+                      className="inline-flex items-center rounded-lg border border-border bg-card px-2 py-1 text-xs font-medium text-primary hover:bg-secondary/50 transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Gỡ vi phạm
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="min-w-0 space-y-2 pt-1">
@@ -509,6 +610,20 @@ export const AdminUserDetailView: React.FC = () => {
                                   <span>Đã ẩn</span>
                                 </span>
                               )}
+                              {post.violationFlag && (
+                                <PostViolationBadge
+                                  onClick={() =>
+                                    ctrl.handleOpenViolationDetail({
+                                      kind: 'POST',
+                                      postId: post.id,
+                                      subjectName: authorName,
+                                      reason: post.violationFlag!.reason,
+                                      flaggedAt: post.violationFlag!.flaggedAt,
+                                      postExcerpt: post.content,
+                                    })
+                                  }
+                                />
+                              )}
                             </div>
                             <p className="text-xs text-muted tabular-nums">
                               Đăng lúc {formatDateTime(post.createdAt)}
@@ -519,11 +634,15 @@ export const AdminUserDetailView: React.FC = () => {
                         <AdminUserPostActionMenu
                           postId={post.id}
                           moderationStatus={post.moderationStatus}
+                          isViolationFlagged={Boolean(post.violationFlag)}
                           disabled={ctrl.isModeratingPost}
                           isRestoring={ctrl.restoringPostId === post.id}
                           onHidePost={() => ctrl.handleOpenHidePostModal(post)}
                           onRestorePost={() => void ctrl.handleRestorePost(post)}
-                          onFlagViolation={ctrl.handleFlagPostViolation}
+                          onFlagViolation={() => ctrl.handleFlagPostViolation(post)}
+                          onUnflagViolation={() =>
+                            void ctrl.handleUnflagPostViolation(post.id)
+                          }
                           onRemovePost={() => ctrl.handleOpenRemovePostModal(post)}
                         />
                       </header>
@@ -751,6 +870,20 @@ export const AdminUserDetailView: React.FC = () => {
         onHidePost={ctrl.handleOpenHidePostModal}
         onRestorePost={(targetPost) => void ctrl.handleRestorePost(targetPost)}
         onFlagViolation={ctrl.handleFlagPostViolation}
+        onUnflagViolation={(targetPost) =>
+          void ctrl.handleUnflagPostViolation(targetPost.id)
+        }
+        onInspectViolation={(targetPost) => {
+          if (!targetPost.violationFlag) return;
+          ctrl.handleOpenViolationDetail({
+            kind: 'POST',
+            postId: targetPost.id,
+            subjectName: targetPost.author.fullName?.trim() || displayName,
+            reason: targetPost.violationFlag.reason,
+            flaggedAt: targetPost.violationFlag.flaggedAt,
+            postExcerpt: targetPost.content,
+          });
+        }}
         onRemovePost={ctrl.handleOpenRemovePostModal}
         onRequestRemoveComment={ctrl.handleOpenRemoveCommentModal}
         onRequestRestoreAppeal={ctrl.handleRequestRestoreAppeal}
@@ -793,6 +926,32 @@ export const AdminUserDetailView: React.FC = () => {
         isLoading={ctrl.isRestoringAppeal}
         onConfirm={() => void ctrl.handleConfirmRestoreAppeal()}
         onCancel={ctrl.handleCancelRestoreAppeal}
+      />
+
+      {/* Violation Detail & Evidence Modal */}
+      <ViolationDetailModal
+        target={ctrl.violationDetailTarget}
+        onClose={ctrl.handleCloseViolationDetail}
+        primaryAction={
+          ctrl.violationDetailTarget
+            ? {
+                label: 'Gỡ đánh dấu vi phạm',
+                variant: 'outline',
+                isLoading: ctrl.isClearingViolation,
+                onClick: () => {
+                  const target = ctrl.violationDetailTarget;
+                  if (!target) return;
+                  if (target.kind === 'AVATAR') {
+                    void ctrl.handleClearAvatarViolation();
+                  } else if (target.kind === 'COVER') {
+                    void ctrl.handleClearCoverViolation();
+                  } else if (target.postId) {
+                    void ctrl.handleUnflagPostViolation(target.postId);
+                  }
+                },
+              }
+            : undefined
+        }
       />
     </div>
   );

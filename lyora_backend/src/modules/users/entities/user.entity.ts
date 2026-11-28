@@ -61,4 +61,28 @@ export class User extends AbstractBaseEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   lockedAt?: Date | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  avatarViolationReason?: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  avatarViolationFlaggedAt?: Date | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  avatarViolationFlaggedById?: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  avatarViolationEvidenceUrl?: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  coverViolationReason?: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  coverViolationFlaggedAt?: Date | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  coverViolationFlaggedById?: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  coverViolationEvidenceUrl?: string | null;
 }

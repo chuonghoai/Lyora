@@ -18,6 +18,11 @@ import { JwtPayload } from '../../common/interfaces/authenticated-user.interface
 import { RedisService } from '../../redis/redis.service';
 import { MailService } from '../mail/mail.service';
 import { User } from '../users/entities/user.entity';
+import {
+  buildAvatarViolation,
+  buildCoverViolation,
+  type ProfileMediaViolationDto,
+} from '../users/dto/flag-profile-media-violation.dto';
 import { UsersService } from '../users/users.service';
 import {
   ResetPasswordDto,
@@ -42,6 +47,8 @@ export interface AuthTokenResponse {
     location?: string | null;
     avatarUrl?: string | null;
     coverUrl?: string | null;
+    avatarViolation?: ProfileMediaViolationDto | null;
+    coverViolation?: ProfileMediaViolationDto | null;
     hometown?: string | null;
     workplace?: string | null;
     education?: string | null;
@@ -335,12 +342,22 @@ export class AuthService {
     return { loggedOut: true };
   }
 
-  async getProfile(userId: string): Promise<User> {
-    return this.usersService.findById(userId);
+  async getProfile(userId: string) {
+    const user = await this.usersService.findById(userId);
+    return {
+      ...user,
+      avatarViolation: buildAvatarViolation(user),
+      coverViolation: buildCoverViolation(user),
+    };
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
-    return this.usersService.updateProfile(userId, dto);
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.usersService.updateProfile(userId, dto);
+    return {
+      ...user,
+      avatarViolation: buildAvatarViolation(user),
+      coverViolation: buildCoverViolation(user),
+    };
   }
 
   private async issueTokens(user: User): Promise<AuthTokenResponse> {
@@ -390,6 +407,8 @@ export class AuthService {
         location: user.location ?? null,
         avatarUrl: user.avatarUrl ?? null,
         coverUrl: user.coverUrl ?? null,
+        avatarViolation: buildAvatarViolation(user),
+        coverViolation: buildCoverViolation(user),
         hometown: user.hometown ?? null,
         workplace: user.workplace ?? null,
         education: user.education ?? null,

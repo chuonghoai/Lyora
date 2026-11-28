@@ -152,6 +152,10 @@ describe('Admin Users Management - Model, Lock Notice & UserService', () => {
         success: true,
         data: { ...mockUserItem, isActive: true, lockReason: null },
       } satisfies ApiResponse<AdminUserSummaryItem>),
+      flagAvatarViolation: vi.fn(),
+      clearAvatarViolation: vi.fn(),
+      flagCoverViolation: vi.fn(),
+      clearCoverViolation: vi.fn(),
     };
 
     const service = new UserService(repoMock);

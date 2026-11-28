@@ -70,6 +70,11 @@ export interface IPostRepository {
   getAdminPostDetail(postId: string): Promise<ApiResponse<AdminPostDetail>>;
   hideAdminPost(postId: string, reason: string): Promise<ApiResponse<AdminPostDetail>>;
   restoreAdminPost(postId: string): Promise<ApiResponse<AdminPostDetail>>;
+  flagAdminPostViolation(
+    postId: string,
+    reason: string,
+  ): Promise<ApiResponse<AdminPostDetail>>;
+  unflagAdminPostViolation(postId: string): Promise<ApiResponse<AdminPostDetail>>;
   removeAdminPost(postId: string, reason?: string): Promise<ApiResponse<null>>;
   removeAdminComment(
     postId: string,
@@ -307,6 +312,27 @@ export class PostRepository implements IPostRepository {
       ApiResponse<AdminPostDetail>,
       ApiResponse<AdminPostDetail>
     >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}/restore`);
+  }
+
+  async flagAdminPostViolation(
+    postId: string,
+    reason: string,
+  ): Promise<ApiResponse<AdminPostDetail>> {
+    return apiClient.patch<
+      ApiResponse<AdminPostDetail>,
+      ApiResponse<AdminPostDetail>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}/flag-violation`, {
+      reason,
+    });
+  }
+
+  async unflagAdminPostViolation(
+    postId: string,
+  ): Promise<ApiResponse<AdminPostDetail>> {
+    return apiClient.patch<
+      ApiResponse<AdminPostDetail>,
+      ApiResponse<AdminPostDetail>
+    >(`${CORE_CONSTANTS.API_ENDPOINTS.ADMIN_POSTS}/${postId}/unflag-violation`);
   }
 
   async removeAdminPost(

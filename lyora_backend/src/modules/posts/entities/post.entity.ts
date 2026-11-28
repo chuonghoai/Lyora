@@ -57,4 +57,17 @@ export class Post extends AbstractBaseEntity {
 
   @Column({ type: 'uuid', nullable: true })
   moderatedById?: string | null;
+
+  @Index()
+  @Column({ type: 'boolean', default: false })
+  isViolationFlagged: boolean;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  violationReason?: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  violationFlaggedAt?: Date | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  violationFlaggedById?: string | null;
 }

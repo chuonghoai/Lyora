@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { isApiError, toast, useAuthStore } from '@/core';
 import {
+  flagPostViolationSchema,
   hidePostModerationSchema,
   rejectPostAppealSchema,
   removeModerationReasonSchema,
+  useFlagAdminPostViolationMutation,
   useHideAdminPostMutation,
   useInfinitePostCommentsQuery,
   useInfinitePostsQuery,
@@ -16,6 +18,7 @@ import {
   useRemoveAdminPostMutation,
   useRestoreAdminPostAppealMutation,
   useRestoreAdminPostMutation,
+  useUnflagAdminPostViolationMutation,
   type Post,
   type PostAppealSummary,
   type PostComment,
@@ -23,11 +26,17 @@ import {
   type ReactionType,
 } from '@/features/posts';
 import {
+  flagProfileMediaViolationSchema,
   useAdminUserDetailQuery,
+  useClearUserAvatarViolationMutation,
+  useClearUserCoverViolationMutation,
+  useFlagUserAvatarViolationMutation,
+  useFlagUserCoverViolationMutation,
   useLockUserMutation,
   useUnlockUserMutation,
 } from '@/features/user';
 import { getAdminUserDetailPath, ROUTES } from '@/routes/paths';
+import type { ViolationModalTarget } from '@/ui/shared/ViolationIndicators';
 import type { AdminPostReactionsModalState } from './AdminPostReactionsModal';
 import type { AdminUserAppealEvidenceTarget } from './AdminUserAppealEvidenceModal';
 import type { AdminUserModerationTarget } from './AdminUserPostModerationModal';
@@ -66,6 +75,11 @@ export function useAdminUserDetailController() {
     useState<AdminUserModerationTarget | null>(null);
   const [moderationReason, setModerationReason] = useState('');
   const [moderationError, setModerationError] = useState<string | null>(null);
+  const [violationDetailTarget, setViolationDetailTarget] =
+    useState<ViolationModalTarget | null>(null);
+  const [violationClearingKind, setViolationClearingKind] = useState<
+    'AVATAR' | 'COVER' | 'POST' | null
+  >(null);
   const [restoringPostId, setRestoringPostId] = useState<string | null>(null);
   const [restoreAppealTarget, setRestoreAppealTarget] =
     useState<AdminUserAppealEvidenceTarget | null>(null);
@@ -100,8 +114,14 @@ export function useAdminUserDetailController() {
 
   const lockMutation = useLockUserMutation();
   const unlockMutation = useUnlockUserMutation();
+  const flagAvatarViolationMutation = useFlagUserAvatarViolationMutation();
+  const clearAvatarViolationMutation = useClearUserAvatarViolationMutation();
+  const flagCoverViolationMutation = useFlagUserCoverViolationMutation();
+  const clearCoverViolationMutation = useClearUserCoverViolationMutation();
   const hidePostMutation = useHideAdminPostMutation();
   const restorePostMutation = useRestoreAdminPostMutation();
+  const flagPostViolationMutation = useFlagAdminPostViolationMutation();
+  const unflagPostViolationMutation = useUnflagAdminPostViolationMutation();
   const removePostMutation = useRemoveAdminPostMutation();
   const removeCommentMutation = useRemoveAdminCommentMutation();
   const restoreAppealMutation = useRestoreAdminPostAppealMutation();
@@ -110,6 +130,12 @@ export function useAdminUserDetailController() {
   const isModeratingPost =
     hidePostMutation.isPending ||
     restorePostMutation.isPending ||
+    flagPostViolationMutation.isPending ||
+    unflagPostViolationMutation.isPending ||
+    flagAvatarViolationMutation.isPending ||
+    clearAvatarViolationMutation.isPending ||
+    flagCoverViolationMutation.isPending ||
+    clearCoverViolationMutation.isPending ||
     removePostMutation.isPending ||
     removeCommentMutation.isPending;
 
@@ -295,20 +321,104 @@ export function useAdminUserDetailController() {
     }
   };
 
-  // TODO: Đang phát triển — các thao tác kiểm duyệt bên dưới được ghi nhận trong admin_manage_user.todo
   const handleFlagCoverViolation = () => {
-    // TODO: Đang phát triển
-    toast.info('// TODO: Đang phát triển');
+    if (!user) return;
+    if (!user.coverUrl?.trim()) {
+      toast.info('Người dùng hiện chưa có ảnh bìa để đánh dấu vi phạm.');
+      return;
+    }
+    setModerationTarget({ mode: 'FLAG_COVER', user });
+    setModerationReason(user.coverViolation?.reason ?? '');
+    setModerationError(null);
   };
 
   const handleFlagAvatarViolation = () => {
-    // TODO: Đang phát triển
-    toast.info('// TODO: Đang phát triển');
+    if (!user) return;
+    if (!user.avatarUrl?.trim()) {
+      toast.info('Người dùng hiện chưa có ảnh đại diện để đánh dấu vi phạm.');
+      return;
+    }
+    setModerationTarget({ mode: 'FLAG_AVATAR', user });
+    setModerationReason(user.avatarViolation?.reason ?? '');
+    setModerationError(null);
   };
 
-  const handleFlagPostViolation = () => {
-    // TODO: Đang phát triển
-    toast.info('// TODO: Đang phát triển');
+  const handleFlagPostViolation = (post: Post) => {
+    setModerationTarget({ mode: 'FLAG_POST', post });
+    setModerationReason(post.violationFlag?.reason ?? '');
+    setModerationError(null);
+  };
+
+  const handleClearAvatarViolation = async () => {
+    if (!user || clearAvatarViolationMutation.isPending) return;
+    setViolationClearingKind('AVATAR');
+    try {
+      await clearAvatarViolationMutation.mutateAsync(user.id);
+      if (violationDetailTarget?.kind === 'AVATAR') {
+        setViolationDetailTarget(null);
+      }
+      toast.success('Đã gỡ đánh dấu vi phạm ảnh đại diện.');
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : 'Không thể gỡ đánh dấu vi phạm ảnh đại diện lúc này.',
+      );
+    } finally {
+      setViolationClearingKind(null);
+    }
+  };
+
+  const handleClearCoverViolation = async () => {
+    if (!user || clearCoverViolationMutation.isPending) return;
+    setViolationClearingKind('COVER');
+    try {
+      await clearCoverViolationMutation.mutateAsync(user.id);
+      if (violationDetailTarget?.kind === 'COVER') {
+        setViolationDetailTarget(null);
+      }
+      toast.success('Đã gỡ đánh dấu vi phạm ảnh bìa.');
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : 'Không thể gỡ đánh dấu vi phạm ảnh bìa lúc này.',
+      );
+    } finally {
+      setViolationClearingKind(null);
+    }
+  };
+
+  const handleUnflagPostViolation = async (postId: string) => {
+    if (unflagPostViolationMutation.isPending) return;
+    setViolationClearingKind('POST');
+    try {
+      await unflagPostViolationMutation.mutateAsync(postId);
+      if (
+        violationDetailTarget?.kind === 'POST' &&
+        violationDetailTarget.postId === postId
+      ) {
+        setViolationDetailTarget(null);
+      }
+      toast.success('Đã gỡ đánh dấu vi phạm bài viết.');
+    } catch (err) {
+      toast.error(
+        isApiError(err)
+          ? err.message
+          : 'Không thể gỡ đánh dấu vi phạm bài viết lúc này.',
+      );
+    } finally {
+      setViolationClearingKind(null);
+    }
+  };
+
+  const handleOpenViolationDetail = (target: ViolationModalTarget) => {
+    setViolationDetailTarget(target);
+  };
+
+  const handleCloseViolationDetail = () => {
+    if (violationClearingKind) return;
+    setViolationDetailTarget(null);
   };
 
   const handleOpenHidePostModal = (post: Post) => {
@@ -349,6 +459,96 @@ export function useAdminUserDetailController() {
   const handleConfirmModeration = async (event: FormEvent) => {
     event.preventDefault();
     if (!moderationTarget || isModeratingPost) return;
+
+    if (moderationTarget.mode === 'FLAG_AVATAR') {
+      const parsed = flagProfileMediaViolationSchema.safeParse({
+        reason: moderationReason,
+      });
+      if (!parsed.success) {
+        setModerationError(
+          parsed.error.issues[0]?.message ?? 'Lý do đánh dấu vi phạm chưa hợp lệ',
+        );
+        return;
+      }
+
+      try {
+        await flagAvatarViolationMutation.mutateAsync({
+          userId: moderationTarget.user.id,
+          payload: { reason: parsed.data.reason },
+        });
+        setModerationTarget(null);
+        setModerationReason('');
+        setModerationError(null);
+        toast.success('Đã đánh dấu vi phạm ảnh đại diện và gửi thông báo realtime.');
+      } catch (err) {
+        toast.error(
+          isApiError(err)
+            ? err.message
+            : 'Không thể đánh dấu vi phạm ảnh đại diện lúc này.',
+        );
+      }
+      return;
+    }
+
+    if (moderationTarget.mode === 'FLAG_COVER') {
+      const parsed = flagProfileMediaViolationSchema.safeParse({
+        reason: moderationReason,
+      });
+      if (!parsed.success) {
+        setModerationError(
+          parsed.error.issues[0]?.message ?? 'Lý do đánh dấu vi phạm chưa hợp lệ',
+        );
+        return;
+      }
+
+      try {
+        await flagCoverViolationMutation.mutateAsync({
+          userId: moderationTarget.user.id,
+          payload: { reason: parsed.data.reason },
+        });
+        setModerationTarget(null);
+        setModerationReason('');
+        setModerationError(null);
+        toast.success('Đã đánh dấu vi phạm ảnh bìa và gửi thông báo realtime.');
+      } catch (err) {
+        toast.error(
+          isApiError(err)
+            ? err.message
+            : 'Không thể đánh dấu vi phạm ảnh bìa lúc này.',
+        );
+      }
+      return;
+    }
+
+    if (moderationTarget.mode === 'FLAG_POST') {
+      const parsed = flagPostViolationSchema.safeParse({
+        reason: moderationReason,
+      });
+      if (!parsed.success) {
+        setModerationError(
+          parsed.error.issues[0]?.message ?? 'Lý do đánh dấu vi phạm chưa hợp lệ',
+        );
+        return;
+      }
+
+      try {
+        await flagPostViolationMutation.mutateAsync({
+          postId: moderationTarget.post.id,
+          reason: parsed.data.reason,
+        });
+        setModerationTarget(null);
+        setModerationReason('');
+        setModerationError(null);
+        toast.success('Đã đánh dấu vi phạm bài viết và gửi thông báo realtime.');
+      } catch (err) {
+        toast.error(
+          isApiError(err)
+            ? err.message
+            : 'Không thể đánh dấu vi phạm bài viết lúc này.',
+        );
+      }
+      return;
+    }
 
     if (moderationTarget.mode === 'HIDE_POST') {
       const parsed = hidePostModerationSchema.safeParse({
@@ -633,6 +833,8 @@ export function useAdminUserDetailController() {
     moderationReason,
     moderationError,
     isModeratingPost,
+    violationDetailTarget,
+    isClearingViolation: Boolean(violationClearingKind),
     setVisibilityFilter,
     handleBackToList,
     handleRefreshAll,
@@ -647,6 +849,11 @@ export function useAdminUserDetailController() {
     handleFlagCoverViolation,
     handleFlagAvatarViolation,
     handleFlagPostViolation,
+    handleClearAvatarViolation,
+    handleClearCoverViolation,
+    handleUnflagPostViolation,
+    handleOpenViolationDetail,
+    handleCloseViolationDetail,
     handleOpenHidePostModal,
     handleOpenRemovePostModal,
     handleOpenRemoveCommentModal,

@@ -13,6 +13,18 @@ export class HidePostModerationDto {
   reason: string;
 }
 
+export class FlagPostViolationDto {
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString({ message: 'Lý do đánh dấu vi phạm bài viết phải là chuỗi ký tự' })
+  @MinLength(5, {
+    message: 'Vui lòng nhập lý do đánh dấu vi phạm tối thiểu 5 ký tự',
+  })
+  @MaxLength(500, { message: 'Lý do đánh dấu vi phạm tối đa 500 ký tự' })
+  reason: string;
+}
+
 export class RemoveModerationReasonDto {
   @IsOptional()
   @Transform(({ value }: { value: unknown }) =>
