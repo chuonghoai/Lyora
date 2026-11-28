@@ -5,6 +5,8 @@ import type { ForgotPasswordController } from '@/ui/auth/forgot-password/forgot-
 import type { HomeController } from '@/ui/client/home/home.controller';
 import type { ProfileController } from '@/ui/client/profile/profile.controller';
 import type { DashboardController } from '@/ui/admin/dashboard/dashboard.controller';
+import type { AdminUsersController } from '@/ui/admin/users/admin-users.controller';
+import type { AdminUserDetailController } from '@/ui/admin/users/admin-user-detail.controller';
 import type { AdminPostsController } from '@/ui/admin/posts/admin-posts.controller';
 import type { ClientLayoutController } from '@/ui/client/client-layout.controller';
 import type { AdminLayoutController } from '@/ui/admin/admin-layout.controller';
@@ -18,8 +20,10 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'showPassword'
       | 'isLoading'
       | 'apiError'
+      | 'lockedAccountNotice'
       | 'handleFieldChange'
       | 'handleTogglePassword'
+      | 'handleCloseLockedModal'
       | 'handleSubmit';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
@@ -199,6 +203,8 @@ describe('View-Controller Contract & Integration Types', () => {
       | 'handleNavigateAdminPosts'
       | 'handleCheckHealth'
       | 'handleSelectRoleFilter'
+      | 'handleViewAllUsers'
+      | 'handleOpenAdminUserDetail'
       | 'setFilterQuery';
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
@@ -344,6 +350,106 @@ describe('View-Controller Contract & Integration Types', () => {
 
     type HasKey<T, K extends string> = K extends keyof T ? true : false;
     type Check = HasKey<AdminLayoutController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('AdminUsersController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'activeRoleTab'
+      | 'statusFilter'
+      | 'onlineFilter'
+      | 'sortOption'
+      | 'searchQuery'
+      | 'items'
+      | 'meta'
+      | 'summary'
+      | 'isLoading'
+      | 'isError'
+      | 'isTransitioningData'
+      | 'isRefreshingOnlineStatus'
+      | 'isCreateModalOpen'
+      | 'isCreatingUser'
+      | 'createUserError'
+      | 'handleSelectRoleTab'
+      | 'handleStatusFilterChange'
+      | 'handleOnlineFilterChange'
+      | 'handleSortOptionChange'
+      | 'handleSearchChange'
+      | 'handleClearSearch'
+      | 'handleResetFilters'
+      | 'handlePageChange'
+      | 'handleRefresh'
+      | 'handleOpenUserDetail'
+      | 'handleOpenCreateModal'
+      | 'handleCloseCreateModal'
+      | 'handleCreateUser';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<AdminUsersController, ExpectedKeys>;
+    const isContractValid: Check = true;
+    expect(isContractValid).toBe(true);
+  });
+
+  it('AdminUserDetailController contract has all required unified properties and handlers', () => {
+    type ExpectedKeys =
+      | 'user'
+      | 'posts'
+      | 'totalPosts'
+      | 'visibilityFilter'
+      | 'canLockTarget'
+      | 'canUnlockTarget'
+      | 'isLoadingUser'
+      | 'isUserError'
+      | 'isLoadingPosts'
+      | 'isPostsError'
+      | 'isLockModalOpen'
+      | 'isLockingUser'
+      | 'isUnlockConfirmOpen'
+      | 'isUnlockingUser'
+      | 'expandedCommentsMap'
+      | 'reactionsModal'
+      | 'reactionsModalPost'
+      | 'reactionsData'
+      | 'isReactionsLoading'
+      | 'isReactionsError'
+      | 'sharesModal'
+      | 'sharesModalPost'
+      | 'sharesData'
+      | 'isSharesLoading'
+      | 'isSharesError'
+      | 'moderationTarget'
+      | 'moderationReason'
+      | 'moderationError'
+      | 'isModeratingPost'
+      | 'handleBackToList'
+      | 'handleRefreshAll'
+      | 'handleOpenLockModal'
+      | 'handleConfirmLock'
+      | 'handleOpenUnlockConfirm'
+      | 'handleConfirmUnlock'
+      | 'handleFlagCoverViolation'
+      | 'handleFlagAvatarViolation'
+      | 'handleFlagPostViolation'
+      | 'handleOpenHidePostModal'
+      | 'handleOpenRemovePostModal'
+      | 'handleOpenRemoveCommentModal'
+      | 'handleCloseModerationModal'
+      | 'handleModerationReasonChange'
+      | 'handleSelectModerationReasonPreset'
+      | 'handleConfirmModeration'
+      | 'handleTogglePostComments'
+      | 'handleOpenReactionsModal'
+      | 'handleCloseReactionsModal'
+      | 'handleChangeReactionsFilter'
+      | 'handleChangeReactionsPage'
+      | 'handleOpenSharesModal'
+      | 'handleCloseSharesModal'
+      | 'handleChangeSharesPage'
+      | 'handleInspectUserProfile';
+
+    type HasKey<T, K extends string> = K extends keyof T ? true : false;
+    type Check = HasKey<AdminUserDetailController, ExpectedKeys>;
     const isContractValid: Check = true;
     expect(isContractValid).toBe(true);
   });
