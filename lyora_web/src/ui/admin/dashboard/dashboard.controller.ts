@@ -1,11 +1,17 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDebounce, toast } from '@/core';
+import {
+  useAdminPostStatisticsQuery,
+  type AdminPostStatistics,
+} from '@/features/posts';
 import { useSystemHealthQuery, type HealthStatus } from '@/features/system';
 import {
   useUserStatisticsQuery,
   type UserRoleFilter,
   type UserStatistics,
 } from '@/features/user';
+import { ROUTES } from '@/routes/paths';
 
 export type { UserRoleFilter };
 
@@ -17,6 +23,7 @@ export interface HealthCheckReport {
 }
 
 export function useDashboardController() {
+  const navigate = useNavigate();
   const [filterQuery, setFilterQuery] = useState('');
   const [isStatsRefreshing, setIsStatsRefreshing] = useState(false);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
@@ -25,6 +32,7 @@ export function useDashboardController() {
 
   const healthQuery = useSystemHealthQuery();
   const userStatsQuery = useUserStatisticsQuery(activeRoleFilter);
+  const postStatsQuery = useAdminPostStatisticsQuery();
 
   const debouncedFilter = useDebounce(filterQuery, 350);
   const appTitle = import.meta.env.VITE_APP_TITLE || 'Lyora';
@@ -36,11 +44,17 @@ export function useDashboardController() {
   const handleRefreshStats = async () => {
     setIsStatsRefreshing(true);
     try {
-      const [statsRes, healthRes] = await Promise.all([
+      const [statsRes, postStatsRes, healthRes] = await Promise.all([
         userStatsQuery.refetch(),
+        postStatsQuery.refetch(),
         healthQuery.refetch(),
       ]);
-      if (statsRes.isError || healthRes.isError || healthRes.data?.status !== 'ok') {
+      if (
+        statsRes.isError ||
+        postStatsRes.isError ||
+        healthRes.isError ||
+        healthRes.data?.status !== 'ok'
+      ) {
         toast.error('Không thể làm mới đầy đủ số liệu. Vui lòng thử lại.');
         return;
       }
@@ -61,6 +75,21 @@ export function useDashboardController() {
     } catch {
       toast.error('Không thể tải lại thống kê người dùng.');
     }
+  };
+
+  const handleRetryPostStats = async () => {
+    try {
+      const result = await postStatsQuery.refetch();
+      if (result.isError) {
+        toast.error('Không thể tải lại thống kê bài viết.');
+      }
+    } catch {
+      toast.error('Không thể tải lại thống kê bài viết.');
+    }
+  };
+
+  const handleNavigateAdminPosts = () => {
+    navigate(ROUTES.ADMIN.POSTS);
   };
 
   const handleSelectRoleFilter = (filter: UserRoleFilter) => {
@@ -126,10 +155,15 @@ export function useDashboardController() {
     isStatsLoading: userStatsQuery.isLoading,
     isStatsError: userStatsQuery.isError,
     statsError: userStatsQuery.error,
+    postStats: (postStatsQuery.data as AdminPostStatistics | undefined) ?? null,
+    isPostStatsLoading: postStatsQuery.isLoading,
+    isPostStatsError: postStatsQuery.isError,
     appTitle,
     handleFilterChange,
     handleRefreshStats,
     handleRetryStats,
+    handleRetryPostStats,
+    handleNavigateAdminPosts,
     handleCheckHealth,
     handleSelectRoleFilter,
     setFilterQuery,
