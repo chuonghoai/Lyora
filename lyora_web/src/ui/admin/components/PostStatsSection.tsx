@@ -75,7 +75,9 @@ export const PostStatsSection: React.FC<PostStatsSectionProps> = ({
   const publicPct = toPercent(stats.visibilityBreakdown.PUBLIC, stats.totalPosts);
   const friendsPct = toPercent(stats.visibilityBreakdown.FRIENDS, stats.totalPosts);
   const privatePct =
-    stats.totalPosts > 0 ? Math.max(0, 100 - publicPct - friendsPct) : 0;
+    stats.totalPosts > 0 && stats.visibilityBreakdown.PRIVATE > 0
+      ? Math.max(0, 100 - publicPct - friendsPct)
+      : 0;
 
   return (
     <section aria-labelledby="post-stats-heading" className="space-y-4">
@@ -113,18 +115,27 @@ export const PostStatsSection: React.FC<PostStatsSectionProps> = ({
                 <span style={{ width: `${publicPct}%` }} className="bg-primary" />
               )}
               {friendsPct > 0 && (
-                <span style={{ width: `${friendsPct}%` }} className="bg-info" />
+                <span style={{ width: `${friendsPct}%` }} className="bg-success" />
               )}
               {privatePct > 0 && (
-                <span style={{ width: `${privatePct}%` }} className="bg-muted/60" />
+                <span style={{ width: `${privatePct}%` }} className="bg-warning" />
               )}
             </div>
           )}
-          <p className="text-xs text-muted tabular-nums">
-            Công khai {stats.visibilityBreakdown.PUBLIC.toLocaleString('vi-VN')} · Bạn bè{' '}
-            {stats.visibilityBreakdown.FRIENDS.toLocaleString('vi-VN')} · Riêng tư{' '}
-            {stats.visibilityBreakdown.PRIVATE.toLocaleString('vi-VN')}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted tabular-nums">
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />
+              <span>Công khai {stats.visibilityBreakdown.PUBLIC.toLocaleString('vi-VN')}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-success" />
+              <span>Bạn bè {stats.visibilityBreakdown.FRIENDS.toLocaleString('vi-VN')}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-warning" />
+              <span>Riêng tư {stats.visibilityBreakdown.PRIVATE.toLocaleString('vi-VN')}</span>
+            </span>
+          </div>
         </div>
 
         <div className="p-5 space-y-1.5">
