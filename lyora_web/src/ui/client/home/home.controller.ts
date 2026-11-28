@@ -15,7 +15,7 @@ import {
   useUpdateUserProfileMutation,
   useUserProfileQuery,
 } from '@/features/user';
-import { getClientProfilePath } from '@/routes/paths';
+import { getClientProfilePath, ROUTES } from '@/routes/paths';
 import {
   MAX_AUDIO_RECORDING_SECONDS,
   usePostFeedController,
@@ -399,8 +399,7 @@ export function useHomeController() {
 
   // All Friends Modal Handlers
   const handleOpenAllFriendsModal = () => {
-    setFriendSearchQuery('');
-    setIsAllFriendsModalOpen(true);
+    navigate(ROUTES.CLIENT.FRIENDS);
   };
 
   const handleCloseAllFriendsModal = () => {
