@@ -257,4 +257,51 @@ describe('PostsService (Real DB Data & Empty State)', () => {
     const adminRes = await service.findOne(adminUser, hiddenPostId);
     expect(adminRes.id).toBe(hiddenPostId);
   });
+
+  it('tài khoản ADMIN khi đăng bài luôn mặc định phạm vi PUBLIC', async () => {
+    const adminUser: AuthenticatedUser = {
+      id: '88888888-8888-4888-8888-888888888888',
+      email: 'admin@lyora.vn',
+      role: UserRole.ADMIN,
+    };
+    const postId = '99999999-9999-4999-8999-999999999999';
+    const createdEntity = {
+      id: postId,
+      authorId: adminUser.id,
+      author: {
+        id: adminUser.id,
+        fullName: 'Ban Quản Trị',
+        email: adminUser.email,
+        avatarUrl: null,
+      },
+      content: 'Thông báo bảo trì hệ thống',
+      visibility: PostVisibility.PUBLIC,
+      moderationStatus: PostModerationStatus.ACTIVE,
+      media: [],
+      taggedUserIds: null,
+      reactionsCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      createdAt: new Date('2026-11-28T03:30:00.000Z'),
+      updatedAt: new Date('2026-11-28T03:30:00.000Z'),
+    } as unknown as Post;
+
+    const createSpy = jest.fn((payload: Partial<Post>) => payload as Post);
+    const saveSpy = jest.fn().mockResolvedValue(createdEntity);
+    postRepo.create = createSpy;
+    postRepo.save = saveSpy;
+    (postRepo.findOne as jest.Mock).mockResolvedValue(createdEntity);
+
+    const res = await service.create(adminUser, {
+      content: 'Thông báo bảo trì hệ thống',
+      visibility: PostVisibility.FRIENDS,
+    });
+
+    expect(createSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visibility: PostVisibility.PUBLIC,
+      }),
+    );
+    expect(res.visibility).toBe(PostVisibility.PUBLIC);
+  });
 });

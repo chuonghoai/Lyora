@@ -78,11 +78,16 @@ export class PostsService {
       currentUser.id,
     );
 
+    const visibility =
+      currentUser.role === UserRole.ADMIN
+        ? PostVisibility.PUBLIC
+        : (dto.visibility ?? PostVisibility.PUBLIC);
+
     const created = await this.postRepository.save(
       this.postRepository.create({
         authorId: currentUser.id,
         content,
-        visibility: dto.visibility ?? PostVisibility.PUBLIC,
+        visibility,
         media,
         taggedUserIds: taggedUserIds.length > 0 ? taggedUserIds : null,
       }),

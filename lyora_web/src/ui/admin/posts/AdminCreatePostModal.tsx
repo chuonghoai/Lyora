@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppImage, Button } from '@/core';
-import { POST_SUGGESTION_TONES, type PostVisibility } from '@/features/posts';
+import { POST_SUGGESTION_TONES } from '@/features/posts';
 import {
   CloseIcon,
   ImageIcon,
@@ -13,12 +13,6 @@ import { AdminDialog } from './AdminDialog';
 export interface AdminCreatePostModalProps {
   controller: AdminPostsController;
 }
-
-const VISIBILITY_OPTIONS: { value: PostVisibility; label: string }[] = [
-  { value: 'PUBLIC', label: 'Công khai toàn cộng đồng' },
-  { value: 'FRIENDS', label: 'Chỉ bạn bè' },
-  { value: 'PRIVATE', label: 'Nội bộ (Riêng tư)' },
-];
 
 export const AdminCreatePostModal: React.FC<AdminCreatePostModalProps> = ({
   controller,
@@ -42,7 +36,11 @@ export const AdminCreatePostModal: React.FC<AdminCreatePostModalProps> = ({
               Đăng bài viết / Thông báo từ Ban Quản Trị
             </h1>
             <p className="text-xs text-muted">
-              Bài viết sẽ mang dấu xác thực Quản trị khi hiển thị trên hệ thống.
+              Mặc định hiển thị{' '}
+              <span className="font-medium text-foreground">
+                Công khai toàn cộng đồng
+              </span>{' '}
+              kèm dấu xác thực Quản trị.
             </p>
           </div>
 
@@ -61,39 +59,6 @@ export const AdminCreatePostModal: React.FC<AdminCreatePostModalProps> = ({
           onSubmit={controller.handleSubmitAdminPost}
           className="flex-1 overflow-y-auto p-5 space-y-4"
         >
-          <div className="space-y-1.5">
-            <span className="block text-xs font-medium text-foreground">
-              Phạm vi hiển thị
-            </span>
-            <div
-              role="radiogroup"
-              aria-label="Phạm vi hiển thị bài viết"
-              className="flex flex-wrap gap-1.5"
-            >
-              {VISIBILITY_OPTIONS.map((opt) => {
-                const active = controller.composerVisibility === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() =>
-                      controller.handleComposerVisibilityChange(opt.value)
-                    }
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                      active
-                        ? 'border-secondary-strong bg-secondary text-primary-active'
-                        : 'border-border bg-card text-foreground hover:bg-background'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <label
