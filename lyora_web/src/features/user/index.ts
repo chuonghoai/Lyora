@@ -1,5 +1,6 @@
 export * from './types/user.types';
 export * from './models/profile.model';
+export * from './models/admin-user.model';
 export * from './repositories/user.repository';
 export * from './repositories/profile.repository';
 export * from './services/user.service';

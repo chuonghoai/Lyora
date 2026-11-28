@@ -21,6 +21,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.';
     let errorName = 'InternalServerError';
+    let code: string | undefined;
+    let details: Record<string, unknown> | undefined;
 
     if (exception instanceof ThrottlerException) {
       statusCode = HttpStatus.TOO_MANY_REQUESTS;
@@ -47,6 +49,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         if (typeof resObj.error === 'string') {
           errorName = resObj.error;
         }
+        if (typeof resObj.code === 'string' && resObj.code.trim()) {
+          code = resObj.code;
+        }
+        if (
+          typeof resObj.details === 'object' &&
+          resObj.details !== null &&
+          !Array.isArray(resObj.details)
+        ) {
+          details = resObj.details as Record<string, unknown>;
+        }
       }
     } else if (exception instanceof Error) {
       const isDev =
@@ -66,6 +78,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode,
       message,
       error: errorName,
+      ...(code ? { code } : {}),
+      ...(details ? { details } : {}),
       timestamp: new Date().toISOString(),
       path: request.url,
     });

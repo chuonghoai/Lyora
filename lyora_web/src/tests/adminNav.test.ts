@@ -36,6 +36,8 @@ describe('adminNav feature search & active path helpers', () => {
     expect(isAdminNavActive('/admin/posts', postsItem)).toBe(true);
     expect(isAdminNavActive('/admin/posts', dashboardItem)).toBe(false);
 
+    expect(usersItem.implemented).toBe(true);
+    expect(usersItem.path).toBe('/admin/users');
     expect(isAdminNavActive('/admin', dashboardItem)).toBe(true);
     expect(isAdminNavActive('/admin/', dashboardItem)).toBe(true);
     expect(isAdminNavActive('/admin/users', dashboardItem)).toBe(false);

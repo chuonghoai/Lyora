@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDebounce, toast } from '@/core';
 import { useSystemHealthQuery, type HealthStatus } from '@/features/system';
 import {
@@ -6,6 +7,7 @@ import {
   type UserRoleFilter,
   type UserStatistics,
 } from '@/features/user';
+import { getAdminUserDetailPath, ROUTES } from '@/routes/paths';
 
 export type { UserRoleFilter };
 
@@ -17,6 +19,7 @@ export interface HealthCheckReport {
 }
 
 export function useDashboardController() {
+  const navigate = useNavigate();
   const [filterQuery, setFilterQuery] = useState('');
   const [isStatsRefreshing, setIsStatsRefreshing] = useState(false);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
@@ -65,6 +68,14 @@ export function useDashboardController() {
 
   const handleSelectRoleFilter = (filter: UserRoleFilter) => {
     setActiveRoleFilter(filter);
+  };
+
+  const handleViewAllUsers = () => {
+    navigate(ROUTES.ADMIN.USERS);
+  };
+
+  const handleOpenAdminUserDetail = (userId: string) => {
+    navigate(getAdminUserDetailPath(userId));
   };
 
   const handleCheckHealth = async () => {
@@ -132,6 +143,8 @@ export function useDashboardController() {
     handleRetryStats,
     handleCheckHealth,
     handleSelectRoleFilter,
+    handleViewAllUsers,
+    handleOpenAdminUserDetail,
     setFilterQuery,
   };
 }

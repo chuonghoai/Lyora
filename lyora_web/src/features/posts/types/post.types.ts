@@ -25,6 +25,7 @@ export interface PostAuthor {
 
 export interface PostComment {
   id: string;
+  parentId?: string | null;
   author: PostAuthor;
   content: string;
   media?: PostMediaItem | null;
@@ -102,6 +103,22 @@ export interface PaginatedPostReactionsResult {
   items: PostReactionUser[];
   meta: PaginationMeta;
   breakdown: ReactionBreakdown;
+}
+
+export interface PostShareUser {
+  id: string;
+  user: PostAuthor;
+  createdAt: string;
+}
+
+export interface PostSharesQueryParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedPostSharesResult {
+  items: PostShareUser[];
+  meta: PaginationMeta;
 }
 
 export type PostSuggestionTone =

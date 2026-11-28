@@ -10,6 +10,8 @@ export const ROUTES = {
   ADMIN: {
     ROOT: '/admin',
     DASHBOARD: '/admin',
+    USERS: '/admin/users',
+    USER_DETAIL: '/admin/users/:userId',
     POSTS: '/admin/posts',
   },
   AUTH: {
@@ -18,6 +20,10 @@ export const ROUTES = {
     FORGOT_PASSWORD: '/forgot-password',
   },
 } as const;
+
+export function getAdminUserDetailPath(userId: string): string {
+  return `/admin/users/${encodeURIComponent(userId.trim())}`;
+}
 
 export function getClientProfilePath(userId?: string, selfId?: string): string {
   const trimmed = userId?.trim();
