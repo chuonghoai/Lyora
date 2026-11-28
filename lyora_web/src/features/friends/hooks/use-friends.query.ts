@@ -57,7 +57,6 @@ export function useAcceptedFriendsQuery() {
     queryKey: friendsKeys.accepted(),
     queryFn: () => friendsService.getAcceptedFriends(),
     staleTime: 30_000,
-    refetchInterval: 3_000,
     refetchOnMount: "always",
   });
 }
@@ -67,7 +66,6 @@ export function useReceivedFriendRequestsQuery() {
     queryKey: friendsKeys.receivedRequests(),
     queryFn: () => friendsService.getReceivedRequests(),
     staleTime: 30_000,
-    refetchInterval: 3_000,
   });
 }
 

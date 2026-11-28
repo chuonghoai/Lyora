@@ -5,6 +5,7 @@ import { Friendship } from './entities/friendship.entity';
 import { FriendshipStatus } from './enums/friendship-status.enum';
 import { FriendsService } from './friends.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 describe('FriendsService', () => {
   let service: FriendsService;
@@ -16,6 +17,7 @@ describe('FriendsService', () => {
       'createFriendRequest' | 'createFriendRequestAccepted'
     >
   >;
+  let realtimeGateway: jest.Mocked<Pick<RealtimeGateway, 'emitToUsers'>>;
 
   beforeEach(() => {
     friendshipRepo = {
@@ -33,11 +35,13 @@ describe('FriendsService', () => {
       createFriendRequest: jest.fn(),
       createFriendRequestAccepted: jest.fn(),
     };
+    realtimeGateway = { emitToUsers: jest.fn() };
 
     service = new FriendsService(
       friendshipRepo as Repository<Friendship>,
       userRepo as Repository<User>,
       notificationsService as NotificationsService,
+      realtimeGateway as RealtimeGateway,
     );
   });
 
@@ -219,6 +223,11 @@ describe('FriendsService', () => {
         'Người gửi',
         'user-1',
       );
+      expect(realtimeGateway.emitToUsers).toHaveBeenCalledWith(
+        ['user-1', 'user-2'],
+        'friendship.updated',
+        { action: 'REQUEST_SENT' },
+      );
     });
 
     it('chỉ chấp nhận lời mời PENDING gửi đến người dùng hiện tại', async () => {
@@ -240,6 +249,11 @@ describe('FriendsService', () => {
       expect(
         notificationsService.createFriendRequestAccepted,
       ).toHaveBeenCalledWith('user-2', 'Người chấp nhận', 'user-1');
+      expect(realtimeGateway.emitToUsers).toHaveBeenCalledWith(
+        ['user-1', 'user-2'],
+        'friendship.updated',
+        { action: 'ACCEPTED' },
+      );
     });
 
     it('vẫn hoàn tất lời mời khi lưu thông báo thất bại', async () => {

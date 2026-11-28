@@ -7,7 +7,6 @@ export function useNotificationsQuery() {
     queryKey: notificationsKeys.mine(),
     queryFn: () => notificationsService.getMine(),
     staleTime: 5_000,
-    refetchInterval: 10_000,
   });
 }
 
